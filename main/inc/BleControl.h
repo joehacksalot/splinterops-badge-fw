@@ -119,5 +119,7 @@ esp_err_t BleControl_DisableBle(BleControl *this);
 esp_err_t BleControl_EnableBleXfer(BleControl *this, bool genericMode);
 esp_err_t BleControl_DisableBleXfer(BleControl *this);
 bool BleControl_BleXferEnabled(BleControl *this);
+void update_uuid_with_pairId(uint8_t *uuid, uint8_t *pairId);
+void refresh_service_uuid(BleControl *this);
 
 #endif // BLE_CONFIG_H_

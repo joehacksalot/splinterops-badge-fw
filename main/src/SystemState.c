@@ -208,6 +208,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_COMPLETE,           &SystemState_BleNotificationHandler,         this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_FAILED,             &SystemState_BleNotificationHandler,         this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_CUSTOM_RECV,    &SystemState_BleNotificationHandler,         this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV,      &SystemState_BleNotificationHandler,         this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED,    &SystemState_BleNotificationHandler,         this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV,  &SystemState_BleNotificationHandler,         this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED,           &SystemState_GameEventNotificationHandler,   this));
@@ -538,6 +539,12 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
             ESP_LOGE(TAG, "BLE Xfer New Custom Recv. Notification Data is NULL");
         }
         
+        break;
+    case NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV:
+        LedModing_SetLedSequencePreviewActive(&this->ledModing, false);
+        // just picked this one with false to flow to normal (idk how to do it properly)
+        // tbh this might be a problem with LedModding not refreshing automatically once state is changed
+        // also broken for Settings, TouchMode->Ble Timeout, and TouchMode->Disable Ble
         break;
     default:
         break;
