@@ -1,0 +1,48 @@
+menu "Badge Additional Configuration"
+
+    config CONSOLE_STORE_HISTORY
+        bool "Store console command history in flash"
+        default y
+        help
+            Linenoise line editing library provides functions to save and load
+            command history. If this option is enabled, initalizes a FAT filesystem
+            and uses it to store command history.
+
+    config DEBUG_FEATURES
+        bool "Developer debug tools"
+        default n
+        help
+            If this option is enabled, additional commands and debug information
+            will be available
+
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "DEFCON"
+        help
+            SSID (Network Name) to connect to
+    
+    config WIFI_PASSWORD
+        string "WiFi Password"
+        default ""
+        help
+            WiFi password to connect to WIFI_SSID with WPA2. Leave empty for open wifi
+
+    config WIFI_MAX_RETRY
+        int "WiFi Max retry"
+        default 3
+        help
+            Maximium retry count for connecting to WiFi AP
+
+    config OTA_UPDATE_URL
+        string "OTA Update URL"
+        default "https://localhost:8080/update.bin"
+        help
+            URL to check for OTA updates
+    
+    config OTA_UPDATE_RECV_TIMEOUT
+        int "OTA Update Receive Timeout"
+        default 15000
+        help
+            Maximum time in MS for file download from OTA Update URL
+
+endmenu

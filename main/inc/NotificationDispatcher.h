@@ -1,0 +1,55 @@
+
+#ifndef NOTIFICATION_DISPATCHER_H_
+#define NOTIFICATION_DISPATCHER_H_
+
+#include "esp_event.h"
+
+#define DEFAULT_NOTIFY_WAIT_DURATION 100 //ms
+
+typedef enum NotificationEvents_e
+{
+    NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION,
+    NOTIFICATION_EVENTS_TOUCH_ACTION_CMD,
+    NOTIFICATION_EVENTS_TOUCH_ENABLED, //
+    NOTIFICATION_EVENTS_TOUCH_DISABLED, //
+    NOTIFICATION_EVENTS_BLE_ENABLED,
+    NOTIFICATION_EVENTS_BLE_DISABLED,
+    NOTIFICATION_EVENTS_BLE_XFER_REQ_RECV,
+    NOTIFICATION_EVENTS_BLE_XFER_ENABLED,
+    NOTIFICATION_EVENTS_BLE_XFER_DISABLED,
+    NOTIFICATION_EVENTS_BLE_XFER_CONNECTED,
+    NOTIFICATION_EVENTS_BLE_XFER_DISCONNECTED,
+    NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED,
+    NOTIFICATION_EVENTS_BLE_XFER_COMPLETE,
+    NOTIFICATION_EVENTS_BLE_XFER_FAILED,
+    NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV,
+    NOTIFICATION_EVENTS_BLE_XFER_NEW_CUSTOM_RECV,
+    NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, // TODO: Ethan to send this, Jose to catch/process this
+    NOTIFICATION_EVENTS_GAME_EVENT_JOINED,
+    NOTIFICATION_EVENTS_GAME_EVENT_ENDED,
+    NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, // TODO: Jose to send this, Shaun to catch/process this
+    NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, // TODO: Shaun to send this. Jose to catch/process this
+    NOTIFICATION_EVENTS_WIFI_ENABLED, //
+    NOTIFICATION_EVENTS_WIFI_DISABLED, //
+    NOTIFICATION_EVENTS_WIFI_CONNECTED, //
+    NOTIFICATION_EVENTS_WIFI_DISCONNECTED, //
+    NOTIFICATION_EVENTS_OTA_REQUIRED, //
+    NOTIFICATION_EVENTS_OTA_DOWNLOAD_INITIATED, //
+    NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE,
+    NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE //
+} NotificationEvent;
+
+typedef struct NotificationDispatcher_t
+{
+    esp_event_loop_handle_t eventLoopHandle;
+    esp_event_base_t notificationEventBase;
+    SemaphoreHandle_t notifyMutex;
+} NotificationDispatcher;
+
+esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this);
+esp_err_t NotificationDispatcher_NotifyEvent(NotificationDispatcher *this, NotificationEvent notificationEvent, void *data, int dataSize, uint32_t waitDurationMSec);
+esp_err_t NotificationDispatcher_RegisterNotificationEventHandler(NotificationDispatcher *this, NotificationEvent notificationEvent, esp_event_handler_t eventHandler, void *eventHandlerArgs);
+
+
+
+#endif // NOTIFICATION_DISPATCHER_H_
