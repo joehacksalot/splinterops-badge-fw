@@ -32,10 +32,12 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this);
 // Internal Constants
 static const char * TOUCH_TAG = "TCH";
 
-#ifdef TRON_BADGE
+#if defined(TRON_BADGE)
   static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {0,2,3,4,5,6,7,8,9};
-#else
+#elif defined(REACTOR_BADGE)
   static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {7,6,4,3,2,5,0,9,8};
+#elif defined(CREST_BADGE)
+  static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {0,2,3,4,5,6,7,8,9};
 #endif
 
 esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher)
@@ -145,7 +147,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
             {
                 if (this->touchSensorActive[i] == TOUCH_SENSOR_EVENT_RELEASED)
                 {
-                    ESP_LOGD(TOUCH_TAG, "Touch %d Pressed", i);
+                    ESP_LOGI(TOUCH_TAG, "Touch %d Pressed", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_TOUCHED;
                     this->touchSensorActiveTimeStamp[i] = curTime;
 
@@ -162,7 +164,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
             {
                 if (this->touchSensorActive[i] != TOUCH_SENSOR_EVENT_RELEASED)
                 {
-                    ESP_LOGD(TOUCH_TAG, "Touch %d Released", i);
+                    ESP_LOGI(TOUCH_TAG, "Touch %d Released", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_RELEASED;
                     this->touchSensorActiveTimeStamp[i] = curTime;
 

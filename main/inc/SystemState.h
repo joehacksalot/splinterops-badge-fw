@@ -19,7 +19,7 @@
 #include "WifiClient.h"
 #include "HTTPGameClient.h"
 
-#ifndef TRON_BADGE
+#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     #include "SynthMode.h"
 #endif
 
@@ -56,7 +56,7 @@ typedef struct SystemState_t
     WifiClient wifiClient;
     HTTPGameClient httpGameClient;
 
-#ifndef TRON_BADGE
+#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     SynthMode synthMode;
 #endif
 } SystemState;

@@ -180,7 +180,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings));
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
-#ifndef TRON_BADGE
+#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->ledControl, &this->userSettings));
 #endif
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
@@ -247,7 +247,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
 
     if (this->touchActionCmdClearRequired == false)
     {
-#ifndef TRON_BADGE
+#if defined (REACTOR_BADGE) || defined (CREST_BADGE)
         if (!this->touchActive)
         {
             if (touchCmd == TOUCH_ACTIONS_CMD_ENABLE_TOUCH)
@@ -332,7 +332,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                     break;
             }
         }
-#ifndef TRON_BADGE
+#if defined(REACTOR_BADGE) || defined (CREST_BADGE)
     }
 #endif
     if (cmdProcessed)
@@ -660,7 +660,7 @@ static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
     ESP_LOGI(TAG, "Touch Disabled");
     LedModing_SetTouchActive(&this->ledModing, false);
     TouchSensor_SetTouchEnabled(&this->touchSensor, false);
-#ifndef TRON_BADGE
+#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     SynthMode_SetEnabled(&this->synthMode, false);
 #endif
     return NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);

@@ -22,6 +22,7 @@ typedef struct TouchSensorEventNotificationData_t
     int touchSensorIdx;
 } TouchSensorEventNotificationData;
 
+#if defined (TRON_BADGE) || defined (REACTOR_BADGE)
 typedef enum TouchSensorNames_t
 {
     TOUCH_SENSOR_12_OCLOCK = 0, // 0
@@ -37,6 +38,7 @@ typedef enum TouchSensorNames_t
     TOUCH_SENSOR_NUM_BUTTONS // 9
 } TouchSensorNames;
 
+// Reactor Pin Map Notes:
 // touch pin 1 -> no response
 // touch pin 7 -> 12,6 o' clock -> 0 idx
 // touch pin 6 -> 1 o' clock    -> 1 idx
@@ -47,6 +49,35 @@ typedef enum TouchSensorNames_t
 // touch pin 0 -> 8 o' clock    -> 6 idx
 // touch pin 9 -> 10 o' clock   -> 7 idx
 // touch pin 8 -> 11 o' clock   -> 8 idx
+
+#elif defined (CREST_BADGE)
+typedef enum TouchSensorCrestNames_t
+{
+    TOUCH_SENSOR_RIGHT_WING_FEATHER_1 = 0, // 0
+    TOUCH_SENSOR_RIGHT_WING_FEATHER_2,     // 1
+    TOUCH_SENSOR_RIGHT_WING_FEATHER_3,     // 2
+    TOUCH_SENSOR_RIGHT_WING_FEATHER_4,     // 3
+    TOUCH_SENSOR_TAIL_FEATHER,             // 4
+    TOUCH_SENSOR_LEFT_WING_FEATHER_4,      // 5
+    TOUCH_SENSOR_LEFT_WING_FEATHER_3,      // 6
+    TOUCH_SENSOR_LEFT_WING_FEATHER_2,      // 7
+    TOUCH_SENSOR_LEFT_WING_FEATHER_1,      // 8
+    
+    TOUCH_SENSOR_NUM_BUTTONS // 9
+} TouchSensorNames;
+
+// Crest Pin Map Notes:
+// touch pin 0 -> 0 idx
+// touch pin 1 -> no response
+// touch pin 2 -> 1 idx
+// touch pin 3 -> 2 idx
+// touch pin 4 -> 3 idx
+// touch pin 5 -> 4 idx
+// touch pin 6 -> 5 idx
+// touch pin 7 -> 6 idx
+// touch pin 8 -> 7 idx
+// touch pin 9 -> 8 idx
+#endif 
 
 typedef struct TouchSensor_t
 {

@@ -37,7 +37,7 @@ static esp_err_t CommandDetected(TouchActions *this, TouchActionsCmd touchAction
 
 static TouchActionsCmd GetTouchAction(TouchActions *this)
 {
-#ifdef TRON_BADGE
+#if defined(TRON_BADGE)
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)  &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
         (this->touchSensorValue[TOUCH_SENSOR_2_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
@@ -102,7 +102,7 @@ static TouchActionsCmd GetTouchAction(TouchActions *this)
     {
         return TOUCH_ACTIONS_CMD_UNKNOWN;
     }
-#else
+#elif defined(REACTOR_BADGE)
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)  &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
         (this->touchSensorValue[TOUCH_SENSOR_2_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
@@ -196,6 +196,107 @@ static TouchActionsCmd GetTouchAction(TouchActions *this)
              (this->touchSensorValue[TOUCH_SENSOR_8_OCLOCK]  >= TOUCH_SENSOR_EVENT_RELEASED)       &&
              (this->touchSensorValue[TOUCH_SENSOR_10_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
              (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED))
+    {
+        return TOUCH_ACTIONS_CMD_NETWORK_TEST;
+    }
+    else
+    {
+        return TOUCH_ACTIONS_CMD_UNKNOWN;
+    }
+#elif defined(CREST_BADGE)
+    if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
+    {
+        return TOUCH_ACTIONS_CMD_CLEAR;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         >= TOUCH_SENSOR_EVENT_LONG_PRESSED)  &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)      &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
+    {
+        return TOUCH_ACTIONS_CMD_ENABLE_TOUCH;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       && 
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] >= TOUCH_SENSOR_EVENT_TOUCHED))
+    {
+        return TOUCH_ACTIONS_CMD_DISPLAY_VOLTAGE_METER;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_TOUCHED)        && 
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] >= TOUCH_SENSOR_EVENT_TOUCHED))
+    {
+        return TOUCH_ACTIONS_CMD_NEXT_LED_SEQUENCE;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       && 
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] >= TOUCH_SENSOR_EVENT_TOUCHED))
+    {
+        return TOUCH_ACTIONS_CMD_PREV_LED_SEQUENCE;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_TOUCHED)        && 
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
+    {
+        return TOUCH_ACTIONS_CMD_ENABLE_BLE_XFER;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       && 
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] >= TOUCH_SENSOR_EVENT_RELEASED))
+    {
+        return TOUCH_ACTIONS_CMD_DISABLE_BLE_XFER;
+    }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       && 
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_TOUCHED)        &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
     {
         return TOUCH_ACTIONS_CMD_NETWORK_TEST;
     }

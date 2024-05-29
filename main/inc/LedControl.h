@@ -17,18 +17,24 @@
 #define LED_TYPE LED_STRIP_WS2812
 
 // LED Ring configurations
-#ifdef TRON_BADGE
+#if defined(TRON_BADGE)
   #define LED_STRIP_LEN 77
   #define OUTER_RING_LED_OFFSET 27
   #define OUTER_RING_LED_COUNT 50
   #define INNER_RING_LED_OFFSET 0
   #define INNER_RING_LED_COUNT 27
-#else
+#elif defined(REACTOR_BADGE)
   #define LED_STRIP_LEN 48
   #define OUTER_RING_LED_OFFSET 24
   #define OUTER_RING_LED_COUNT  24 // outer ring led are led index 24->47
   #define INNER_RING_LED_OFFSET 0
   #define INNER_RING_LED_COUNT  24 // inner ring led are led index 0->23
+#elif defined(CREST_BADGE)
+  #define LED_STRIP_LEN 59
+  #define OUTER_RING_LED_OFFSET 6
+  #define OUTER_RING_LED_COUNT  53 // outer ring led are led index 6->53
+  #define INNER_RING_LED_OFFSET 0
+  #define INNER_RING_LED_COUNT  6  // inner ring led are led index 0->6
 #endif
 
 typedef enum InnerLedState_e

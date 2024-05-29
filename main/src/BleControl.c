@@ -80,10 +80,12 @@ uint8_t GATTS_CHAR_UUID_TEST_B_128[16] = {0xbf, 0xe7, 0xfa, 0x46, 0xb7, 0x29, 0x
 #define GATTS_DESCR_UUID_TEST_B     0x2222
 #define GATTS_NUM_HANDLE_TEST_B     4
 
-#ifdef TRON_BADGE
-  #define BLE_DEVICE_NAME            "IWC Mk1"
-#else
-  #define BLE_DEVICE_NAME            "IWC Mk2"
+#if defined(TRON_BADGE)
+  #define BLE_DEVICE_NAME            "IWCv1"
+#elif defined(REACTOR_BADGE)
+  #define BLE_DEVICE_NAME            "IWCv2"
+#elif defined(CREST_BADGE)
+  #define BLE_DEVICE_NAME            "IWCv3"
 #endif
 
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX 0x40
