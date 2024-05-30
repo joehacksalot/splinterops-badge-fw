@@ -20,7 +20,12 @@
 #include "WifiClient.h"
 
 // Application settings
+#if defined(REACTOR_BADGE)
 #define BRIGHTNESS_NORMAL   (40)
+#elif defined(TRON_BADGE) || defined(CREST_BADGE)
+#define BRIGHTNESS_NORMAL   (10)
+#endif
+
 #define MUTEX_MAX_WAIT_MS   (500)
 #define MAX_EVENT_TIME_MSEC (15*60*1000)
 
@@ -72,7 +77,7 @@ static const int correctedPixelOffset[] =
 };
 #endif
 
-#define MAX_TOUCH_MAP_INDEX_COUNT 6
+#define MAX_TOUCH_MAP_INDEX_COUNT 7
 typedef struct TouchMap_t
 {
     int numIndexes;
@@ -81,26 +86,49 @@ typedef struct TouchMap_t
 
 static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] = 
 {
-    {.numIndexes=6, .indexes={0,  1, 23, 11, 12, 13 }},  // 0  12
-    {.numIndexes=2, .indexes={2,  3, 0   }},  // 1  1
-    {.numIndexes=3, .indexes={4,  5, 6   }},  // 2  2
-    {.numIndexes=3, .indexes={6,  7, 8   }},  // 3  4
-    {.numIndexes=2, .indexes={9, 10, 0   }},  // 4  5
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+// TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
+    {.numIndexes=6, .indexes={24,25,47,35,36,37}},  // 0  12
+    {.numIndexes=2, .indexes={26,27,24}},  // 1  1
+    {.numIndexes=3, .indexes={28,29,30}},  // 2  2
+    {.numIndexes=3, .indexes={30,31,32}},  // 3  4
+    {.numIndexes=2, .indexes={33,34,24}},  // 4  5
     // {.numIndexes=0, .indexes={0,  0,  0   }},  // 5  6
-    {.numIndexes=2, .indexes={14, 15, 0   }},  // 6  7
-    {.numIndexes=3, .indexes={16, 17, 18  }},  // 7  8
-    {.numIndexes=3, .indexes={18, 19, 20  }},  // 8  10
-    {.numIndexes=2, .indexes={21, 22, 0   }}   // 9  11
+    {.numIndexes=2, .indexes={38,39,24}},  // 6  7
+    {.numIndexes=3, .indexes={40,41,42}},  // 7  8
+    {.numIndexes=3, .indexes={42,43,44}},  // 8  10
+    {.numIndexes=2, .indexes={45,46,47}}   // 9  11
+#elif defined(CREST_BADGE)
+    {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0  0
+    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1  1
+    {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2  2
+    {.numIndexes=3, .indexes={28,29,30}},            // 3  4
+    {.numIndexes=3, .indexes={31,32,33}},            // 4  4
+    {.numIndexes=3, .indexes={34,35,36}},            // 5  5
+    {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6  6
+    {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7  7
+    {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8  8
+#endif
 };
 
 static const LedMap gameStatusMap[NUM_GAMESTATE_EVENTCOLORS] = 
 {
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+// TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
     {.numIndexes=2, .indexes={1,  2 }},  // RED
     {.numIndexes=2, .indexes={5,  6 }},  // GREEN
     {.numIndexes=2, .indexes={9,  10}},  // YELLOW
     {.numIndexes=2, .indexes={13, 14}},  // MAGENTA
     {.numIndexes=2, .indexes={17, 18}},  // BLUE
     {.numIndexes=2, .indexes={21, 22}}   // CYAN
+#elif defined(CREST_BADGE)
+    {.numIndexes=1, .indexes={1}},  // RED
+    {.numIndexes=1, .indexes={2}},  // GREEN
+    {.numIndexes=1, .indexes={3}},  // YELLOW
+    {.numIndexes=1, .indexes={4}},  // MAGENTA
+    {.numIndexes=1, .indexes={5}},  // BLUE
+    {.numIndexes=1, .indexes={6}}   // CYAN
+#endif
 };
 
 static const rgb_t stoneColorMap[NUM_GAMESTATE_EVENTCOLORS] = 
@@ -661,10 +689,10 @@ static esp_err_t LedControl_ServiceDrawGameStatusSequence(LedControl *this, bool
                 color_t color = { .r = stoneColorMap[stoneIndex].r, .g = stoneColorMap[stoneIndex].g, .b = stoneColorMap[stoneIndex].b, .i = 100};
                 for (int ledIndexIter = 0; ledIndexIter < gameStatusMap[stoneIndex].numIndexes; ledIndexIter++)
                 {
-                    if (allowDrawOuterRing)
-                    {
-                        ret = LedControl_SetPixel(this, color, correctedPixelOffset[gameStatusMap[stoneIndex].indexes[ledIndexIter]+OUTER_RING_LED_OFFSET]);
-                    }
+                //     if (allowDrawOuterRing)
+                //     {
+                //         ret = LedControl_SetPixel(this, color, correctedPixelOffset[gameStatusMap[stoneIndex].indexes[ledIndexIter]+OUTER_RING_LED_OFFSET]);
+                //     }
                     if (allowDrawInnerRing)
                     {
                         ret = LedControl_SetPixel(this, color, correctedPixelOffset[gameStatusMap[stoneIndex].indexes[ledIndexIter]+INNER_RING_LED_OFFSET]);
@@ -820,12 +848,12 @@ static esp_err_t LedControl_ServiceDrawTouchLightingSequence(LedControl *this, b
                 color_t color = { .r = rbg.r, .g = rbg.g, .b = rbg.b, .i = 100 };
                 if (allowDrawOuterRing && TimeUtils_IsTimeExpired(this->touchModeRuntimeInfo.nextOuterDrawTime))
                 {
-                    ret = LedControl_SetPixel(this, color, correctedPixelOffset[touchMap[touchIndex].indexes[ledIndexIter]+OUTER_RING_LED_OFFSET]);
+                    ret = LedControl_SetPixel(this, color, correctedPixelOffset[touchMap[touchIndex].indexes[ledIndexIter]]);
                 }
-                if (allowDrawInnerRing && TimeUtils_IsTimeExpired(this->touchModeRuntimeInfo.nextInnerDrawTime))
-                {
-                    ret = LedControl_SetPixel(this, color, correctedPixelOffset[touchMap[touchIndex].indexes[ledIndexIter]+INNER_RING_LED_OFFSET]);
-                }
+                // if (allowDrawInnerRing && TimeUtils_IsTimeExpired(this->touchModeRuntimeInfo.nextInnerDrawTime))
+                // {
+                //     ret = LedControl_SetPixel(this, color, correctedPixelOffset[touchMap[touchIndex].indexes[ledIndexIter]+INNER_RING_LED_OFFSET]);
+                // }
             }
         }
         if (allowDrawOuterRing && TimeUtils_IsTimeExpired(this->touchModeRuntimeInfo.nextOuterDrawTime))
@@ -928,7 +956,7 @@ static esp_err_t LedControl_SetPixel(LedControl *this, color_t in_color, int pix
     esp_err_t ret = led_strip_set_pixel(&this->ledStrip, pix_num, color);
     if (ret != ESP_OK)
     {
-        ESP_LOGE(TAG, "led_strip_set_pixel failed. error = %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "led_strip_set_pixel failed. pixnum= %d, error = %s", pix_num, esp_err_to_name(ret));
     }
     return ret;
 }

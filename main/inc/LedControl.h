@@ -26,15 +26,15 @@
 #elif defined(REACTOR_BADGE)
   #define LED_STRIP_LEN 48
   #define OUTER_RING_LED_OFFSET 24
-  #define OUTER_RING_LED_COUNT  24 // outer ring led are led index 24->47
+  #define OUTER_RING_LED_COUNT  24 /* outer ring led are led index 24->47 */
   #define INNER_RING_LED_OFFSET 0
-  #define INNER_RING_LED_COUNT  24 // inner ring led are led index 0->23
+  #define INNER_RING_LED_COUNT  24 /* inner ring led are led index 0->23 */
 #elif defined(CREST_BADGE)
   #define LED_STRIP_LEN 59
   #define OUTER_RING_LED_OFFSET 6
-  #define OUTER_RING_LED_COUNT  53 // outer ring led are led index 6->53
+  #define OUTER_RING_LED_COUNT  53 /* outer ring led are led index 6->53 */
   #define INNER_RING_LED_OFFSET 0
-  #define INNER_RING_LED_COUNT  6  // inner ring led are led index 0->6
+  #define INNER_RING_LED_COUNT  6  /* inner ring led are led index 0->6 */
 #endif
 
 typedef enum InnerLedState_e
