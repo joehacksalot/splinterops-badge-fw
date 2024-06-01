@@ -1193,48 +1193,60 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             ESP_LOGD(TAG, "Setting LED mode to normal");
             this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
             innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
             outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+#endif
             break;
         case LED_MODE_TOUCH:
             ESP_LOGD(TAG, "Setting LED mode to touch");
             this->touchModeRuntimeInfo.nextOuterDrawTime = TimeUtils_GetCurTimeTicks();
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_TOUCH_LIGHTING);
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
             this->touchModeRuntimeInfo.nextInnerDrawTime = TimeUtils_GetCurTimeTicks();
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_TOUCH_LIGHTING);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_TOUCH_LIGHTING);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_TOUCH_LIGHTING);
+#endif
             break;
         case LED_MODE_BATTERY:
             ESP_LOGD(TAG, "Setting LED mode to battery");
             initRet = LedControl_InitServiceDrawBatteryIndicatorSequence(this);
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BATTERY_STATUS);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_BATTERY_STATUS);
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BATTERY_STATUS);
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_BATTERY_STATUS);
+#endif
             break;
         case LED_MODE_BLE_XFER_PERCENT:
             ESP_LOGD(TAG, "Setting LED mode to ble xfer percent");
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_MODE_BLE_XFER_PERCENT);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_MODE_BLE_XFER_PERCENT);
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_MODE_BLE_XFER_PERCENT);
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_MODE_BLE_XFER_PERCENT);
+#endif
             break;
         case LED_MODE_STATUS_INDICATOR:
             ESP_LOGD(TAG, "Setting LED mode to status indicator");
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_STATUS_INDICATOR);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_STATUS_INDICATOR);
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_STATUS_INDICATOR);
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_STATUS_INDICATOR);
+#endif
             break;
         case LED_MODE_NETWORK_TEST:
             ESP_LOGD(TAG, "Setting LED mode to network test");
             this->networkTestRuntimeInfo.success = false;
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_NETWORK_TEST);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_NETWORK_TEST);
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_NETWORK_TEST);
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_NETWORK_TEST);
+#endif
             break;
         case LED_MODE_EVENT:
             ESP_LOGD(TAG, "Setting LED mode to event");
             initRet = LedControl_InitDrawGameEventSequence(this);
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_GAME_EVENT);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_EVENT);
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_GAME_EVENT);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_EVENT);
             // TODO: Need some way for the game to end. still tbd
             break;
         case LED_MODE_GAME_STATUS:
             ESP_LOGD(TAG, "Setting LED mode to game status");
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_STATUS);
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_STATUS);
             // TODO: Need some way for the game to end. still tbd
             break;
         case LED_MODE_BLE_XFER_ENABLED:

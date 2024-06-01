@@ -149,7 +149,7 @@ static void SynthModeTask(void* pvParameters) {
     SynthMode* this = (SynthMode*)pvParameters;
     assert(this);
     while(true) {
-        // SynthMode_ServicePlayTouchSound(this);
+        SynthMode_ServicePlayTouchSound(this);
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }

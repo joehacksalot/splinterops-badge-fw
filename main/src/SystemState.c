@@ -31,7 +31,12 @@
 #define NETWORK_TEST_SUCCESS_DRAW_DURATION_MSEC   (2000)
 #define TOUCH_ACTIVE_TIMEOUT_DURATION_MSEC   (5000)
 #define BATTERY_SEQUENCE_DRAW_DURATION_MSEC  (3000)
+
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 #define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (2000)
+#elif defined(CREST_BADGE)
+#define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (100)
+#endif
 
 // Internal Function Declarations
 static void SystemState_TouchActiveTimerCallback(TimerHandle_t xTimer);
