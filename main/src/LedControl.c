@@ -29,6 +29,8 @@
 #define MUTEX_MAX_WAIT_MS   (500)
 #define MAX_EVENT_TIME_MSEC (15*60*1000)
 
+#define LED_CONTROL_TASK_PERIOD (50)
+
 // Internal Function Declarations
 static void LedControlTask(void *pvParameters);
 static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
@@ -332,7 +334,7 @@ static void LedControlTask(void *pvParameters)
         LedControl_ServiceDrawStatusIndicatorSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_STATUS_INDICATOR,   this->ledControlModeSettings.innerLedState == INNER_LED_STATE_STATUS_INDICATOR );
         LedControl_ServiceDrawNetworkTestSequence      ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_NETWORK_TEST,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_NETWORK_TEST     );
         LedControl_FlushLedStrip(this);
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(LED_CONTROL_TASK_PERIOD));
     }
 }
 
@@ -553,10 +555,22 @@ static esp_err_t LedControl_ServiceDrawBatteryIndicatorSequence(LedControl *this
         if (this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator < this->batteryIndicatorRuntimeInfo.numOuterLeds)
         {
             this->flushNeeded = true;
-            uint32_t holdTime = this->batteryIndicatorRuntimeInfo.holdTime / OUTER_RING_LED_COUNT;
+            int ledsToSet = 1;
+            int holdTime = this->batteryIndicatorRuntimeInfo.holdTime / OUTER_RING_LED_COUNT;
+            double holdTimeDbl = this->batteryIndicatorRuntimeInfo.holdTime / (double)OUTER_RING_LED_COUNT;
+            if (holdTimeDbl < (double)LED_CONTROL_TASK_PERIOD)
+            {
+                int ledsRemaining = this->batteryIndicatorRuntimeInfo.numOuterLeds - this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator;
+                ledsToSet = MIN((int)LED_CONTROL_TASK_PERIOD/holdTimeDbl, ledsRemaining);
+                holdTime = 0; // led control task has a min period of 50ms, if less than 50ms, ensure we run the next frame by setting next time to 0
+            }
+            
             this->batteryIndicatorRuntimeInfo.nextOuterFrameDrawTime = TimeUtils_GetFutureTimeTicks(holdTime);
-            ESP_ERROR_CHECK(LedControl_SetPixel(this, color, correctedPixelOffset[this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator+OUTER_RING_LED_OFFSET]));
-            this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator++;
+            for (int i = 0; i < ledsToSet; i++)
+            {
+                ESP_ERROR_CHECK(LedControl_SetPixel(this, color, correctedPixelOffset[this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator+OUTER_RING_LED_OFFSET]));
+                this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator++;
+            }
         }
     }
     if (allowDrawInnerRing && TimeUtils_IsTimeExpired(this->batteryIndicatorRuntimeInfo.nextInnerFrameDrawTime))
@@ -564,10 +578,22 @@ static esp_err_t LedControl_ServiceDrawBatteryIndicatorSequence(LedControl *this
         if (this->batteryIndicatorRuntimeInfo.innerLedsDrawIterator < this->batteryIndicatorRuntimeInfo.numInnerLeds)
         {
             this->flushNeeded = true;
-            uint32_t holdTime = this->batteryIndicatorRuntimeInfo.holdTime / INNER_RING_LED_COUNT;
+            int ledsToSet = 1;
+            int holdTime = this->batteryIndicatorRuntimeInfo.holdTime / OUTER_RING_LED_COUNT;
+            double holdTimeDbl = this->batteryIndicatorRuntimeInfo.holdTime / (double)INNER_RING_LED_COUNT;
+            if (holdTimeDbl < (double)LED_CONTROL_TASK_PERIOD)
+            {
+                int ledsRemaining = this->batteryIndicatorRuntimeInfo.numOuterLeds - this->batteryIndicatorRuntimeInfo.outerLedsDrawIterator;
+                ledsToSet = MIN((int)LED_CONTROL_TASK_PERIOD/holdTimeDbl, ledsRemaining);
+                holdTime = 0; // led control task has a min period of 50ms, if less than 50ms, ensure we run the next frame by setting next time to 0
+            }
+
             this->batteryIndicatorRuntimeInfo.nextInnerFrameDrawTime = TimeUtils_GetFutureTimeTicks(holdTime);
-            ESP_ERROR_CHECK(LedControl_SetPixel(this, color, correctedPixelOffset[this->batteryIndicatorRuntimeInfo.innerLedsDrawIterator+INNER_RING_LED_OFFSET]));
-            this->batteryIndicatorRuntimeInfo.innerLedsDrawIterator++;
+            for (int i = 0; i < ledsToSet; i++)
+            {
+                ESP_ERROR_CHECK(LedControl_SetPixel(this, color, correctedPixelOffset[this->batteryIndicatorRuntimeInfo.innerLedsDrawIterator+INNER_RING_LED_OFFSET]));
+                this->batteryIndicatorRuntimeInfo.innerLedsDrawIterator++;
+            }
         }
     }
 

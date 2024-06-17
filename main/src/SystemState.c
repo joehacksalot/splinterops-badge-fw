@@ -35,7 +35,7 @@
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 #define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (2000)
 #elif defined(CREST_BADGE)
-#define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (100)
+#define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (1000)
 #endif
 
 // Internal Function Declarations
