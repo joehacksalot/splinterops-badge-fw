@@ -1248,12 +1248,22 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
         memcpy((void*)&rsp.attr_value.value+printed_bytes, settings_pack, length);
         printed_bytes += length;
 
-        // Write Wifi_Type
+        // Write Badge_Type
         length = 1;
-        memcpy((void*)&rsp.attr_value.value+printed_bytes, &this->pUserSettings->settings.wifiSettings.wifiType, length);
+        int coded_badge_type;
+        #if defined(TRON_BADGE)
+            coded_badge_type = 1;
+        #elif defined(REACTOR_BADGE)
+            coded_badge_type = 2;
+        #elif defined(CREST_BADGE)
+            coded_badge_type = 3;
+        #else
+            coded_badge_type = 0;
+        #endif
+        memcpy((void*)&rsp.attr_value.value+printed_bytes, &coded_badge_type, length);
         printed_bytes += length;
         
-        // Write Wifi_SSID
+        // Write Wifi_SSID (deprecated / replaced by new wifi flow)
         length = sizeof(this->pUserSettings->settings.wifiSettings.ssid) / sizeof(this->pUserSettings->settings.wifiSettings.ssid[0]);
         memcpy((void*)&rsp.attr_value.value+printed_bytes, this->pUserSettings->settings.wifiSettings.ssid, length);
         printed_bytes += length;
