@@ -5,10 +5,10 @@
 #include "freertos/timers.h"
 
 #include "AudioUtils.h"
-#include "LedControl.h"
-#include "TaskPriorities.h"
-#include "SynthMode.h"
 #include "NotificationDispatcher.h"
+#include "TaskPriorities.h"
+#include "TouchSensor.h"
+#include "SynthMode.h"
 #include "TouchSensor.h"
 #include "UserSettings.h"
 
@@ -26,7 +26,9 @@
 static const char * TAG = "SYN";
 
 // middle C - major scale
-static int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] = {
+static int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] = 
+#if defined (REACTOR_BADGE) || defined (TRON_BADGE)
+{
     262, // TOUCH_SENSOR_12_OCLOCK
     294, // TOUCH_SENSOR_1_OCLOCK
     330, // TOUCH_SENSOR_2_OCLOCK
@@ -35,33 +37,50 @@ static int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] = {
     440, // TOUCH_SENSOR_7_OCLOCK
     494, // TOUCH_SENSOR_8_OCLOCK
     523, // TOUCH_SENSOR_10_OCLOCK
-    587 // TOUCH_SENSOR_11_OCLOCK
+    587  // TOUCH_SENSOR_11_OCLOCK
 };
+#elif defined (CREST_BADGE)
+{
+    262, // TOUCH_SENSOR_RIGHT_WING_FEATHER_1 = 0, // 0
+    294, // TOUCH_SENSOR_RIGHT_WING_FEATHER_2,     // 1
+    330, // TOUCH_SENSOR_RIGHT_WING_FEATHER_3,     // 2
+    349, // TOUCH_SENSOR_RIGHT_WING_FEATHER_4,     // 3
+    392, // TOUCH_SENSOR_TAIL_FEATHER,             // 4
+    440, // TOUCH_SENSOR_LEFT_WING_FEATHER_4,      // 5
+    494, // TOUCH_SENSOR_LEFT_WING_FEATHER_3,      // 6
+    523, // TOUCH_SENSOR_LEFT_WING_FEATHER_2,      // 7
+    587  // TOUCH_SENSOR_LEFT_WING_FEATHER_1,      // 8
+};
+#endif
 
-static esp_err_t SynthMode_ServicePlayTouchSound(SynthMode* this);
-static void SynthModeTask(void* pvParameters);
+static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+esp_err_t SynthMode_PlayTone(SynthMode* this, int frequency);
+esp_err_t SynthMode_StopTone(SynthMode* this);
 
 
-esp_err_t SynthMode_ConfigurePWM(SynthMode *this) {
-
+esp_err_t SynthMode_ConfigurePWM(SynthMode *this)
+{
     esp_err_t ret = ESP_FAIL;
 
-    ledc_timer_config_t ledc_timer = {
+    ledc_timer_config_t ledc_timer =
+    {
         .duty_resolution = DEFAULT_LEDC_DUTY_RESOLUTION, // resolution of PWM duty
-        .freq_hz = DEFAULT_LEDC_FREQ,          // frequency of PWM signal
-        .speed_mode = DEFAULT_LEDC_SPEED_MODE,    // timer mode
-        .timer_num = DEFAULT_LEDC_TIMER,
-        .clk_cfg = LEDC_AUTO_CLK          // timer index
+        .freq_hz = DEFAULT_LEDC_FREQ,                    // frequency of PWM signal
+        .speed_mode = DEFAULT_LEDC_SPEED_MODE,           // timer mode
+        .timer_num = DEFAULT_LEDC_TIMER,                 // timer number
+        .clk_cfg = LEDC_AUTO_CLK                         // timer index
     };
 
     ret = ledc_timer_config(&ledc_timer);
 
-    if (ret == ESP_FAIL || ret == ESP_ERR_INVALID_ARG) {
+    if (ret == ESP_FAIL || ret == ESP_ERR_INVALID_ARG)
+    {
         ESP_LOGE(TAG, "PWM LEDC timer failed to init");
         return ret;
     }
 
-    ledc_channel_config_t ledc_channel = {
+    ledc_channel_config_t ledc_channel =
+    {
         .channel    = DEFAULT_LEDC_CHANNEL,
         .duty       = DEFAULT_LEDC_DUTY_OFF,
         .gpio_num   = SPEAKER_GPIO_NUM,
@@ -72,7 +91,8 @@ esp_err_t SynthMode_ConfigurePWM(SynthMode *this) {
 
     ret = ledc_channel_config(&ledc_channel);
 
-    if (ret == ESP_FAIL) {
+    if (ret == ESP_FAIL)
+    {
         ESP_LOGE(TAG, "PWM LEDC channel failed to init");
         return ret;
     }
@@ -81,13 +101,15 @@ esp_err_t SynthMode_ConfigurePWM(SynthMode *this) {
 
 }
 
-esp_err_t SynthMode_SetEnabled(SynthMode *this, bool enabled) {
 
+esp_err_t SynthMode_SetEnabled(SynthMode *this, bool enabled)
+{
     assert(this);
-
     esp_err_t ret = ESP_FAIL;
 
-    if (this->initialized) {
+    if (this->initialized)
+    {
+        ESP_LOGD(TAG, "Setting audio enabled to %s", enabled ? "true" : "false");
         this->audioEnabled = enabled;
         ret = ESP_OK;
     }
@@ -95,84 +117,89 @@ esp_err_t SynthMode_SetEnabled(SynthMode *this, bool enabled) {
     return ret;
 }
 
-esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationDispatcher, LedControl* ledControl, UserSettings* userSettings) {
 
-    esp_err_t ret = ESP_FAIL;
+esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationDispatcher, UserSettings* pUserSettings)
+{
     assert(this);
 
-    if (this->initialized == false) {
-
+    if (this->initialized == false)
+    {
         this->pNotificationDispatcher = pNotificationDispatcher;
-
-        this->ledControl = ledControl;
-        this->userSettings = userSettings;
-
+        this->pUserSettings = pUserSettings;
         this->audioEnabled = false;
-
-        this->procSyncMutex = xSemaphoreCreateMutex();
-        assert(this->procSyncMutex);
-
-        ret = SynthMode_ConfigurePWM(this);
-
-        if (ret == ESP_OK) {
+        esp_err_t ret = SynthMode_ConfigurePWM(this);
+        if (ret == ESP_OK)
+        {
             this->initialized = true;
-            xTaskCreate(SynthModeTask, "SynthModeTask", 1024, this, SYNTH_MODE_TASK_PRIORITY, NULL);
             ESP_LOGI(TAG, "Synth Mode succesfully initialized");
+            return NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &SynthMode_TouchSensorNotificationHandler, this);
         }
     }
 
-    return ret;
+    return ESP_FAIL;
 }
 
-esp_err_t SynthMode_PlayTone(SynthMode* this, int frequency) {
 
+esp_err_t SynthMode_PlayTone(SynthMode* this, int frequency)
+{
     assert(this);
-
     esp_err_t ret = ESP_FAIL;
 
-    if (this->initialized) {
+    if (this->initialized)
+    {
+        ESP_LOGD(TAG, "Starting tone at %d", frequency);
         ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
         ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_ON);
         ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
-        // ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
-        vTaskDelay(pdMS_TO_TICKS(DEFAULT_LEDC_DURATION));
-        ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_OFF);
-        ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
-
         ret = ESP_OK;
     }
 
     return ret;
 }
 
-static void SynthModeTask(void* pvParameters) {
-    SynthMode* this = (SynthMode*)pvParameters;
-    assert(this);
-    while(true) {
-        SynthMode_ServicePlayTouchSound(this);
-        vTaskDelay(pdMS_TO_TICKS(50));
-    }
-}
 
-static esp_err_t SynthMode_ServicePlayTouchSound(SynthMode* this) {
+esp_err_t SynthMode_StopTone(SynthMode* this)
+{
+    assert(this);
     esp_err_t ret = ESP_FAIL;
-    assert(this);
-    // global sound disabled
-    if (this->userSettings->settings.soundEnabled == false) {
-        return ESP_OK;
-    }
-    // touch mode audio disabled
-    if (this->audioEnabled == false) {
-        return ESP_OK;
-    }
-
-    for (int touchIndex = 0; touchIndex < TOUCH_SENSOR_NUM_BUTTONS; touchIndex++) {
-        if (this->ledControl->touchModeRuntimeInfo.touchSensorValue[touchIndex] == TOUCH_SENSOR_EVENT_TOUCHED) {
-
-            ret = SynthMode_PlayTone(this, touchFrequencyMapping[touchIndex]);
-            break;
-        }
+    if (this->initialized)
+    {
+        ESP_LOGD(TAG, "Stopping tone");
+        ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_OFF);
+        ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
+        ret = ESP_OK;
     }
 
     return ret;
+}
+
+
+static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+{
+    ESP_LOGD(TAG, "Handling Touch Sensor Notification");
+    SynthMode *this = (SynthMode *)pObj;
+    assert(this);
+    assert(notificationData);
+    TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
+    
+    // global sound disabled
+    if (this->pUserSettings->settings.soundEnabled == false)
+    {
+        ESP_LOGD(TAG, "Sound disabled, not playing audio");
+        return;
+    }
+    // touch mode audio disabled
+    if (this->audioEnabled == false)
+    {
+        ESP_LOGD(TAG, "Touch mode audio disabled, not playing audio");
+        return;
+    }
+
+    if (touchNotificationData.touchSensorEvent != TOUCH_SENSOR_EVENT_RELEASED)
+    {
+        ESP_LOGD(TAG, "Playing audio for touch sensor %d  frequency %d", touchNotificationData.touchSensorIdx, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+        SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+        return;
+    }
+    SynthMode_StopTone(this);
 }

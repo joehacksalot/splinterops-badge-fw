@@ -1,7 +1,5 @@
 #include <stdint.h>
-
 #include "esp_err.h"
-
 #include "TouchSensor.h"
 
 typedef struct wav_header_t {
@@ -27,5 +25,3 @@ typedef struct ToneData_t
 {
     int freq[TOUCH_SENSOR_NUM_BUTTONS];
 } ToneData;
-
-// esp_err_t ToneGenerator_init(ToneGenerator this*);

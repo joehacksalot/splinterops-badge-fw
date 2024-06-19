@@ -186,7 +186,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-    ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->ledControl, &this->userSettings));
+    ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
 #endif
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
@@ -262,13 +262,24 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 this->touchActive = true;
                 NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ENABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                 SystemState_ResetTouchActiveTimer(this);
-                GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                LedModing_SetTouchActive(&this->ledModing, true);
-                TouchSensor_SetTouchEnabled(&this->touchSensor, true);
-                SynthMode_SetEnabled(&this->synthMode, true);
+                GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
+                LedModing_SetTouchActive(&this->ledModing, true);      // TODO: Make these components use the notification dispatcher instead of these functions
+                TouchSensor_SetTouchEnabled(&this->touchSensor, true); // TODO: Make these components use the notification dispatcher instead of these functions
+                SynthMode_SetEnabled(&this->synthMode, true);          // TODO: Make these components use the notification dispatcher instead of these functions
                 cmdProcessed = true;
             }
+        }
+        else if (touchCmd == TOUCH_ACTIONS_CMD_DISABLE_TOUCH)
+        {
+            ESP_LOGI(TAG, "Touch Disabled");
+            this->touchActive = false;
+            NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+            SystemState_StopTouchActiveTimer(this);
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
+            LedModing_SetTouchActive(&this->ledModing, false);      // TODO: Make these components use the notification dispatcher instead of these functions
+            TouchSensor_SetTouchEnabled(&this->touchSensor, false); // TODO: Make these components use the notification dispatcher instead of these functions
+            SynthMode_SetEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+            cmdProcessed = true;
         }
         else
         {
@@ -277,18 +288,17 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
             {
                 case TOUCH_ACTIONS_CMD_NEXT_LED_SEQUENCE:
                     ESP_LOGI(TAG, "Next LED Sequence");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
                     // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    LedModing_CycleSelectedLedSequence(&this->ledModing, true);
-                    LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
+                    LedModing_CycleSelectedLedSequence(&this->ledModing, true);    // TODO: Make these components use the notification dispatcher instead of these functions
+                    LedModing_SetLedSequencePreviewActive(&this->ledModing, true); // TODO: Make these components use the notification dispatcher instead of these functions
                     SystemState_ResetLedSequencePreviewActiveTimer(this);
-                    BadgeStats_IncrementNumLedCycles(&this->badgeStats);
+                    BadgeStats_IncrementNumLedCycles(&this->badgeStats);           // TODO: Make these components use the notification dispatcher instead of these functions
                     cmdProcessed = true;
                     break;
                 case TOUCH_ACTIONS_CMD_PREV_LED_SEQUENCE:
                     ESP_LOGI(TAG, "Previous LED Sequence");
                     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
                     LedModing_CycleSelectedLedSequence(&this->ledModing, false);
                     LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
                     SystemState_ResetLedSequencePreviewActiveTimer(this);
@@ -298,7 +308,6 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 case TOUCH_ACTIONS_CMD_DISPLAY_VOLTAGE_METER:
                     ESP_LOGI(TAG, "Displaying Voltage Meter");
                     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
                     LedModing_SetBatteryIndicatorActive(&this->ledModing, true);
                     SystemState_ResetBatteryIndicatorActiveTimer(this);
                     BadgeStats_IncrementNumBatteryChecks(&this->badgeStats);

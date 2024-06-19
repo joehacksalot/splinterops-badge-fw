@@ -22,8 +22,10 @@
 // Application settings
 #if defined(REACTOR_BADGE)
 #define BRIGHTNESS_NORMAL   (40)
-#elif defined(TRON_BADGE) || defined(CREST_BADGE)
+#elif defined(TRON_BADGE)
 #define BRIGHTNESS_NORMAL   (10)
+#elif defined(CREST_BADGE)
+#define BRIGHTNESS_NORMAL   (25)
 #endif
 
 #define MUTEX_MAX_WAIT_MS   (500)

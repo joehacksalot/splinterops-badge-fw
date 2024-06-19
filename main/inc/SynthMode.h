@@ -11,12 +11,12 @@ typedef struct SynthMode_t {
     bool audioEnabled;
     SemaphoreHandle_t procSyncMutex;
     NotificationDispatcher* pNotificationDispatcher;
-    LedControl* ledControl;
-    UserSettings* userSettings;
+    LedControl* pLedControl;
+    UserSettings* pUserSettings;
 } SynthMode;
 
 esp_err_t SynthMode_PlayTone(SynthMode *this, int frequency);
-esp_err_t SynthMode_Init(SynthMode* this, NotificationDispatcher* pNotificationDispatcher, LedControl* ledControl, UserSettings* userSettings);
+esp_err_t SynthMode_Init(SynthMode* this, NotificationDispatcher* pNotificationDispatcher, UserSettings* userSettings);
 esp_err_t SynthMode_SetEnabled(SynthMode *this, bool enabled);
 
 

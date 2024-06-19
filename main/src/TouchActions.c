@@ -228,6 +228,18 @@ static TouchActionsCmd GetTouchAction(TouchActions *this)
     {
         return TOUCH_ACTIONS_CMD_ENABLE_TOUCH;
     }
+    else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)  &&
+             (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  >= TOUCH_SENSOR_EVENT_TOUCHED)   &&
+             (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         >= TOUCH_SENSOR_EVENT_TOUCHED)   &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] >= TOUCH_SENSOR_EVENT_TOUCHED)   &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)  &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)  &&
+             (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
+    {
+        return TOUCH_ACTIONS_CMD_DISABLE_TOUCH;
+    }
     else if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       && 
              (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
              (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
