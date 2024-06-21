@@ -5,17 +5,26 @@
 
 #include "LedControl.h"
 #include "NotificationDispatcher.h"
+#include "Song.h"
 #include "UserSettings.h"
-typedef struct SynthMode_t {
+
+typedef struct SynthMode_t
+{
     bool initialized;
     bool audioEnabled;
+    Song selectedSong;
+    int currentNoteIdx;
+    TickType_t nextNotePlayTime;
     SemaphoreHandle_t procSyncMutex;
     NotificationDispatcher* pNotificationDispatcher;
-    LedControl* pLedControl;
     UserSettings* pUserSettings;
 } SynthMode;
 
-esp_err_t SynthMode_PlayTone(SynthMode *this, int frequency);
+typedef struct PlaySongEventNotificationData_t
+{
+    Song song;
+} PlaySongEventNotificationData;
+
 esp_err_t SynthMode_Init(SynthMode* this, NotificationDispatcher* pNotificationDispatcher, UserSettings* userSettings);
 esp_err_t SynthMode_SetEnabled(SynthMode *this, bool enabled);
 
