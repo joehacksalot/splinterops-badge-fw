@@ -1,0 +1,26 @@
+
+#include "Songs.h"
+
+SongNotes SongOfStorms = {
+  "Epona's Song",
+  180,  // Tempo
+  13,   // Number of Notes
+  [
+    {NOTE_D3, NOTE_TYPE_QUARTER},
+    {NOTE_F3, NOTE_TYPE_QUARTER},
+    {NOTE_D4, NOTE_TYPE_HALF},
+
+    {NOTE_D3, NOTE_TYPE_QUARTER},
+    {NOTE_F3, NOTE_TYPE_QUARTER},
+    {NOTE_D4, NOTE_TYPE_HALF},
+
+    {NOTE_E4, NOTE_TYPE_QUARTER_DOT},
+    {NOTE_F4, NOTE_TYPE_EIGHTH},
+    {NOTE_E4, NOTE_TYPE_QUARTER},
+    {NOTE_F4, NOTE_TYPE_QUARTER},
+
+    {NOTE_E4, NOTE_TYPE_QUARTER},
+    {NOTE_C4, NOTE_TYPE_QUARTER},
+    {NOTE_A4, NOTE_TYPE_HALF}
+  ]
+};
