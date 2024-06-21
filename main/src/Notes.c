@@ -1,7 +1,11 @@
 
+#include "esp_log.h"
+
 #include "Notes.h"
 
-float NoteMap[NOTE_TOTAL_NUM_NOTES] = 
+static const char * TAG = "NOTE";
+
+static float NoteFrequencies[NOTE_TOTAL_NUM_NOTES] = 
 {
   FREQ_NOTE_C0,
   FREQ_NOTE_CS0,
@@ -108,13 +112,12 @@ float NoteMap[NOTE_TOTAL_NUM_NOTES] =
   FREQ_NOTE_FS8
 };
 
-static float NoteFrequencies[NOTE_TOTAL_NUM_NOTES];
-
 float GetNoteFrequency(NoteName note)
 {
     if (note < NOTE_TOTAL_NUM_NOTES)
     {
       return NoteFrequencies[note];
     }
+    ESP_LOGI(TAG, "Invalid note: %d", note);
     return 0.0;
 }

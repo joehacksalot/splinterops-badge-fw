@@ -5,7 +5,10 @@
 #include "Song.h"
 
 
-#define TAG "SONG"
+static const char * TAG = "SONG";
+
+extern SongNotes EponasSong;
+extern SongNotes SongOfStorms;
 
 static SongNotes *pSongs[NUM_SONGS] = 
 {
@@ -17,7 +20,7 @@ static SongNotes *pSongs[NUM_SONGS] =
 // 'tempo' is the tempo in beats per minute
 // 'noteType' is the type of the note as a fraction of a whole note
 // For example, 1 for a whole note, 2 for a half note, 4 for a quarter note, etc.
-int NoteTypeInMilliseconds(int tempo, int noteType)
+int GetNoteTypeInMilliseconds(int tempo, int noteType)
 {
     if (tempo <= 0 || noteType <= 0)
     {

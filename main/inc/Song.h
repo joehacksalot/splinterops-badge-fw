@@ -25,7 +25,7 @@ typedef enum NoteType_t
 typedef struct Note_t
 {
     NoteName note;
-    NoteType duration; 
+    NoteType noteType; 
 } Note;
 
 typedef struct SongNotes_t
@@ -43,9 +43,6 @@ typedef enum Song_e
     SONG_SONG_OF_STORMS,
     NUM_SONGS
 } Song;
-
-SongNotes EponasSong;
-SongNotes SongOfStorms;
 
 SongNotes * GetSong(Song song);
 int GetNoteTypeInMilliseconds(int tempo, int noteType);

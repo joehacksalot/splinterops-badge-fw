@@ -18,7 +18,7 @@
 
 #define DEFAULT_LEDC_TIMER LEDC_TIMER_0
 #define DEFAULT_LEDC_CHANNEL LEDC_CHANNEL_0
-#define DEFAULT_LEDC_DUTY_RESOLUTION LEDC_TIMER_2_BIT
+#define DEFAULT_LEDC_DUTY_RESOLUTION LEDC_TIMER_3_BIT
 #define DEFAULT_LEDC_SPEED_MODE LEDC_HIGH_SPEED_MODE
 #define DEFAULT_LEDC_DUTY_OFF 0
 #define DEFAULT_LEDC_DUTY_ON 3
@@ -114,12 +114,23 @@ static void SynthModeTask(void *pvParameters)
         if (this->selectedSong != SONG_NONE)
         {
             SongNotes *pSong = GetSong(this->selectedSong);
+            ESP_LOGI(TAG, "Playing song %s (%d) note %d of %d", pSong->songName, this->selectedSong, this->currentNoteIdx, pSong->numNotes);
             if (this->currentNoteIdx < pSong->numNotes)
             {
                 this->nextNotePlayTime = TimeUtils_GetFutureTimeTicks(0);
-                SynthMode_PlayTone(this, GetNoteFrequency(pSong->notes[this->currentNoteIdx].note));
-                int holdTimeMs = GetNoteTypeInMilliseconds(pSong->tempo, pSong->notes[this->currentNoteIdx].duration);
-                vTaskDelay(pdMS_TO_TICKS(holdTimeMs));
+                int pauseTime = 50; //msec
+                int frequency = (int)GetNoteFrequency(pSong->notes[this->currentNoteIdx].note);
+                int holdTimeMs = GetNoteTypeInMilliseconds(pSong->tempo, pSong->notes[this->currentNoteIdx].noteType);
+                ESP_LOGI(TAG, "Note Idx %d - Note: %d  Type: %d  HoldTime: %d  Freq: %d", 
+                    this->currentNoteIdx,
+                    pSong->notes[this->currentNoteIdx].note,
+                    pSong->notes[this->currentNoteIdx].noteType,
+                    holdTimeMs,
+                    frequency);
+                SynthMode_PlayTone(this, frequency);
+                vTaskDelay(pdMS_TO_TICKS(holdTimeMs - pauseTime));
+                SynthMode_StopTone(this);
+                vTaskDelay(pdMS_TO_TICKS(pauseTime));
                 this->currentNoteIdx++;
             }
             if (this->currentNoteIdx >= pSong->numNotes)
@@ -127,11 +138,12 @@ static void SynthModeTask(void *pvParameters)
                 this->selectedSong = SONG_NONE;
                 this->currentNoteIdx = 0;
                 SynthMode_StopTone(this);
+                ESP_LOGI(TAG, "Finished playing song");
             }
         }
         else
         {
-            vTaskDelay(pdMS_TO_TICKS(5));
+            vTaskDelay(pdMS_TO_TICKS(50));
         }
     }
 }
@@ -187,6 +199,7 @@ static esp_err_t SynthMode_PlaySong(SynthMode* this, Song song)
         {
             ESP_LOGD(TAG, "Interrupting Song %d", this->selectedSong);
         }
+        ESP_LOGD(TAG, "Settings song to Song %d", song);
         this->selectedSong = song;
         this->currentNoteIdx = 0;
         this->nextNotePlayTime = TimeUtils_GetFutureTimeTicks(0);
@@ -201,17 +214,17 @@ static esp_err_t SynthMode_PlayTone(SynthMode* this, int frequency)
     assert(this);
     esp_err_t ret = ESP_FAIL;
 
-    if (this->initialized)
-    {
-        if (this->audioEnabled)
-        {
-            ESP_LOGD(TAG, "Starting tone at %d", frequency);
+    // if (this->initialized)
+    // {
+    //     if (this->audioEnabled)
+    //     {
+            ESP_LOGI(TAG, "Starting tone at %d", frequency);
             ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
             ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_ON);
             ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
-        }
+        // }
         ret = ESP_OK;
-    }
+    // }
 
     return ret;
 }
@@ -257,13 +270,17 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
     assert(notificationData);
     TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
 
-    if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
+    
+    if (this->selectedSong != SONG_NONE)
     {
-        SynthMode_StopTone(this);
-    }
-    else if (this->selectedSong != SONG_NONE)
-    {
-        SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+        if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
+        {
+            SynthMode_StopTone(this);
+        }
+        else
+        {
+            SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+        }
     }
 }
 
