@@ -9,11 +9,13 @@ static const char * TAG = "SONG";
 
 extern SongNotes EponasSong;
 extern SongNotes SongOfStorms;
+extern SongNotes ZeldaTheme;
 
 static SongNotes *pSongs[NUM_SONGS] = 
 {
     &EponasSong,
-    &SongOfStorms
+    &SongOfStorms,
+    &ZeldaTheme
 };
 
 // Function to calculate the duration of a note in milliseconds

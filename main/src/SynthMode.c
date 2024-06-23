@@ -121,6 +121,10 @@ static void SynthModeTask(void *pvParameters)
                 int pauseTime = 50; //msec
                 int frequency = (int)GetNoteFrequency(pSong->notes[this->currentNoteIdx].note);
                 int holdTimeMs = GetNoteTypeInMilliseconds(pSong->tempo, pSong->notes[this->currentNoteIdx].noteType);
+                if (pSong->notes[this->currentNoteIdx].slur == 0)
+                {
+                    holdTimeMs -= pauseTime;
+                }
                 ESP_LOGI(TAG, "Note Idx %d - Note: %d  Type: %d  HoldTime: %d  Freq: %d", 
                     this->currentNoteIdx,
                     pSong->notes[this->currentNoteIdx].note,
@@ -129,8 +133,11 @@ static void SynthModeTask(void *pvParameters)
                     frequency);
                 SynthMode_PlayTone(this, frequency);
                 vTaskDelay(pdMS_TO_TICKS(holdTimeMs - pauseTime));
-                SynthMode_StopTone(this);
-                vTaskDelay(pdMS_TO_TICKS(pauseTime));
+                if (pSong->notes[this->currentNoteIdx].slur == 0)
+                {
+                    SynthMode_StopTone(this);
+                    vTaskDelay(pdMS_TO_TICKS(pauseTime));
+                }
                 this->currentNoteIdx++;
             }
             if (this->currentNoteIdx >= pSong->numNotes)

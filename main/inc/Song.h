@@ -15,7 +15,9 @@ typedef enum NoteType_t
     NOTE_TYPE_HALF = 2,
     NOTE_TYPE_HALF_DOT = 3,
     NOTE_TYPE_QUARTER = 4,
+    NOTE_TYPE_HALF_DOT_DOT = 5,
     NOTE_TYPE_QUARTER_DOT = 6,
+    NOTE_TYPE_QUARTER_DOT_DOT = 7,
     NOTE_TYPE_EIGHTH = 8,
     NOTE_TYPE_SIXTEENTH = 16,
     NOTE_TYPE_THIRTY_SECOND = 32,
@@ -25,7 +27,8 @@ typedef enum NoteType_t
 typedef struct Note_t
 {
     NoteName note;
-    NoteType noteType; 
+    NoteType noteType;
+    int slur;
 } Note;
 
 typedef struct SongNotes_t
@@ -41,6 +44,7 @@ typedef enum Song_e
     SONG_NONE = -1,
     SONG_EPONAS_SONG,
     SONG_SONG_OF_STORMS,
+    SONG_ZELDA_THEME,
     NUM_SONGS
 } Song;
 
