@@ -1,27 +1,29 @@
 
 #include <stdio.h>
-
 #include "esp_log.h"
 #include "Song.h"
 
-
 static const char * TAG = "SONG";
 
+extern const SongNotes SecretSound;
+extern const SongNotes SuccessSound;
+extern const SongNotes ZeldaTheme;
+extern const SongNotes ZeldasLullaby;
 extern const SongNotes EponasSong;
 extern const SongNotes SongOfStorms;
-extern const SongNotes ZeldaTheme;
-extern const SongNotes SuccessSound;
-extern const SongNotes ZeldasLullaby;
 extern const SongNotes SariasSong;
+extern const SongNotes SunsSong;
 
 static const SongNotes *pSongs[NUM_SONGS] = 
 {
+    &SecretSound,
+    &SuccessSound,
+    &ZeldaTheme,
+    &ZeldasLullaby,
     &EponasSong,
     &SongOfStorms,
-    &ZeldaTheme,
-    &SuccessSound,
-    &ZeldasLullaby,
-    &SariasSong
+    &SariasSong,
+    &SunsSong
 };
 
 // Function to calculate the duration of a note in milliseconds
