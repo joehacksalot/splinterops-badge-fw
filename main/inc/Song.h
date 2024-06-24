@@ -47,6 +47,7 @@ typedef enum Song_e
     SONG_ZELDA_THEME,
     SONG_SONG_SUCCESS,
     SONG_ZELDAS_LULLABY,
+    SONG_SARIAS_SONG,
     NUM_SONGS
 } Song;
 
