@@ -285,17 +285,17 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
     TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
 
     
-    if (this->selectedSong == SONG_NONE)
-    {
-        if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
-        {
-            SynthMode_StopTone(this);
-        }
-        else
-        {
-            SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
-        }
-    }
+    // if (this->selectedSong == SONG_NONE)
+    // {
+    //     if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
+    //     {
+    //         SynthMode_StopTone(this);
+    //     }
+    //     else
+    //     {
+    //         SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+    //     }
+    // }
 }
 
 

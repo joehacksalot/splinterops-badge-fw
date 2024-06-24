@@ -19,7 +19,8 @@ static SongNotes *pSongs[NUM_SONGS] =
     &SongOfStorms,
     &ZeldaTheme,
     // &ZeldaThemeCrap,
-    &SuccessSound
+    &SuccessSound,
+    &EponasSong
 };
 
 // Function to calculate the duration of a note in milliseconds
