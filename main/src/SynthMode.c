@@ -125,14 +125,21 @@ static void SynthModeTask(void *pvParameters)
                 {
                     holdTimeMs -= pauseTime;
                 }
-                ESP_LOGI(TAG, "Note Idx %d - Note: %d  Type: %d  HoldTime: %d  Freq: %d", 
+                ESP_LOGI(TAG, "Note Idx %d - Note: %d  Type: %f  HoldTime: %d  Freq: %d", 
                     this->currentNoteIdx,
                     pSong->notes[this->currentNoteIdx].note,
                     pSong->notes[this->currentNoteIdx].noteType,
                     holdTimeMs,
                     frequency);
-                SynthMode_PlayTone(this, frequency);
-                vTaskDelay(pdMS_TO_TICKS(holdTimeMs - pauseTime));
+                if (pSong->notes[this->currentNoteIdx].note == NOTE_REST)
+                {
+                    SynthMode_StopTone(this);
+                }
+                else
+                {
+                    SynthMode_PlayTone(this, frequency);
+                }
+                vTaskDelay(pdMS_TO_TICKS(holdTimeMs));
                 if (pSong->notes[this->currentNoteIdx].slur == 0)
                 {
                     SynthMode_StopTone(this);
@@ -278,7 +285,7 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
     TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
 
     
-    if (this->selectedSong != SONG_NONE)
+    if (this->selectedSong == SONG_NONE)
     {
         if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
         {

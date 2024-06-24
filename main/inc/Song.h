@@ -9,20 +9,20 @@
 #define SONG_MAX_NOTES       (256)
 
 
-typedef enum NoteType_t
-{
-    NOTE_TYPE_WHOLE = 1,
-    NOTE_TYPE_HALF = 2,
-    NOTE_TYPE_HALF_DOT = 3,
-    NOTE_TYPE_QUARTER = 4,
-    NOTE_TYPE_HALF_DOT_DOT = 5,
-    NOTE_TYPE_QUARTER_DOT = 6,
-    NOTE_TYPE_QUARTER_DOT_DOT = 7,
-    NOTE_TYPE_EIGHTH = 8,
-    NOTE_TYPE_SIXTEENTH = 16,
-    NOTE_TYPE_THIRTY_SECOND = 32,
-    NOTE_TYPE_SIXTY_FOURTH = 64,
-} NoteType;
+typedef float NoteType;
+#define NOTE_TYPE_WHOLE            (1.0)
+#define NOTE_TYPE_HALF             (1.0/2.0)
+#define NOTE_TYPE_QUARTER          (1.0/4.0)
+#define NOTE_TYPE_EIGHTH           (1.0/8.0)
+#define NOTE_TYPE_SIXTEENTH        (1.0/16.0)
+#define NOTE_TYPE_THIRTY_SECOND    (1.0/32.0)
+#define NOTE_TYPE_SIXTY_FOURTH     (1.0/64.0)
+#define NOTE_TYPE_HALF_DOT         (NOTE_TYPE_HALF+NOTE_TYPE_QUARTER)          // Ethan verify
+#define NOTE_TYPE_HALF_DOT_DOT     (NOTE_TYPE_HALF_DOT+NOTE_TYPE_EIGHTH)       // Ethan verify
+#define NOTE_TYPE_QUARTER_DOT      (NOTE_TYPE_QUARTER+NOTE_TYPE_EIGHTH)        // Ethan verify
+#define NOTE_TYPE_QUARTER_DOT_DOT  (NOTE_TYPE_QUARTER_DOT+NOTE_TYPE_SIXTEENTH) // Ethan verify
+#define NOTE_TYPE_EIGHTH_DOT       (NOTE_TYPE_EIGHTH+NOTE_TYPE_SIXTEENTH)      // Ethan verify
+#define NOTE_TYPE_QUARTER_TRIPLET  (NOTE_TYPE_QUARTER/3.0)                     // Ethan verify
 
 typedef struct Note_t
 {
@@ -45,10 +45,12 @@ typedef enum Song_e
     SONG_EPONAS_SONG,
     SONG_SONG_OF_STORMS,
     SONG_ZELDA_THEME,
+    // SONG_ZELDA_THEME_CRAP,
+    SONG_SONG_SUCCESS,
     NUM_SONGS
 } Song;
 
 SongNotes * GetSong(Song song);
-int GetNoteTypeInMilliseconds(int tempo, int noteType);
+int GetNoteTypeInMilliseconds(int tempo, float noteType);
 
 #endif // SONG_H_

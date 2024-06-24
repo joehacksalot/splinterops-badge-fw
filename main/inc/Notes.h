@@ -171,6 +171,7 @@ typedef enum NoteName_t
 #define FREQ_NOTE_AS0 29.14
 #define FREQ_NOTE_BF0 29.14
 #define FREQ_NOTE_B0  30.87
+
 #define FREQ_NOTE_C1  32.703
 #define FREQ_NOTE_CS1 34.648
 #define FREQ_NOTE_DF1 34.648
