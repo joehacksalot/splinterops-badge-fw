@@ -1,7 +1,7 @@
 
 #include "Song.h"
 
-SongNotes ZeldaThemeCrap = {
+const SongNotes ZeldaThemeCrap = {
   "Zelda Theme Crap",
   88,  // Tempo
   90,   // Number of Notes

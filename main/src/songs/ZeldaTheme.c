@@ -4,7 +4,7 @@
 // Sheet music
 //  https://musescore.com/user/20360426/scores/4880846
 
-SongNotes ZeldaTheme = {
+const SongNotes ZeldaTheme = {
   "Zelda Theme",
   130,   // Tempo
   134,   // Number of Notes

@@ -113,7 +113,7 @@ static void SynthModeTask(void *pvParameters)
     {
         if (this->selectedSong != SONG_NONE)
         {
-            SongNotes *pSong = GetSong(this->selectedSong);
+            const SongNotes *pSong = GetSong(this->selectedSong);
             ESP_LOGI(TAG, "Playing song %s (%d) note %d of %d", pSong->songName, this->selectedSong, this->currentNoteIdx, pSong->numNotes);
             if (this->currentNoteIdx < pSong->numNotes)
             {

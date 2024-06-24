@@ -1,7 +1,7 @@
 
 #include "Song.h"
 
-SongNotes SuccessSound = {
+const SongNotes SuccessSound = {
   "Success Sound",
   240,   // Tempo
   5,   // Number of Notes

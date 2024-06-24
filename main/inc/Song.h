@@ -45,13 +45,12 @@ typedef enum Song_e
     SONG_EPONAS_SONG,
     SONG_SONG_OF_STORMS,
     SONG_ZELDA_THEME,
-    // SONG_ZELDA_THEME_CRAP,
     SONG_SONG_SUCCESS,
-    SONG_EPONAS_SONG2,
+    SONG_ZELDAS_LULLABY,
     NUM_SONGS
 } Song;
 
-SongNotes * GetSong(Song song);
+const SongNotes * GetSong(Song song);
 int GetNoteTypeInMilliseconds(int tempo, float noteType);
 
 #endif // SONG_H_

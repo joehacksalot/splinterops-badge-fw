@@ -263,7 +263,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 this->touchActive = true;
                 NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ENABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                 PlaySongEventNotificationData playSongNotificationData;
-                playSongNotificationData.song = SONG_EPONAS_SONG2;
+                playSongNotificationData.song = SONG_ZELDAS_LULLABY;
                 NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &playSongNotificationData.song, sizeof(playSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                 
                 SystemState_ResetTouchActiveTimer(this);

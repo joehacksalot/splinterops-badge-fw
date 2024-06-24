@@ -7,20 +7,19 @@
 
 static const char * TAG = "SONG";
 
-extern SongNotes EponasSong;
-extern SongNotes SongOfStorms;
-extern SongNotes ZeldaTheme;
-// extern SongNotes ZeldaThemeCrap;
-extern SongNotes SuccessSound;
+extern const SongNotes EponasSong;
+extern const SongNotes SongOfStorms;
+extern const SongNotes ZeldaTheme;
+extern const SongNotes SuccessSound;
+extern const SongNotes ZeldasLullaby;
 
-static SongNotes *pSongs[NUM_SONGS] = 
+static const SongNotes *pSongs[NUM_SONGS] = 
 {
     &EponasSong,
     &SongOfStorms,
     &ZeldaTheme,
-    // &ZeldaThemeCrap,
     &SuccessSound,
-    &EponasSong
+    &ZeldasLullaby
 };
 
 // Function to calculate the duration of a note in milliseconds
@@ -44,9 +43,9 @@ int GetNoteTypeInMilliseconds(int tempo, float noteType)
     return (int)NoteType;
 }
 
-SongNotes * GetSong(Song song)
+const SongNotes * GetSong(Song song)
 {
-    if (song > 0 && song < NUM_SONGS)
+    if (song >= 0 && song < NUM_SONGS)
     {
        return pSongs[song];
     }

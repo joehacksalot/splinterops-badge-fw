@@ -1,7 +1,7 @@
 
 #include "Song.h"
 
-SongNotes EponasSong = {
+const SongNotes EponasSong = {
   "Epona's Song",
   100,  // Tempo
   42,   // Number of Notes

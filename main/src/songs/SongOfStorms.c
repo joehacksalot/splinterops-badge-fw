@@ -1,7 +1,7 @@
 
 #include "Song.h"
 
-SongNotes SongOfStorms = {
+const SongNotes SongOfStorms = {
   "Song of Storms",
   180,  // Tempo
   35,   // Number of Notes
@@ -54,7 +54,7 @@ SongNotes SongOfStorms = {
 
     {NOTE_E4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_C4, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_A3, NOTE_TYPE_HALF}
+    {NOTE_A3, NOTE_TYPE_HALF, 0}
     //13
   }
 };
