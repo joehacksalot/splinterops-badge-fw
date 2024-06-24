@@ -4,34 +4,34 @@
 SongNotes EponasSong = {
   "Epona's Song",
   100,  // Tempo
-  45,   // Number of Notes
+  42,   // Number of Notes
   {
     {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
 
     // --
 
-    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
     {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
 
     // --
 
-    {NOTE_A3, NOTE_TYPE_HALF, 0},
     {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A3, NOTE_TYPE_QUARTER, 1},
 
     // --
 
     {NOTE_B3, NOTE_TYPE_QUARTER, 0},
-    {NOTE_A3, NOTE_TYPE_HALF_DOT, 1},
+    {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
 
     // --
 
-    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
     {NOTE_REST, NOTE_TYPE_QUARTER, 0},
     {NOTE_FS3, NOTE_TYPE_QUARTER, 0},
     {NOTE_F3, NOTE_TYPE_QUARTER, 0},
@@ -41,39 +41,36 @@ SongNotes EponasSong = {
     {NOTE_CS4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_HALF, 1},
+    {NOTE_B3, NOTE_TYPE_SIXTEENTH, 0},
 
     // --
 
-    {NOTE_B3, NOTE_TYPE_HALF, 0},
     {NOTE_D4, NOTE_TYPE_HALF, 1},
-
-    // --
-
-    {NOTE_D4, NOTE_TYPE_HALF, 0},
     {NOTE_D4, NOTE_TYPE_QUARTER, 0},
     {NOTE_CS4, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_B4, NOTE_TYPE_EIGHTH, 0},
-
-    // --
-
-    {NOTE_A3, NOTE_TYPE_WHOLE, 0},
-
-    // --
-
-    {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_A3, NOTE_TYPE_HALF_DOT, 1},
 
-    // +++
+    // --
 
-    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
+
+    // --
+
     {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
+
+    // +++
+
+    {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
 
     // --
 
-    {NOTE_A3, NOTE_TYPE_HALF, 0},
     {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_A3, NOTE_TYPE_QUARTER, 1},
@@ -81,14 +78,7 @@ SongNotes EponasSong = {
     // --
 
     {NOTE_B3, NOTE_TYPE_QUARTER, 0},
-    {NOTE_A3, NOTE_TYPE_HALF_DOT, 1},
-
-    // --
-
-    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
-    // {NOTE_A3, NOTE_TYPE_HALF_DOT, 0},
-    // {NOTE_A3, NOTE_TYPE_HALF_DOT, 0},
-    // {NOTE_A3, NOTE_TYPE_HALF_DOT, 0},
-
+    {NOTE_A3, NOTE_TYPE_HALF, 1},
+    {NOTE_A3, NOTE_TYPE_SIXTEENTH, 0},
   }
 };
