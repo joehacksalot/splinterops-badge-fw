@@ -27,6 +27,7 @@ const SongNotes SunsSong = {
     {NOTE_G4, NOTE_TYPE_HALF, 1},
 
     // --
+    
     {NOTE_G4, NOTE_TYPE_HALF_DOT, 0},
   }
 };

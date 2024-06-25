@@ -13,6 +13,8 @@ extern const SongNotes EponasSong;
 extern const SongNotes SongOfStorms;
 extern const SongNotes SariasSong;
 extern const SongNotes SunsSong;
+extern const SongNotes SongOfTime;
+extern const SongNotes MinuetOfForest;
 
 static const SongNotes *pSongs[NUM_SONGS] = 
 {
@@ -21,9 +23,11 @@ static const SongNotes *pSongs[NUM_SONGS] =
     &ZeldaTheme,
     &ZeldasLullaby,
     &EponasSong,
-    &SongOfStorms,
     &SariasSong,
-    &SunsSong
+    &SunsSong,
+    &SongOfTime,
+    &SongOfStorms,
+    &MinuetOfForest,
 };
 
 // Function to calculate the duration of a note in milliseconds

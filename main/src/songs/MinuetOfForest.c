@@ -1,0 +1,49 @@
+
+#include "Song.h"
+
+const SongNotes MinuetOfForest = {
+  "Minuet of Forest",
+  92,  // Tempo
+  21,   // Number of Notes
+  {
+    {NOTE_D3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B3, NOTE_TYPE_HALF, 0},
+
+    //--
+
+    {NOTE_A3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A3, NOTE_TYPE_HALF, 0},
+
+    //--
+
+    {NOTE_D3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B3, NOTE_TYPE_HALF, 0},
+
+    //--
+
+    {NOTE_A3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A3, NOTE_TYPE_HALF, 0},
+
+    //--
+
+    {NOTE_E3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_G3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+
+    //--
+
+    {NOTE_G3, NOTE_TYPE_QUARTER_TRIPLET, 0},
+    {NOTE_A3, NOTE_TYPE_QUARTER_TRIPLET, 0},
+    {NOTE_G3, NOTE_TYPE_QUARTER_TRIPLET, 0},
+    {NOTE_FS3, NOTE_TYPE_HALF, 0},
+
+    //--
+
+    {NOTE_E3, NOTE_TYPE_HALF_DOT, 0},
+  }
+};
