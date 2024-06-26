@@ -13,6 +13,10 @@
 #define WIFI_DISCONNECTED       BIT1
 #define WIFI_MUTEX_TIMEOUT_MS   5000
 
+// Define wifi scan settings
+#define WIFI_SCAN_LIST_SIZE     16      // Number of APs to scan for
+#define WIFI_SCAN_RSSI_MINIMUM  -127
+
 // Internal Function Declarations
 static void WifiIpEventHandler(void * arg, esp_event_base_t event_base, int32_t event_id, void * event_data);
 
@@ -23,6 +27,43 @@ static const char * TAG = "wifi_client";
 static void _WifiTask(void *pvParameters);
 void _WifiClient_Enable(WifiClient *this);
 
+static void _WifiClient_Print_Authmode(int authmode)
+{
+    switch (authmode)
+    {
+    case WIFI_AUTH_OPEN:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_OPEN");
+        break;
+    case WIFI_AUTH_WEP:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WEP");
+        break;
+    case WIFI_AUTH_WPA_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_PSK");
+        break;
+    case WIFI_AUTH_WPA2_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_PSK");
+        break;
+    case WIFI_AUTH_WPA_WPA2_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_WPA2_PSK");
+        break;
+    case WIFI_AUTH_WPA2_ENTERPRISE:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_ENTERPRISE");
+        break;
+    case WIFI_AUTH_WPA3_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA3_PSK");
+        break;
+    case WIFI_AUTH_WPA2_WPA3_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_WPA3_PSK");
+        break;
+    case WIFI_AUTH_WAPI_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WAPI_PSK");
+        break;
+    default:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_UNKNOWN");
+        break;
+    }
+}
+
 // Should be called by app_main on boot to prevent race condition on initial initialization
 esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher)
 {
@@ -31,10 +72,6 @@ esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificatio
 
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->state = WIFI_CLIENT_STATE_DISCONNECTED;
-
-    strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
-    strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
-    this->wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK,
 
     this->clientMutex = xSemaphoreCreateMutex();
 
@@ -74,14 +111,6 @@ esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificatio
         // Create configuration
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-        if(strlen(CONFIG_WIFI_PASSWORD) == 0)
-        {
-            ESP_LOGI(TAG, "changing WiFi connection to open");
-            this->wifiConfig.sta.threshold.authmode = WIFI_AUTH_OPEN;
-        }
-
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
-
         // Change the power saving mode to WiFi power saving
         esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 
@@ -102,15 +131,61 @@ void _WifiClient_Enable(WifiClient *this)
        this->state == WIFI_CLIENT_STATE_FAILED)
     {
         // Needed stop or else subsequent starts may not work
-        esp_wifi_stop();
+        ESP_ERROR_CHECK(esp_wifi_stop());
+
+        memset((char*)this->wifiConfig.sta.ssid, 0, sizeof(this->wifiConfig.sta.ssid));
+        memset((char*)this->wifiConfig.sta.password, 0, sizeof(this->wifiConfig.sta.password));
+        this->wifiConfig.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+        this->wifiConfig.sta.threshold.rssi = WIFI_SCAN_RSSI_MINIMUM;
+        this->wifiConfig.sta.threshold.authmode = WIFI_AUTH_OPEN;        // we accept all APs
+        
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
+
+        // Scan for strongest AP, compare AP names to list stored
+        wifi_ap_record_t ap_info[WIFI_SCAN_LIST_SIZE];
+        uint16_t ap_scan_count = WIFI_SCAN_LIST_SIZE;   // this will get updated by api later
+        memset(ap_info, 0, sizeof(ap_info));
+
         esp_err_t ret = esp_wifi_start();
         if (ret == ESP_OK)
         {
-            ESP_LOGI(TAG, "Attempting to connect to AP(%s)(%d)", CONFIG_WIFI_SSID, this->state);
+            ESP_LOGI(TAG, "Attempting to start wifi(%d)", this->state);
         }
         else
         {
             ESP_LOGE(TAG, "Failed to start WiFi. error code = %s", esp_err_to_name(ret));
+        }
+
+        // TODO: Change this to use actual AP list from user
+        // CONFIG_WIFI_SSID
+        // CONFIG_WIFI_PASSWORD
+        // char TEST_SSID[] = "PLACEHOLDER";
+        // char TEST_PASS[] = "PLACEHOLDER_PASS";
+
+        ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+        ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_scan_count, ap_info));  // esp_wifi_scan_get_ap_records clears memory allocated from scan_start
+        ESP_LOGI(TAG, "Total APIs scanned: %d", ap_scan_count);
+
+        for(uint32_t i = 0; i < ap_scan_count; ++i)
+        {
+            if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
+            {
+                ESP_LOGI(TAG, "Found AP(%s)", CONFIG_WIFI_SSID);
+                strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
+                strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
+                ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
+                ESP_ERROR_CHECK(esp_wifi_start());
+                break;
+            }
+            // else if(strncmp((char*)ap_info[i].ssid, TEST_SSID, sizeof(ap_info[i].ssid)) == 0)
+            // {
+            //     ESP_LOGI(TAG, "Found AP(%s)", TEST_SSID);
+            //     strncpy((char*)this->wifiConfig.sta.ssid, TEST_SSID, sizeof(this->wifiConfig.sta.ssid));
+            //     strncpy((char*)this->wifiConfig.sta.password, TEST_PASS, sizeof(this->wifiConfig.sta.password));
+            //     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
+            //     ESP_ERROR_CHECK(esp_wifi_start());
+            //     break;
+            // }
         }
 
         this->state = WIFI_CLIENT_STATE_ATTEMPTING;
@@ -303,11 +378,11 @@ esp_err_t WifiClient_Disconnect(WifiClient *this)
                 ret = esp_wifi_stop();
                 if (ret == ESP_OK)
                 {
-                    ESP_LOGI(TAG, "Disconnecting from AP(%s)", CONFIG_WIFI_SSID);
+                    ESP_LOGI(TAG, "Disconnecting from AP(%s)", this->wifiConfig.sta.ssid);
                 }
                 else
                 {
-                    ESP_LOGE(TAG, "Failed to disconnect from AP(%s). error code = %s", CONFIG_WIFI_SSID, esp_err_to_name(ret));
+                    ESP_LOGE(TAG, "Failed to disconnect from AP(%s). error code = %s", this->wifiConfig.sta.ssid, esp_err_to_name(ret));
                 }
 
                 // The handler will handle changing wifi state to the final state

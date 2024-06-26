@@ -121,9 +121,17 @@ esp_err_t UserSettings_SetPairId(UserSettings *this, uint8_t * pairId)
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        ESP_LOGI(TAG, "Updating pair id");
-        esp_log_buffer_hex(TAG, pairId, PAIR_ID_SIZE);
-        memcpy(this->settings.pairId, pairId, PAIR_ID_SIZE);
+        if (pairId == NULL)
+        {
+            ESP_LOGI(TAG, "Clearing pair id");
+            memset(this->settings.pairId, 0, sizeof(this->settings.pairId));
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Updating pair id");
+            esp_log_buffer_hex(TAG, pairId, sizeof(this->settings.pairId));
+            memcpy(this->settings.pairId, pairId, sizeof(this->settings.pairId));
+        }
         this->updateNeeded = true;
         ret = ESP_OK;
         if (xSemaphoreGive(this->mutex) != pdTRUE)
