@@ -16,6 +16,7 @@
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
 #include "OtaUpdate.h"
+#include "Song.h"
 #include "SystemState.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
@@ -261,6 +262,10 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 this->touchActionCmdClearRequired = true;
                 this->touchActive = true;
                 NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ENABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                PlaySongEventNotificationData playSongNotificationData;
+                playSongNotificationData.song = SONG_ZELDA_THEME;
+                NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &playSongNotificationData.song, sizeof(playSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                
                 SystemState_ResetTouchActiveTimer(this);
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
                 LedModing_SetTouchActive(&this->ledModing, true);      // TODO: Make these components use the notification dispatcher instead of these functions
