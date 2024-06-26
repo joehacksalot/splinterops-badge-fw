@@ -65,7 +65,8 @@ static void BleXferDisableTimeoutEventHandler(void* arg);
 typedef enum FileType_e
 {
    FILE_TYPE_LED_SEQUENCE = 1,
-   FILE_TYPE_SETTINGS_FILE = 2
+   FILE_TYPE_SETTINGS_FILE = 2,
+   FILE_TYPE_TEST = 3
 } FileType;
 
 // Internal Constants
@@ -97,14 +98,13 @@ static const uint8_t char1_str[] = {0x11,0x22,0x33};
 #define adv_config_flag      (1 << 0)
 #define SCAN_RSP_CONFIG_FLAG (1 << 1)
 
-static const uint8_t ADV_SERVICE_UUID128[] = {
+static const uint8_t ADV_BASE_SERVICE_UUID128[] = {
     // LSB <--------------------------------------------------------------------------------> MSB
-    // first uuid, 16bit, [12],[13] is the value
     0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x8b, 0xff, 0x00, 0x00,
-    // 0x00, 0x30, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x8b, 0xff, 0x00, 0x00,
-    
-    // second uuid, 32bit, [12], [13], [14], [15] is the value
-    // 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x3f, 0xec, 0x00, 0x00,
+};
+
+static uint8_t ADV_SERVICE_UUID128[] = {
+    0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x8b, 0xff, 0x00, 0x00,
 };
 
 static BleControl bleControl;
@@ -117,6 +117,28 @@ AdvertisingHeader eventAdvHeader =
     .type = 0xFF,
     .magicNum = EVENT_ADV_MAGIC_NUMBER
 };
+
+void update_uuid_with_pairId(uint8_t *uuid, uint8_t *pairId) 
+{
+    // Check if pairId is NULL before proceeding
+    if (pairId == NULL || uuid == NULL) 
+    {
+        return;
+    }
+
+    // Check if pairId is all zeros (NULL'd settings)
+    static uint8_t null_pair_id[PAIR_ID_SIZE] = {0};
+    if(memcmp(pairId, null_pair_id, PAIR_ID_SIZE) == 0)
+    {
+        // Do nothing if pairID is set of null bytes
+        return;
+    }
+
+    // Assuming uuid is a 16-byte array and pairId is 8 characters long
+    static const uint8_t offset = 8;
+    static const uint8_t copy_size = 8;
+    memcpy(uuid+offset, pairId, copy_size);
+}
 
 bool IsEventAdvertisingPacket(uint8_t *advData, uint8_t advDataLen)
 {
@@ -197,6 +219,8 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pUserSettings = pUserSettings;
     this->pGameState = pGameState;
+
+    refresh_service_uuid(this);
 
     this->bleXferParameters.aProperty = 0;
     this->bleXferParameters.bProperty = 0;
@@ -562,12 +586,11 @@ esp_err_t BleControl_EnableBleXfer(BleControl *this, bool genericMode)
     assert(this);
     if (genericMode)
     {
-        strncpy(this->bleName, BLE_DEVICE_NAME, sizeof(this->bleName));
+        // Wipe pairing data
+        UserSettings_SetPairId(this->pUserSettings, NULL);
+        refresh_service_uuid(this);
     }
-    else
-    {
-        snprintf(this->bleName, sizeof(this->bleName), "%s %s", BLE_DEVICE_NAME, this->pUserSettings->settings.pairId);
-    }
+    strncpy(this->bleName, BLE_DEVICE_NAME, sizeof(this->bleName));
 
     ESP_LOGI(TAG, "Enable BLE Xfer, generic mode %d", genericMode);
     ResetFrameContext(this);
@@ -812,6 +835,14 @@ static esp_err_t ProcessTransferedFile(BleControl *this)
                 ESP_LOGI(TAG, "Updating settings");
                 ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV, (void *)this->frameContext.rcvBuffer, MIN(this->frameContext.frameBytesReceived, MAX_BLE_XFER_PAYLOAD_SIZE), DEFAULT_NOTIFY_WAIT_DURATION);
                 ESP_LOGI(TAG, "NotificationDispatcher_NotifyEvent for NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV event ret=%s", esp_err_to_name(ret));
+                ResetFrameContext(this);
+                ret = ESP_OK;
+            }
+            else if (this->frameContext.fileType == FILE_TYPE_TEST)
+            {
+                ESP_LOGI(TAG, "Pairing Successful");
+                ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                ESP_LOGI(TAG, "NotificationDispatcher_NotifyEvent for NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV event ret=%s", esp_err_to_name(ret));
                 ResetFrameContext(this);
                 ret = ESP_OK;
             }
@@ -1123,6 +1154,24 @@ static void BleXferGapEventHandler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_
     }
 }
 
+void refresh_service_uuid(BleControl *this)
+{
+    // Overwrite with base service UUID
+    memcpy(ADV_SERVICE_UUID128, ADV_BASE_SERVICE_UUID128, sizeof(ADV_SERVICE_UUID128));
+
+    // If pairID is set, update the UUID with the pairID
+    // ASSUMPTION that pairID byte is 0x7b when set
+    if (this && this->pUserSettings && this->pUserSettings->settings.pairId[0] != '\0')
+    {
+        ESP_LOGI(TAG, "BLE Pair ID: %s", this->pUserSettings->settings.pairId);
+        update_uuid_with_pairId(ADV_SERVICE_UUID128, this->pUserSettings->settings.pairId);
+    }
+
+    // Setup response/advertisement data
+    this->bleXferParameters.advData.p_service_uuid = (uint8_t *)ADV_SERVICE_UUID128;
+    this->bleXferParameters.scanRspData.p_service_uuid = (uint8_t *)ADV_SERVICE_UUID128;
+}
+
 static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gatt_if_t gattsIf, esp_ble_gatts_cb_param_t *param)
 {
     esp_err_t ret = ESP_OK;
@@ -1132,10 +1181,11 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
     {
     case ESP_GATTS_REG_EVT:
         ESP_LOGI(TAG, "REGISTER_APP_EVT, status %d, appId %d", param->reg.status, param->reg.app_id);
+        refresh_service_uuid(this);
         this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.is_primary = true;
         this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.id.inst_id = 0x00;
         this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.id.uuid.len = ESP_UUID_LEN_128;
-        memcpy(this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.id.uuid.uuid.uuid128, GATTS_SERVICE_UUID_TEST_A_128, sizeof(this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.id.uuid.uuid.uuid128));
+        memcpy(this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.id.uuid.uuid.uuid128, ADV_SERVICE_UUID128, sizeof(this->bleXferParameters.glProfileTable[PROFILE_A_APP_ID].serviceId.id.uuid.uuid.uuid128));
 
         ret = esp_ble_gap_set_device_name(this->bleName);
         if (ret != ESP_OK)
@@ -1198,12 +1248,22 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
         memcpy((void*)&rsp.attr_value.value+printed_bytes, settings_pack, length);
         printed_bytes += length;
 
-        // Write Wifi_Type
+        // Write Badge_Type
         length = 1;
-        memcpy((void*)&rsp.attr_value.value+printed_bytes, &this->pUserSettings->settings.wifiSettings.wifiType, length);
+        int coded_badge_type;
+        #if defined(TRON_BADGE)
+            coded_badge_type = 1;
+        #elif defined(REACTOR_BADGE)
+            coded_badge_type = 2;
+        #elif defined(CREST_BADGE)
+            coded_badge_type = 3;
+        #else
+            coded_badge_type = 0;
+        #endif
+        memcpy((void*)&rsp.attr_value.value+printed_bytes, &coded_badge_type, length);
         printed_bytes += length;
         
-        // Write Wifi_SSID
+        // Write Wifi_SSID (deprecated / replaced by new wifi flow)
         length = sizeof(this->pUserSettings->settings.wifiSettings.ssid) / sizeof(this->pUserSettings->settings.wifiSettings.ssid[0]);
         memcpy((void*)&rsp.attr_value.value+printed_bytes, this->pUserSettings->settings.wifiSettings.ssid, length);
         printed_bytes += length;
