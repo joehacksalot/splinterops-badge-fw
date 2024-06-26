@@ -1,0 +1,56 @@
+
+#include "Song.h"
+
+const SongNotes NocturneOfShadow = {
+  "Nocturne of Shadow",
+  90,  // Tempo
+  28,   // Number of Notes
+  {
+    {NOTE_B3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_D3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A3, NOTE_TYPE_EIGHTH, 0},
+
+    //--
+
+    {NOTE_F3, NOTE_TYPE_WHOLE, 0},
+
+    //--
+
+    {NOTE_B4, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A4, NOTE_TYPE_QUARTER, 0},
+    {NOTE_A4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_D4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_B4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A4, NOTE_TYPE_EIGHTH, 0},
+
+    //--
+
+    {NOTE_F4, NOTE_TYPE_WHOLE, 0},
+
+    //--
+
+    {NOTE_G4, NOTE_TYPE_QUARTER, 0},
+    {NOTE_F4, NOTE_TYPE_QUARTER, 0},
+    {NOTE_F4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_C4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_G4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_F4, NOTE_TYPE_EIGHTH, 0},
+
+    //--
+
+    {NOTE_GS4, NOTE_TYPE_QUARTER, 0},
+    {NOTE_FS4, NOTE_TYPE_QUARTER, 0},
+    {NOTE_FS4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_CS4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_GS4, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_FS4, NOTE_TYPE_EIGHTH, 0},
+
+    //--
+
+    {NOTE_F4, NOTE_TYPE_WHOLE, 1},
+    {NOTE_F4, NOTE_TYPE_QUARTER, 0},
+  }
+};
