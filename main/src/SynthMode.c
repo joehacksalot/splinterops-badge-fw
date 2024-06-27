@@ -123,7 +123,7 @@ static void SynthModeTask(void *pvParameters)
         if (this->selectedSong != SONG_NONE)
         {
             const SongNotes *pSong = GetSong(this->selectedSong);
-            ESP_LOGI(TAG, "Playing song %s (%d) note %d of %d", pSong->songName, this->selectedSong, this->currentNoteIdx, pSong->numNotes);
+            ESP_LOGD(TAG, "Playing song %s (%d) note %d of %d", pSong->songName, this->selectedSong, this->currentNoteIdx, pSong->numNotes);
             if (this->currentNoteIdx < pSong->numNotes)
             {
                 this->nextNotePlayTime = TimeUtils_GetFutureTimeTicks(0);
@@ -134,7 +134,7 @@ static void SynthModeTask(void *pvParameters)
                 {
                     holdTimeMs -= pauseTime;
                 }
-                ESP_LOGI(TAG, "Note Idx %d - Note: %d  Type: %f  HoldTime: %d  Freq: %d", 
+                ESP_LOGD(TAG, "Note Idx %d - Note: %d  Type: %f  HoldTime: %d  Freq: %d", 
                     this->currentNoteIdx,
                     pSong->notes[this->currentNoteIdx].note,
                     pSong->notes[this->currentNoteIdx].noteType,
@@ -272,7 +272,7 @@ static esp_err_t SynthMode_PlayTone(SynthMode* this, NoteName note)
 
             // if (xSemaphoreTake(this->toneMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
             {
-                ESP_LOGI(TAG, "Starting tone at %f", frequency);
+                ESP_LOGD(TAG, "Starting tone at %f", frequency);
 #if DISABLE_SOUND
                 ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
                 ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_ON);
