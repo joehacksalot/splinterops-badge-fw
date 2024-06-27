@@ -8,6 +8,7 @@
 #include "BatterySensor.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
+#include "SynthModeNotifications.h"
 #include "TouchSensor.h"
 #include "UserSettings.h"
 #include "WifiClient.h"
@@ -65,6 +66,7 @@ typedef enum OuterLedState_t
     OUTER_LED_STATE_GAME_STATUS,
     OUTER_LED_MODE_BLE_XFER_PERCENT,
     OUTER_LED_STATE_NETWORK_TEST,
+    OUTER_LED_STATE_SONG_MODE,
     NUM_OUTER_LED_STATES
 } OuterLedState;
 
@@ -87,7 +89,8 @@ typedef enum LedMode_e
     LED_MODE_BLE_XFER_CONNECTED,// 6
     LED_MODE_STATUS_INDICATOR,  // 7
     LED_MODE_BLE_XFER_PERCENT,  // 8
-    LED_MODE_NETWORK_TEST       // 9
+    LED_MODE_NETWORK_TEST,      // 9
+    LED_MODE_SONG               // 10
 } LedMode;
 
 typedef struct 
@@ -175,6 +178,12 @@ typedef struct TouchModeRuntimeSettings_t
     uint32_t updatePeriod;
 } TouchModeRuntimeSettings;
 
+typedef struct SongModeRuntimeSettings_t
+{
+    SongNoteChangeEventNotificationData lastSongNoteChangeEventNotificationData;
+    bool updateNeeded;
+} SongModeRuntimeSettings;
+
 typedef struct LedControlModeSettings_t
 {
     LedMode mode;
@@ -220,6 +229,7 @@ typedef struct LedControl_t
     BatteryIndicatorRuntimeSettings batteryIndicatorRuntimeInfo;
     BleXferPercentRuntimeSettings bleXferPercentRuntimeInfo;
     TouchModeRuntimeSettings touchModeRuntimeInfo;
+    SongModeRuntimeSettings songModeRuntimeInfo;
     LedStatusIndicatorRuntimeSettings ledStatusIndicatorRuntimeInfo;
     GameStatusRuntimeSettings gameStatusRuntimeInfo;
     GameEventRuntimeSettings gameEventRuntimeInfo;

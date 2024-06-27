@@ -25,6 +25,11 @@ static esp_err_t LedMode_SetLedMode(LedModing *this)
         ESP_LOGI(TAG, "Setting Led Mode to Status for status %d", this->curStatusIndicator);
         ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_STATUS_INDICATOR);
     }
+    else if (this->songActiveStatus)
+    {
+        ESP_LOGI(TAG, "Setting Led Mode to Song Mode");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_SONG);
+    }
     else if (this->ledSequencePreviewActive)
     {
         ESP_LOGI(TAG, "Setting Led Mode to Sequence Preview");
@@ -149,6 +154,12 @@ esp_err_t LedModing_SetLedSequencePreviewActive(LedModing *this, bool active)
 esp_err_t LedModing_SetGameStatusActive(LedModing *this, bool active)
 {
     this->ledGameStatusActive = active;
+    return LedMode_SetLedMode(this);
+}
+
+esp_err_t LedModing_SetSongActiveStatusActive(LedModing *this, bool active)
+{
+    this->songActiveStatus = active;
     return LedMode_SetLedMode(this);
 }
 

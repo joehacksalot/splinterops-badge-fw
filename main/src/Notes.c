@@ -157,11 +157,638 @@ const float NoteFrequencies[NOTE_TOTAL_NUM_NOTES] =
 
 float GetNoteFrequency(NoteName note)
 {
-    if (note < NOTE_TOTAL_NUM_NOTES)
-    {
-      return NoteFrequencies[note];
-    }
-    
-    ESP_LOGI(TAG, "Invalid note: %d", note);
-    return 0.0;
+  if (note < NOTE_TOTAL_NUM_NOTES)
+  {
+    return NoteFrequencies[note];
+  }
+  
+  ESP_LOGI(TAG, "Invalid note: %d", note);
+  return 0.0;
+}
+
+NoteParts GetNoteParts(NoteName note)
+{
+  NoteParts parts;
+  switch (note)
+  {
+    case NOTE_REST:
+      parts.base = NOTE_BASE_NONE;
+      parts.octave = NOTE_OCTAVE_NONE;
+      break;
+    case NOTE_C0:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_CS0:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_DF0:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_D0:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_DS0:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_EF0:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_E0:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_F0:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_FS0:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_GF0:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_G0:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_GS0:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_AF0:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_A0:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_AS0:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_BF0:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_B0:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_0;
+      break;
+    case NOTE_C1:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_CS1:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_DF1:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_D1:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_DS1:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_EF1:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_E1:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_F1:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_FS1:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_GF1:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_G1:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_GS1:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_AF1:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_A1:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_AS1:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_BF1:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_B1:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_1;
+      break;
+    case NOTE_C2:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_CS2:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_DF2:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_D2:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_DS2:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_EF2:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_E2:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_F2:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_FS2:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_GF2:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_G2:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_GS2:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_AF2:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_A2:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_AS2:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_BF2:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_B2:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_2;
+      break;
+    case NOTE_C3:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_CS3:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_DF3:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_D3:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_DS3:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_EF3:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_E3:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_F3:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_FS3:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_GF3:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_G3:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_GS3:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_AF3:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_A3:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_AS3:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_BF3:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_B3:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_3;
+      break;
+    case NOTE_C4:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_CS4:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_DF4:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_D4:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_DS4:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_EF4:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_E4:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_F4:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_FS4:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_GF4:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_G4:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_GS4:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_AF4:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_A4:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_AS4:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_BF4:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_B4:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_4;
+      break;
+    case NOTE_C5:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_CS5:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_DF5:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_D5:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_DS5:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_EF5:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_E5:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_F5:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_FS5:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_GF5:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_G5:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_GS5:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_AF5:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_A5:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_AS5:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_BF5:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_B5:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_5;
+      break;
+    case NOTE_C6:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_CS6:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_DF6:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_D6:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_DS6:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_EF6:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_E6:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_F6:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_FS6:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_GF6:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_G6:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_GS6:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_AF6:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_A6:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_AS6:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_BF6:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_B6:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_6;
+      break;
+    case NOTE_C7:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_CS7:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_DF7:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_D7:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_DS7:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_EF7:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_E7:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_F7:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_FS7:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_GF7:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_G7:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_GS7:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_AF7:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_A7:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_AS7:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_BF7:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_B7:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_7;
+      break;
+    case NOTE_C8:
+      parts.base = NOTE_BASE_C;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_CS8:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_DF8:
+      parts.base = NOTE_BASE_CS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_D8:
+      parts.base = NOTE_BASE_D;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_DS8:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_EF8:
+      parts.base = NOTE_BASE_DS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_E8:
+      parts.base = NOTE_BASE_E;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_F8:
+      parts.base = NOTE_BASE_F;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_FS8:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_GF8:
+      parts.base = NOTE_BASE_FS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_G8:
+      parts.base = NOTE_BASE_G;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_GS8:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_AF8:
+      parts.base = NOTE_BASE_GS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_A8:
+      parts.base = NOTE_BASE_A;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_AS8:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_BF8:
+      parts.base = NOTE_BASE_AS;
+      parts.octave = NOTE_OCTAVE_8;
+      break;
+    case NOTE_B8:
+      parts.base = NOTE_BASE_B;
+      parts.octave = NOTE_OCTAVE_8;
+    break;
+  default:
+    break;
+  };
+  return parts;
 }

@@ -71,6 +71,7 @@ static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_bas
 static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 
 static void SystemStateTask(void *pvParameters);
 
@@ -196,24 +197,27 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(OtaUpdate_Init(&this->otaUpdate, &this->wifiClient, &this->notificationDispatcher));
     ESP_ERROR_CHECK(HTTPGameClient_Init(&this->httpGameClient, &this->wifiClient, &this->notificationDispatcher, &this->batterySensor));
 
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ACTION_CMD,            &SystemState_TouchActionNotificationHandler, this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION,          &SystemState_TouchSensorNotificationHandler, this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_ENABLED,                 &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_DISABLED,                &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_REQ_RECV,           &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_ENABLED,            &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_DISABLED,           &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_CONNECTED,          &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_DISCONNECTED,       &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_COMPLETE,           &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_FAILED,             &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_CUSTOM_RECV,    &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV,      &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED,    &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV,  &SystemState_BleNotificationHandler,         this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED,           &SystemState_GameEventNotificationHandler,   this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_ENDED,            &SystemState_GameEventNotificationHandler,   this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE,       &SystemState_NetworkTestNotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ACTION_CMD,            &SystemState_TouchActionNotificationHandler,    this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION,          &SystemState_TouchSensorNotificationHandler,    this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_ENABLED,                 &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_DISABLED,                &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_REQ_RECV,           &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_ENABLED,            &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_DISABLED,           &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_CONNECTED,          &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_DISCONNECTED,       &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_COMPLETE,           &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_FAILED,             &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_CUSTOM_RECV,    &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV,      &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED,    &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV,  &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED,           &SystemState_GameEventNotificationHandler,      this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_ENDED,            &SystemState_GameEventNotificationHandler,      this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE,       &SystemState_NetworkTestNotificationHandler,    this));
+#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION,            &SystemState_SongNoteChangeNotificationHandler, this));
+#endif
 
     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_LEFT_EYE, true, 0);
     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_RIGHT_EYE, true, 0);
@@ -271,7 +275,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
                 LedModing_SetTouchActive(&this->ledModing, true);      // TODO: Make these components use the notification dispatcher instead of these functions
                 TouchSensor_SetTouchEnabled(&this->touchSensor, true); // TODO: Make these components use the notification dispatcher instead of these functions
-                SynthMode_SetEnabled(&this->synthMode, true);          // TODO: Make these components use the notification dispatcher instead of these functions
+                SynthMode_SetTouchSoundEnabled(&this->synthMode, true);          // TODO: Make these components use the notification dispatcher instead of these functions
                 cmdProcessed = true;
             }
         }
@@ -284,7 +288,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
             GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
             LedModing_SetTouchActive(&this->ledModing, false);      // TODO: Make these components use the notification dispatcher instead of these functions
             TouchSensor_SetTouchEnabled(&this->touchSensor, false); // TODO: Make these components use the notification dispatcher instead of these functions
-            SynthMode_SetEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+            SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
             cmdProcessed = true;
         }
         else
@@ -687,7 +691,7 @@ static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
     LedModing_SetTouchActive(&this->ledModing, false);
     TouchSensor_SetTouchEnabled(&this->touchSensor, false);
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-    SynthMode_SetEnabled(&this->synthMode, false);
+    SynthMode_SetTouchSoundEnabled(&this->synthMode, false);
 #endif
     return NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
 }
@@ -707,13 +711,13 @@ static esp_err_t SystemState_ResetTouchActiveTimer(SystemState *this)
 
 static esp_err_t SystemState_StopTouchActiveTimer(SystemState *this)
 {
-    esp_err_t ret = ESP_FAIL;
+    // esp_err_t ret = ESP_FAIL;
     assert(this);
     assert(this->touchActiveTimer);
     
     if (xTimerStop(this->touchActiveTimer, 0) == pdPASS)
     {
-        ret = ESP_OK;
+        // ret = ESP_OK;
     }
     return SystemState_TouchInactiveTimerExpired(this);
 }
@@ -792,11 +796,11 @@ static esp_err_t SystemState_LedGameStatusToggleTimerExpired(SystemState *this)
 {
     assert(this);
     ESP_LOGI(TAG, "Led Game Status Timer Expired");
-    esp_err_t ret = ESP_FAIL;
+    // esp_err_t ret = ESP_FAIL;
     this->ledGameStatusActive = !this->ledGameStatusActive;
     if (xTimerReset(this->ledGameStatusToggleTimer, 0) == pdPASS)
     {
-        ret = ESP_OK;
+        // ret = ESP_OK;
     }
     else
     {
@@ -820,4 +824,26 @@ static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_bas
     this->ledControl.networkTestRuntimeInfo.success = *((bool *) notificationData);
     SystemState_StopNetworkTestActiveTimer(this);
     SystemState_ResetNetworkTestSuccessTimer(this);
+}
+
+static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+{
+    ESP_LOGD(TAG, "Handling Song Note Change Notification: %d", *((bool *) notificationData));
+
+    SystemState *this = (SystemState *)pObj;
+    assert(this);
+    SongNoteChangeEventNotificationData data = *((SongNoteChangeEventNotificationData *) notificationData);
+    switch(data.action)
+    {
+        case SONG_NOTE_CHANGE_TYPE_SONG_START:
+            ESP_LOGI(TAG, "Song Start Notification Received");
+            LedModing_SetSongActiveStatusActive(&this->ledModing, true);
+            break;
+        case SONG_NOTE_CHANGE_TYPE_SONG_STOP:
+            ESP_LOGI(TAG, "Song Stop Notification Received");
+            LedModing_SetSongActiveStatusActive(&this->ledModing, false);
+            break;
+        default:
+            break;
+    }
 }

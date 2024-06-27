@@ -23,7 +23,10 @@
 #define DEFAULT_LEDC_DUTY_OFF 0
 #define DEFAULT_LEDC_DUTY_ON 3
 #define DEFAULT_LEDC_FREQ 440
-#define DEFAULT_LEDC_DURATION 400
+
+#define MUTEX_MAX_WAIT_MS     (50)
+
+#define DISABLE_SOUND (1)
 
 static const char * TAG = "SYN";
 
@@ -66,8 +69,9 @@ static void SynthModeTask(void *pvParameters);
 static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static void SynthMode_PlaySongNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static esp_err_t SynthMode_ConfigurePWM(SynthMode *this);
-static esp_err_t SynthMode_PlayTone(SynthMode* this, int frequency);
 static esp_err_t SynthMode_StopTone(SynthMode* this);
+static esp_err_t SynthMode_PlaySong(SynthMode* this, Song song);
+static esp_err_t SynthMode_PlayTone(SynthMode* this, NoteName note);
 
 
 esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationDispatcher, UserSettings* pUserSettings)
@@ -78,12 +82,17 @@ esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationD
     if (this->initialized == false)
     {
         this->initialized = true;
-        this->audioEnabled = false;
+        this->touchSoundEnabled = false;
         this->selectedSong = SONG_NONE;
         this->currentNoteIdx = 0;
         this->nextNotePlayTime = 0;
         this->pNotificationDispatcher = pNotificationDispatcher;
         this->pUserSettings = pUserSettings;
+        this->queueMutex = xSemaphoreCreateMutex();
+        assert(this->queueMutex);
+        this->toneMutex = xSemaphoreCreateMutex();
+        assert(this->toneMutex);
+        assert(CircularBuffer_Init(&this->songQueue, 10, sizeof(PlaySongEventNotificationData)) == ESP_OK);
         esp_err_t ret = SynthMode_ConfigurePWM(this);
         if (ret == ESP_OK)
         {
@@ -114,7 +123,7 @@ static void SynthModeTask(void *pvParameters)
         if (this->selectedSong != SONG_NONE)
         {
             const SongNotes *pSong = GetSong(this->selectedSong);
-            ESP_LOGI(TAG, "Playing song %s (%d) note %d of %d", pSong->songName, this->selectedSong, this->currentNoteIdx, pSong->numNotes);
+            ESP_LOGD(TAG, "Playing song %s (%d) note %d of %d", pSong->songName, this->selectedSong, this->currentNoteIdx, pSong->numNotes);
             if (this->currentNoteIdx < pSong->numNotes)
             {
                 this->nextNotePlayTime = TimeUtils_GetFutureTimeTicks(0);
@@ -125,7 +134,7 @@ static void SynthModeTask(void *pvParameters)
                 {
                     holdTimeMs -= pauseTime;
                 }
-                ESP_LOGI(TAG, "Note Idx %d - Note: %d  Type: %f  HoldTime: %d  Freq: %d", 
+                ESP_LOGD(TAG, "Note Idx %d - Note: %d  Type: %f  HoldTime: %d  Freq: %d", 
                     this->currentNoteIdx,
                     pSong->notes[this->currentNoteIdx].note,
                     pSong->notes[this->currentNoteIdx].noteType,
@@ -137,7 +146,7 @@ static void SynthModeTask(void *pvParameters)
                 }
                 else
                 {
-                    SynthMode_PlayTone(this, frequency);
+                    SynthMode_PlayTone(this, pSong->notes[this->currentNoteIdx].note);
                 }
                 vTaskDelay(pdMS_TO_TICKS(holdTimeMs));
                 if (pSong->notes[this->currentNoteIdx].slur == 0)
@@ -153,10 +162,28 @@ static void SynthModeTask(void *pvParameters)
                 this->currentNoteIdx = 0;
                 SynthMode_StopTone(this);
                 ESP_LOGI(TAG, "Finished playing song");
+                SongNoteChangeEventNotificationData data;
+                data.action = SONG_NOTE_CHANGE_TYPE_SONG_STOP;
+                data.note = SONG_NONE;
+                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
             }
         }
         else
         {
+            // if (xSemaphoreTake(this->queueMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+            {
+                if (this->songQueue.count > 0)
+                {
+                    PlaySongEventNotificationData playSongNotificationData;
+                    CircularBuffer_PopFront(&this->songQueue, &playSongNotificationData);
+                    ESP_LOGI(TAG, "Popped song %d off song queue. %d songs left in queue", playSongNotificationData.song, this->songQueue.count);
+                    SynthMode_PlaySong(this, playSongNotificationData.song);
+                }
+                // if (xSemaphoreGive(this->queueMutex) != pdTRUE)
+                // {
+                //     ESP_LOGE(TAG, "Failed to give badge queueMutex in %s", __FUNCTION__);
+                // }
+            }
             vTaskDelay(pdMS_TO_TICKS(50));
         }
     }
@@ -211,8 +238,13 @@ static esp_err_t SynthMode_PlaySong(SynthMode* this, Song song)
     {
         if (this->selectedSong != SONG_NONE)
         {
-            ESP_LOGD(TAG, "Interrupting Song %d", this->selectedSong);
+            ESP_LOGI(TAG, "Interrupting Song %d", this->selectedSong);
         }
+        SongNoteChangeEventNotificationData data;
+        data.action = SONG_NOTE_CHANGE_TYPE_SONG_START;
+        data.note = SONG_NONE;
+        NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
+
         ESP_LOGD(TAG, "Settings song to Song %d", song);
         this->selectedSong = song;
         this->currentNoteIdx = 0;
@@ -223,22 +255,43 @@ static esp_err_t SynthMode_PlaySong(SynthMode* this, Song song)
 }
 
 
-static esp_err_t SynthMode_PlayTone(SynthMode* this, int frequency)
+static esp_err_t SynthMode_PlayTone(SynthMode* this, NoteName note)
 {
     assert(this);
     esp_err_t ret = ESP_FAIL;
 
-    // if (this->initialized)
-    // {
-    //     if (this->audioEnabled)
-    //     {
-            ESP_LOGI(TAG, "Starting tone at %d", frequency);
-            ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
-            ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_ON);
-            ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
-        // }
+    if (this->initialized)
+    {
+        if (this->pUserSettings->settings.soundEnabled)
+        {
+            float frequency = GetNoteFrequency(note);
+            SongNoteChangeEventNotificationData data;
+            data.action = SONG_NOTE_CHANGE_TYPE_TONE_START;
+            data.note = note;
+            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
+
+            // if (xSemaphoreTake(this->toneMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+            {
+                ESP_LOGD(TAG, "Starting tone at %f", frequency);
+#if DISABLE_SOUND
+                ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
+                ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_ON);
+                ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
+#endif
+
+                // if (xSemaphoreGive(this->toneMutex) != pdTRUE)
+                // {
+                //     ESP_LOGE(TAG, "Failed to give badge toneMutex in %s", __FUNCTION__);
+                // }
+            }
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Sound disabled in settings, not playing tone");
+        }
+        
         ret = ESP_OK;
-    // }
+    }
 
     return ret;
 }
@@ -250,9 +303,22 @@ static esp_err_t SynthMode_StopTone(SynthMode* this)
     esp_err_t ret = ESP_FAIL;
     if (this->initialized)
     {
-        ESP_LOGD(TAG, "Stopping tone");
-        ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_OFF);
-        ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
+        // if (xSemaphoreTake(this->toneMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+        {
+            ESP_LOGD(TAG, "Stopping tone");
+            SongNoteChangeEventNotificationData data;
+            data.note = SONG_NONE;
+            data.action = SONG_NOTE_CHANGE_TYPE_TONE_STOP;
+            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
+
+            ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_OFF);
+            ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
+
+            // if (xSemaphoreGive(this->toneMutex) != pdTRUE)
+            // {
+            //     ESP_LOGE(TAG, "Failed to give badge toneMutex in %s", __FUNCTION__);
+            // }
+        }
         ret = ESP_OK;
     }
 
@@ -260,15 +326,15 @@ static esp_err_t SynthMode_StopTone(SynthMode* this)
 }
 
 
-esp_err_t SynthMode_SetEnabled(SynthMode *this, bool enabled)
+esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled)
 {
     assert(this);
     esp_err_t ret = ESP_FAIL;
 
     if (this->initialized)
     {
-        ESP_LOGD(TAG, "Setting audio enabled to %s", enabled ? "true" : "false");
-        this->audioEnabled = enabled;
+        ESP_LOGI(TAG, "Setting touch sound enabled to %s", enabled ? "true" : "false");
+        this->touchSoundEnabled = enabled;
         ret = ESP_OK;
     }
 
@@ -284,18 +350,17 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
     assert(notificationData);
     TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
 
-    
-    // if (this->selectedSong == SONG_NONE)
-    // {
-    //     if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
-    //     {
-    //         SynthMode_StopTone(this);
-    //     }
-    //     else
-    //     {
-    //         SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
-    //     }
-    // }
+    if (this->selectedSong == SONG_NONE)
+    {
+        if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_RELEASED)
+        {
+            SynthMode_StopTone(this);
+        }
+        else
+        {
+            SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+        }
+    }
 }
 
 
@@ -310,9 +375,20 @@ static void SynthMode_PlaySongNotificationHandler(void *pObj, esp_event_base_t e
     // global sound disabled
     if (this->pUserSettings->settings.soundEnabled == false)
     {
-        ESP_LOGD(TAG, "Sound disabled, not playing audio");
+        ESP_LOGD(TAG, "Sound disabled in settings, not playing song");
         return;
     }
 
-    SynthMode_PlaySong(this, playSongNotificationData.song);
+    // if (xSemaphoreTake(this->queueMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    {
+        if (CircularBuffer_PushBack(&this->songQueue, &playSongNotificationData) != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to push song to queue");
+            return;
+        }
+        // if (xSemaphoreGive(this->queueMutex) != pdTRUE)
+        // {
+        //     ESP_LOGE(TAG, "Failed to give badge queueMutex in %s", __FUNCTION__);
+        // }
+    }
 }

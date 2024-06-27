@@ -2,6 +2,45 @@
 #ifndef NOTE_FREQUENCIES_H_
 #define NOTE_FREQUENCIES_H_
 
+typedef enum NoteNameBase_t
+{
+  NOTE_BASE_NONE = -1,
+  NOTE_BASE_C,
+  NOTE_BASE_CS,
+  NOTE_BASE_D,
+  NOTE_BASE_DS,
+  NOTE_BASE_E,
+  NOTE_BASE_F,
+  NOTE_BASE_FS,
+  NOTE_BASE_G,
+  NOTE_BASE_GS,
+  NOTE_BASE_A,
+  NOTE_BASE_AS,
+  NOTE_BASE_B,
+  NUM_BASE_NOTES
+} NoteNameBase;
+
+typedef enum NoteOctave_t
+{
+  NOTE_OCTAVE_NONE = -1,
+  NOTE_OCTAVE_0,
+  NOTE_OCTAVE_1,
+  NOTE_OCTAVE_2,
+  NOTE_OCTAVE_3,
+  NOTE_OCTAVE_4,
+  NOTE_OCTAVE_5,
+  NOTE_OCTAVE_6,
+  NOTE_OCTAVE_7,
+  NOTE_OCTAVE_8,
+  NUM_OCTAVES
+} NoteOctave;
+
+typedef struct NoteParts_t
+{
+  NoteNameBase base;
+  NoteOctave octave;
+} NoteParts;
+
 typedef enum NoteName_t
 {
   NOTE_REST,
@@ -150,6 +189,14 @@ typedef enum NoteName_t
   NOTE_E8  ,
   NOTE_F8  ,
   NOTE_FS8 ,
+  NOTE_GF8 ,
+  NOTE_G8  ,
+  NOTE_GS8 ,
+  NOTE_AF8 ,
+  NOTE_A8  ,
+  NOTE_AS8 ,
+  NOTE_BF8 ,
+  NOTE_B8  ,
   NOTE_TOTAL_NUM_NOTES
 } NoteName;
 
@@ -300,7 +347,16 @@ typedef enum NoteName_t
 #define FREQ_NOTE_E8  5274.0
 #define FREQ_NOTE_F8  5587.65
 #define FREQ_NOTE_FS8 5919.91
+#define FREQ_NOTE_GF8 5919.91
+#define FREQ_NOTE_G8  6271.93
+#define FREQ_NOTE_GS8 6644.88
+#define FREQ_NOTE_AF8 6644.88
+#define FREQ_NOTE_A8  7040.0
+#define FREQ_NOTE_AS8 7458.62
+#define FREQ_NOTE_BF8 7458.62
+#define FREQ_NOTE_B8  7902.13
 
 float GetNoteFrequency(NoteName note);
+NoteParts GetNoteParts(NoteName note);
 
 #endif // NOTE_FREQUENCIES_H_
