@@ -14,6 +14,7 @@
 #include "LedControl.h"
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
+#include "SynthModeNotifications.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
 #include "Utilities.h"
@@ -38,6 +39,7 @@ static void LedControlTask(void *pvParameters);
 static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static esp_err_t LedControl_InitServiceDrawBatteryIndicatorSequence(LedControl *this);
 static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawBatteryIndicatorSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
@@ -50,6 +52,7 @@ static esp_err_t LedControl_ServiceDrawBleEnabledSequence(LedControl *this, bool
 static esp_err_t LedControl_ServiceDrawBleConnectedSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawStatusIndicatorSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+static esp_err_t LedControl_ServiceDraSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_LoadJsonLedSequence(LedControl * this);
 static esp_err_t LedControll_FillPixels(LedControl *this, rgb_t color, int intensity, int ledStartIndex, int numLedsToFill);
 static esp_err_t LedControl_SetPixel(LedControl * this, color_t in_color, int pix_num);
@@ -87,6 +90,51 @@ typedef struct TouchMap_t
     int numIndexes;
     int indexes[MAX_TOUCH_MAP_INDEX_COUNT];
 } LedMap;
+
+static const LedMap songMap[NUM_BASE_NOTES] = 
+{
+#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+// TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
+    {.numIndexes=6, .indexes={24,25,47}}, // 12  C
+    {.numIndexes=2, .indexes={26,27,24}}, // 1   C#
+    {.numIndexes=3, .indexes={28,29,30}}, // 2   D
+    {.numIndexes=3, .indexes={29,30,31}}, // 2.5 D#
+    {.numIndexes=3, .indexes={30,31,32}}, // 4   E
+    {.numIndexes=2, .indexes={33,34,24}}, // 5   F
+    {.numIndexes=0, .indexes={35,36,37}}, // 6   F#
+    {.numIndexes=2, .indexes={38,39,24}}, // 7   G
+    {.numIndexes=3, .indexes={40,41,42}}, // 8   A
+    {.numIndexes=3, .indexes={41,42,43}}, // 8.5 G#
+    {.numIndexes=3, .indexes={42,43,44}}, // 10  A#
+    {.numIndexes=2, .indexes={45,46,47}}  // 11  G
+#elif defined(CREST_BADGE)
+    {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0    NOTE_BASE_C
+    {.numIndexes=7, .indexes={11,12,13,15,16}},      // 0.5  NOTE_BASE_CS
+    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1    NOTE_BASE_D
+    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1    NOTE_BASE_DS
+    {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2    NOTE_BASE_E
+    {.numIndexes=3, .indexes={28,29,30}},            // 3    NOTE_BASE_F
+    {.numIndexes=3, .indexes={31,32,33}},            // 4    NOTE_BASE_FS
+    {.numIndexes=3, .indexes={34,35,36}},            // 5    NOTE_BASE_G
+    {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6    NOTE_BASE_GS
+    {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7    NOTE_BASE_A
+    {.numIndexes=4, .indexes={47,48,51,52}},         // 7.5  NOTE_BASE_AS
+    {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8    NOTE_BASE_B
+#endif
+};
+
+static const color_t songColorMap[NUM_OCTAVES] = 
+{
+    { .r = 128, .g = 128, .b = 128, .i = 100 }, // 0
+    { .r = 128, .g = 0,   .b = 128, .i = 100 }, // 1
+    { .r = 0,   .g = 128, .b = 128, .i = 100 }, // 2
+    { .r = 255, .g = 0,   .b = 0,   .i = 100 }, // 3
+    { .r = 0,   .g = 255, .b = 0,   .i = 100 }, // 4
+    { .r = 0,   .g = 0,   .b = 255, .i = 100 }, // 5
+    { .r = 255, .g = 255, .b = 0,   .i = 100 }, // 6
+    { .r = 255, .g = 0,   .b = 255, .i = 100 }, // 7
+    { .r = 0,   .g = 255, .b = 255, .i = 100 }  // 8
+};
 
 static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] = 
 {
@@ -280,6 +328,8 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED, &LedControl_GameStatusNotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &LedControl_TouchSensorNotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED, &LedControl_BleControlPercentChangedNotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &LedControl_SongNoteActionNotificationHandler, this));
+    
 
     xTaskCreate(LedControlTask, "LedControlTask", configMINIMAL_STACK_SIZE * 5, this, LED_CONTROL_TASK_PRIORITY, NULL);
     return ret;
@@ -335,6 +385,7 @@ static void LedControlTask(void *pvParameters)
         LedControl_ServiceDrawBleConnectedSequence     ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_XFER_CONNECTED, false                                                                          );
         LedControl_ServiceDrawStatusIndicatorSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_STATUS_INDICATOR,   this->ledControlModeSettings.innerLedState == INNER_LED_STATE_STATUS_INDICATOR );
         LedControl_ServiceDrawNetworkTestSequence      ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_NETWORK_TEST,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_NETWORK_TEST     );
+        LedControl_ServiceDraSongModeSequence          ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_SONG_MODE,          false);
         LedControl_FlushLedStrip(this);
         vTaskDelay(pdMS_TO_TICKS(LED_CONTROL_TASK_PERIOD));
     }
@@ -830,6 +881,42 @@ static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl* this, boo
     return LedControl_DrawStatusIndicator(this, color, allowDrawOuterRing, allowDrawInnerRing);
 }
 
+
+static esp_err_t LedControl_ServiceDraSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
+{
+    esp_err_t ret = ESP_OK;
+    assert(this);
+    if (allowDrawOuterRing)
+    {
+        if (this->songModeRuntimeInfo.updateNeeded)
+        {
+            this->songModeRuntimeInfo.updateNeeded = false;
+            this->flushNeeded = true;
+            LedControll_FillPixels(this, this->touchModeRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+
+            if (this->songModeRuntimeInfo.lastSongNoteChangeEventNotificationData.action == SONG_NOTE_CHANGE_TYPE_TONE_START)
+            {
+                NoteParts parts = GetNoteParts(this->songModeRuntimeInfo.lastSongNoteChangeEventNotificationData.note);
+                if (parts.base != NOTE_BASE_NONE && parts.octave != NOTE_OCTAVE_NONE)
+                {
+                    for (int ledIndexIter = 0; ledIndexIter < songMap[parts.base].numIndexes; ledIndexIter++)
+                    {
+                        color_t color = songColorMap[parts.octave];
+                        ret = LedControl_SetPixel(this, color, correctedPixelOffset[songMap[parts.base].indexes[ledIndexIter]]);
+                    }
+                }
+                else
+                {
+                    ESP_LOGI(TAG, "Note Parts for %d are None. base: %d  octave: %d", 
+                             this->songModeRuntimeInfo.lastSongNoteChangeEventNotificationData.note,
+                             parts.base, parts.octave);
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 static esp_err_t LedControl_ServiceDrawTouchLightingSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
 {
     esp_err_t ret = ESP_OK;
@@ -1219,11 +1306,20 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
     {
         case LED_MODE_NORMAL:
             ESP_LOGD(TAG, "Setting LED mode to normal");
+            this->touchModeRuntimeInfo.nextOuterDrawTime = TimeUtils_GetCurTimeTicks();
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
+// #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
             this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
-            innerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            outerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
-#endif
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+// #endif
+            break;
+        case LED_MODE_SONG:
+            ESP_LOGD(TAG, "Setting LED mode to song mode");
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_SONG_MODE);
+// #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
+            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+// #endif
             break;
         case LED_MODE_TOUCH:
             ESP_LOGD(TAG, "Setting LED mode to touch");
@@ -1320,6 +1416,23 @@ static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_
         default:
             ESP_LOGE(TAG, "Invalid notification event: %d", notificationEvent);
             break;
+    }
+}
+
+
+static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+{
+    ESP_LOGD(TAG, "Handling Touch Sensor Notification");
+    LedControl *this = (LedControl *)pObj;
+    assert(this);
+    assert(notificationData);
+    SongNoteChangeEventNotificationData data = *(SongNoteChangeEventNotificationData *)notificationData;
+
+    if (data.action == SONG_NOTE_CHANGE_TYPE_TONE_START || 
+        data.action == SONG_NOTE_CHANGE_TYPE_TONE_STOP)
+    {
+        this->songModeRuntimeInfo.lastSongNoteChangeEventNotificationData = data;
+        this->songModeRuntimeInfo.updateNeeded = true;
     }
 }
 

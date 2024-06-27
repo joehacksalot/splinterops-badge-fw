@@ -14,6 +14,7 @@ typedef struct LedModing_t
     bool batteryIndicatorActive;
     bool ledSequencePreviewActive;
     bool ledGameStatusActive;
+    bool songActiveStatus;
     bool bleXferInProgress;
     bool networkTestActive;
     LedStatusIndicator curStatusIndicator;
@@ -31,6 +32,7 @@ esp_err_t LedModing_SetLedSequencePreviewActive(LedModing *this, bool active);
 esp_err_t LedModing_SetGameEventActive(LedModing *this, bool active);
 esp_err_t LedModing_SetGameStatusActive(LedModing *this, bool active);
 esp_err_t LedModing_SetNetworkTestActive(LedModing *this, bool active);
+esp_err_t LedModing_SetSongActiveStatusActive(LedModing *this, bool active);
 esp_err_t LedModing_SetStatusIndicator(LedModing *this, LedStatusIndicator ledStatusIndicator);
 
 esp_err_t LedModing_SetLedCustomSequence(LedModing *this, int newCustomIndex);
