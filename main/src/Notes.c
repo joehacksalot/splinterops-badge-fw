@@ -5,7 +5,7 @@
 
 static const char * TAG = "NOTE";
 
-static float NoteFrequencies[NOTE_TOTAL_NUM_NOTES] = 
+const float NoteFrequencies[NOTE_TOTAL_NUM_NOTES] = 
 {
   FREQ_NOTE_REST,
   FREQ_NOTE_C0,
@@ -161,6 +161,7 @@ float GetNoteFrequency(NoteName note)
     {
       return NoteFrequencies[note];
     }
+    
     ESP_LOGI(TAG, "Invalid note: %d", note);
     return 0.0;
 }

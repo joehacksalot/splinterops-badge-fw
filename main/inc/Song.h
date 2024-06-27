@@ -8,7 +8,6 @@
 #define SONG_MAX_NAME_LENGTH (32)
 #define SONG_MAX_NOTES       (256)
 
-
 typedef float NoteType;
 #define NOTE_TYPE_WHOLE            (1.0)
 #define NOTE_TYPE_HALF             (1.0/2.0)

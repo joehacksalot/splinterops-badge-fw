@@ -2,9 +2,8 @@
 #ifndef OCARINA_SONG_KEYS_H_
 #define OCARINA_SONG_KEYS_H_
 
-
 #define OCARINA_SONG_MAX_NAME_LENGTH 32
-#define OCARINA_MAX_SONG_KEYS 10
+#define OCARINA_MAX_SONG_KEYS 8
 #define OCARINA_NUM_SONGS 
 
 typedef enum OcarinaKey_t
