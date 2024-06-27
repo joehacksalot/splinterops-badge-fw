@@ -20,6 +20,7 @@ extern const SongNotes SerenadeOfWater;
 extern const SongNotes NocturneOfShadow;
 extern const SongNotes RequiemOfSpirit;
 extern const SongNotes PreludeOfLight;
+extern const SongNotes Bonus;
 
 static const SongNotes *pSongs[NUM_SONGS] = 
 {
@@ -38,6 +39,7 @@ static const SongNotes *pSongs[NUM_SONGS] =
     &NocturneOfShadow,
     &RequiemOfSpirit,
     &PreludeOfLight,
+    &Bonus,
 };
 
 // Function to calculate the duration of a note in milliseconds
