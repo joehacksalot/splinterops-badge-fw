@@ -66,8 +66,7 @@ typedef enum FileType_e
 {
    FILE_TYPE_LED_SEQUENCE = 1,
    FILE_TYPE_SETTINGS_FILE = 2,
-   FILE_TYPE_TEST = 3,
-   FILE_TYPE_SETTINGS_WIFI = 4
+   FILE_TYPE_TEST = 3
 } FileType;
 
 // Internal Constants
@@ -848,14 +847,6 @@ static esp_err_t ProcessTransferedFile(BleControl *this)
                 ResetFrameContext(this);
                 ret = ESP_OK;
             }
-            else if (this->frameContext.fileType == FILE_TYPE_SETTINGS_WIFI)
-            {
-                ESP_LOGI(TAG, "Updating WiFi settings");
-                ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_WIFI_SETTINGS_RECV, (void *)this->frameContext.rcvBuffer, MIN(this->frameContext.frameBytesReceived, MAX_BLE_XFER_PAYLOAD_SIZE), DEFAULT_NOTIFY_WAIT_DURATION);
-                ESP_LOGI(TAG, "NotificationDispatcher_NotifyEvent for NOTIFICATION_EVENTS_BLE_XFER_NEW_WIFI_SETTINGS_RECV event ret=%s", esp_err_to_name(ret));
-                ResetFrameContext(this);
-                ret = ESP_OK;
-            }
             else
             {
                 ESP_LOGE(TAG, "Invalid file type %d", this->frameContext.fileType);
@@ -1273,7 +1264,13 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
         memcpy((void*)&rsp.attr_value.value+printed_bytes, &coded_badge_type, length);
         printed_bytes += length;
         
-        // Write Wifi_SSID (deprecated / replaced by new wifi flow)
+        // TODO: Write SongBits (12 bits) [2 bytes]
+        length = 2; // 2 bytes for 12 bits
+        uint16_t temp_song_spacer = 0;
+        memcpy((void*)&rsp.attr_value.value+printed_bytes, &temp_song_spacer, length);
+        printed_bytes += length;
+
+        // Write Wifi_SSID
         length = sizeof(this->pUserSettings->settings.wifiSettings.ssid) / sizeof(this->pUserSettings->settings.wifiSettings.ssid[0]);
         memcpy((void*)&rsp.attr_value.value+printed_bytes, this->pUserSettings->settings.wifiSettings.ssid, length);
         printed_bytes += length;
