@@ -66,7 +66,8 @@ typedef enum FileType_e
 {
    FILE_TYPE_LED_SEQUENCE = 1,
    FILE_TYPE_SETTINGS_FILE = 2,
-   FILE_TYPE_TEST = 3
+   FILE_TYPE_TEST = 3,
+   FILE_TYPE_SETTINGS_WIFI = 4
 } FileType;
 
 // Internal Constants
@@ -844,6 +845,14 @@ static esp_err_t ProcessTransferedFile(BleControl *this)
                 ESP_LOGI(TAG, "Pairing Successful");
                 ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                 ESP_LOGI(TAG, "NotificationDispatcher_NotifyEvent for NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV event ret=%s", esp_err_to_name(ret));
+                ResetFrameContext(this);
+                ret = ESP_OK;
+            }
+            else if (this->frameContext.fileType == FILE_TYPE_SETTINGS_WIFI)
+            {
+                ESP_LOGI(TAG, "Updating WiFi settings");
+                ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_WIFI_SETTINGS_RECV, (void *)this->frameContext.rcvBuffer, MIN(this->frameContext.frameBytesReceived, MAX_BLE_XFER_PAYLOAD_SIZE), DEFAULT_NOTIFY_WAIT_DURATION);
+                ESP_LOGI(TAG, "NotificationDispatcher_NotifyEvent for NOTIFICATION_EVENTS_BLE_XFER_NEW_WIFI_SETTINGS_RECV event ret=%s", esp_err_to_name(ret));
                 ResetFrameContext(this);
                 ret = ESP_OK;
             }

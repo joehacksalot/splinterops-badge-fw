@@ -198,7 +198,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
     ESP_ERROR_CHECK(BleControl_Init(this->pBleControl, &this->notificationDispatcher, &this->userSettings, &this->gameState));
-    ESP_ERROR_CHECK(WifiClient_Init(&this->wifiClient, &this->notificationDispatcher));
+    ESP_ERROR_CHECK(WifiClient_Init(&this->wifiClient, &this->notificationDispatcher, &this->userSettings));
     ESP_ERROR_CHECK(OtaUpdate_Init(&this->otaUpdate, &this->wifiClient, &this->notificationDispatcher));
     ESP_ERROR_CHECK(HTTPGameClient_Init(&this->httpGameClient, &this->wifiClient, &this->notificationDispatcher, &this->batterySensor));
 
@@ -217,6 +217,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_PAIR_RECV,      &SystemState_BleNotificationHandler,            this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED,    &SystemState_BleNotificationHandler,            this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_SETTINGS_RECV,  &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_NEW_WIFI_SETTINGS_RECV,  &SystemState_BleNotificationHandler,       this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED,           &SystemState_GameEventNotificationHandler,      this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_ENDED,            &SystemState_GameEventNotificationHandler,      this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE,       &SystemState_NetworkTestNotificationHandler,    this));
@@ -544,6 +545,25 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
         else
         {
             ESP_LOGE(TAG, "BLE Xfer New Settings Recv. Notification Data is NULL");
+        }
+        break;
+    case NOTIFICATION_EVENTS_BLE_XFER_NEW_WIFI_SETTINGS_RECV:
+        ESP_LOGI(TAG, "BLE Xfer New WiFi Settings Recv");
+        if (notificationData != NULL)
+        {
+            UserSettingsFile *pUserSettingsFile = (UserSettingsFile*)notificationData;
+            if (UserSettings_UpdateJson(&this->userSettings, (char*)pUserSettingsFile) != ESP_OK)
+            {
+                ESP_LOGW(TAG, "Failed to update user wifi settings");
+            }else
+            {
+                ESP_LOGI(TAG, "WIFI SSID: %s", this->userSettings.settings.wifiSettings.ssid);
+                //ESP_LOGI(TAG, "WIFI Password: %s", this->userSettings.settings.wifiSettings.password);
+            }
+        }
+        else
+        {
+            ESP_LOGE(TAG, "BLE Xfer New WiFi Settings Recv. Notification Data is NULL");
         }
         break;
     case NOTIFICATION_EVENTS_BLE_XFER_NEW_CUSTOM_RECV:
