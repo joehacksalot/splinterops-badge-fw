@@ -40,6 +40,7 @@ typedef enum NotificationEvents_e
     NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE, //
     NOTIFICATION_EVENTS_PLAY_SONG,
     NOTIFICATION_EVENTS_SONG_NOTE_ACTION,
+    NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED,
 } NotificationEvent;
 
 typedef struct NotificationDispatcher_t
