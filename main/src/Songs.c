@@ -7,6 +7,7 @@ static const char * TAG = "SONG";
 
 extern const SongNotes SecretSound;
 extern const SongNotes SuccessSound;
+extern const SongNotes ChestSound;
 extern const SongNotes ZeldaTheme;
 extern const SongNotes ZeldasLullaby;
 extern const SongNotes EponasSong;
@@ -26,6 +27,7 @@ static const SongNotes *pSongs[NUM_SONGS] =
 {
     &SecretSound,
     &SuccessSound,
+    &ChestSound,
     &ZeldaTheme,
     &ZeldasLullaby,
     &EponasSong,

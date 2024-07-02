@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "driver/ledc.h"
 #include "esp_err.h"
 #include "esp_log.h"
@@ -51,13 +53,13 @@ static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t 
                 if (CircularBuffer_MatchSequence(&this->ocarinaKeys, songKeySet.Keys, songKeySet.NumKeys) == ESP_OK)
                 {
                     ESP_LOGI(TAG, "Song Matched: %s", songKeySet.Name);
-                    NotificationDispatcher_SendNotification(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                     PlaySongEventNotificationData successPlaySongNotificationData;
                     successPlaySongNotificationData.song = SONG_SUCCESS_SOUND;
-                    NotificationDispatcher_SendNotification(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     PlaySongEventNotificationData ocarinaPlaySongNotificationData;
                     ocarinaPlaySongNotificationData.song = songKeySet.Song;
-                    NotificationDispatcher_SendNotification(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &ocarinaPlaySongNotificationData, sizeof(ocarinaPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &ocarinaPlaySongNotificationData, sizeof(ocarinaPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     CircularBuffer_Clear(&this->ocarinaKeys);
                     break;
                 }
