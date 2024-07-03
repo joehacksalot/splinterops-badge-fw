@@ -267,9 +267,6 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 this->touchActionCmdClearRequired = true;
                 this->touchActive = true;
                 NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ENABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
-                PlaySongEventNotificationData playSongNotificationData;
-                playSongNotificationData.song = SONG_ZELDA_THEME;
-                NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &playSongNotificationData.song, sizeof(playSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                 
                 SystemState_ResetTouchActiveTimer(this);
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
@@ -459,6 +456,11 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
         if (SystemState_ResetStatusIndicatorActiveTimer(this) != ESP_OK)
         {
             ESP_LOGW(TAG, "Failed to reset status indicator active timer");
+        }
+        {
+            PlaySongEventNotificationData playSongNotificationData;
+            playSongNotificationData.song = SONG_SECRET_SOUND;
+            NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &playSongNotificationData.song, sizeof(playSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
         }
         break;
     case NOTIFICATION_EVENTS_BLE_XFER_DISCONNECTED:

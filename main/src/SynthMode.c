@@ -57,11 +57,11 @@ static int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] =
     NOTE_E4  // TOUCH_SENSOR_LEFT_WING_FEATHER_1,      // 8
 };
 
-//   OCARINA_KEY_A = 0,  // D4
-//   OCARINA_KEY_X,      // B4
-//   OCARINA_KEY_Y,      // A4
-//   OCARINA_KEY_R,      // F3
-//   OCARINA_KEY_L,      // D3
+//   OCARINA_KEY_UP_A = 0, // D4
+//   OCARINA_KEY_LEFT_X,   // B4
+//   OCARINA_KEY_RIGHT_Y,  // A4
+//   OCARINA_KEY_A_L,      // D3
+//   OCARINA_KEY_DOWN_R,   // F3
 
 #endif
 
@@ -358,7 +358,10 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
         }
         else
         {
-            SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+            if (this->touchSoundEnabled)
+            {
+                SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+            }
         }
     }
 }

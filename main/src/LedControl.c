@@ -1309,7 +1309,7 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             this->touchModeRuntimeInfo.nextOuterDrawTime = TimeUtils_GetCurTimeTicks();
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
 // #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
+            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetCurTimeTicks();
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
 // #endif
             break;
@@ -1317,7 +1317,7 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             ESP_LOGD(TAG, "Setting LED mode to song mode");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_SONG_MODE);
 // #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
+            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetCurTimeTicks();
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
 // #endif
             break;
