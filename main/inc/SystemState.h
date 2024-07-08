@@ -21,6 +21,7 @@
 
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     #include "SynthMode.h"
+    #include "Ocarina.h"
 #endif
 
 typedef struct SystemState_t
@@ -58,6 +59,7 @@ typedef struct SystemState_t
 
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     SynthMode synthMode;
+    Ocarina ocarina;
 #endif
 } SystemState;
 

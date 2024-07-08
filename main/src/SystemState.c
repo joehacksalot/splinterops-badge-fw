@@ -189,6 +189,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
+    ESP_ERROR_CHECK(Ocarina_Init(&this->ocarina, &this->notificationDispatcher, &this->userSettings));
 #endif
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));

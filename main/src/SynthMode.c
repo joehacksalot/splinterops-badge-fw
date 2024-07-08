@@ -31,15 +31,15 @@
 static const char * TAG = "SYN";
 
 // middle C - major scale
-static int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] = 
+const int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] = 
 #if defined (REACTOR_BADGE) || defined (TRON_BADGE)
 {
     NOTE_D3, // TOUCH_SENSOR_12_OCLOCK
     NOTE_E3, // TOUCH_SENSOR_1_OCLOCK
     NOTE_F3, // TOUCH_SENSOR_2_OCLOCK
     NOTE_G3, // TOUCH_SENSOR_4_OCLOCK
-    NOTE_A4, // TOUCH_SENSOR_5_OCLOCK
-    NOTE_B4, // TOUCH_SENSOR_7_OCLOCK
+    NOTE_A3, // TOUCH_SENSOR_5_OCLOCK
+    NOTE_B3, // TOUCH_SENSOR_7_OCLOCK
     NOTE_C4, // TOUCH_SENSOR_8_OCLOCK
     NOTE_D4, // TOUCH_SENSOR_10_OCLOCK
     NOTE_E4  // TOUCH_SENSOR_11_OCLOCK
@@ -50,16 +50,16 @@ static int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] =
     NOTE_E3, // TOUCH_SENSOR_RIGHT_WING_FEATHER_2,     // 1
     NOTE_F3, // TOUCH_SENSOR_RIGHT_WING_FEATHER_3,     // 2
     NOTE_G3, // TOUCH_SENSOR_RIGHT_WING_FEATHER_4,     // 3
-    NOTE_A4, // TOUCH_SENSOR_TAIL_FEATHER,             // 4
-    NOTE_B4, // TOUCH_SENSOR_LEFT_WING_FEATHER_4,      // 5
+    NOTE_A3, // TOUCH_SENSOR_TAIL_FEATHER,             // 4
+    NOTE_B3, // TOUCH_SENSOR_LEFT_WING_FEATHER_4,      // 5
     NOTE_C4, // TOUCH_SENSOR_LEFT_WING_FEATHER_3,      // 6
     NOTE_D4, // TOUCH_SENSOR_LEFT_WING_FEATHER_2,      // 7
     NOTE_E4  // TOUCH_SENSOR_LEFT_WING_FEATHER_1,      // 8
 };
 
 //   OCARINA_KEY_A = 0,  // D4
-//   OCARINA_KEY_X,      // B4
-//   OCARINA_KEY_Y,      // A4
+//   OCARINA_KEY_X,      // B3
+//   OCARINA_KEY_Y,      // A3
 //   OCARINA_KEY_R,      // F3
 //   OCARINA_KEY_L,      // D3
 

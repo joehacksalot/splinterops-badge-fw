@@ -11,6 +11,7 @@
 #include "SynthModeNotifications.h"
 #include "UserSettings.h"
 #include "Utilities.h"
+#include "TouchSensor.h"
 
 typedef struct SynthMode_t
 {
