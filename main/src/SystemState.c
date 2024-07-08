@@ -16,7 +16,6 @@
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
 #include "OtaUpdate.h"
-#include "Song.h"
 #include "SystemState.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
@@ -24,6 +23,11 @@
 #include "TouchActions.h"
 #include "UserSettings.h"
 #include "WifiClient.h"
+
+#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
+#include "Ocarina.h"
+#include "SynthMode.h"
+#endif
 
 #define LED_GAME_STATUS_TOGGLE_DURATION_MSEC (5000)
 #define LED_PREVIEW_DRAW_DURATION_MSEC       (2000)
@@ -189,6 +193,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
+    ESP_ERROR_CHECK(Ocarina_Init(&this->ocarina, &this->notificationDispatcher, &this->userSettings));
 #endif
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
@@ -268,12 +273,10 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 this->touchActionCmdClearRequired = true;
                 this->touchActive = true;
                 NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ENABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
-                
                 SystemState_ResetTouchActiveTimer(this);
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
                 LedModing_SetTouchActive(&this->ledModing, true);      // TODO: Make these components use the notification dispatcher instead of these functions
                 TouchSensor_SetTouchEnabled(&this->touchSensor, true); // TODO: Make these components use the notification dispatcher instead of these functions
-                SynthMode_SetTouchSoundEnabled(&this->synthMode, true);          // TODO: Make these components use the notification dispatcher instead of these functions
                 cmdProcessed = true;
             }
         }
@@ -287,6 +290,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
             LedModing_SetTouchActive(&this->ledModing, false);      // TODO: Make these components use the notification dispatcher instead of these functions
             TouchSensor_SetTouchEnabled(&this->touchSensor, false); // TODO: Make these components use the notification dispatcher instead of these functions
             SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+            Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
             cmdProcessed = true;
         }
         else
@@ -347,6 +351,26 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                     BadgeStats_IncrementNumNetworkTests(&this->badgeStats);
                     cmdProcessed = true;
                     break;
+#if defined(REACTOR_BADGE) || defined (CREST_BADGE)
+                case TOUCH_ACTIONS_CMD_ENABLE_SYNTH_MODE:
+                    ESP_LOGI(TAG, "Enabling Synth Mode");
+                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
+                    SynthMode_SetTouchSoundEnabled(&this->synthMode, true);          // TODO: Make these components use the notification dispatcher instead of these functions
+                    Ocarina_SetModeEnabled(&this->ocarina, true);          // TODO: Make these components use the notification dispatcher instead of these functions
+                    // BadgeStats_IncrementNumSynthModeEnables(&this->badgeStats);
+                    cmdProcessed = true;
+                    break;
+                case TOUCH_ACTIONS_CMD_DISABLE_SYNTH_MODE:
+                    ESP_LOGI(TAG, "Disabling Synth Mode");
+                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
+                    SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+                    Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+                    // BadgeStats_IncrementNumSynthModeDisables(&this->badgeStats);
+                    cmdProcessed = true;
+                    break;
+#endif
                 case TOUCH_ACTIONS_CMD_CLEAR:
                 case TOUCH_ACTIONS_CMD_ENABLE_TOUCH:
                 case TOUCH_ACTIONS_CMD_UNKNOWN:
@@ -695,6 +719,7 @@ static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
     TouchSensor_SetTouchEnabled(&this->touchSensor, false);
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     SynthMode_SetTouchSoundEnabled(&this->synthMode, false);
+    Ocarina_SetModeEnabled(&this->ocarina, false);
 #endif
     return NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
 }

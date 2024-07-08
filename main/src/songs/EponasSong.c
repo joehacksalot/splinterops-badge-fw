@@ -45,7 +45,7 @@ const SongNotes EponasSong = {
 
     // --
 
-    {NOTE_D4, NOTE_TYPE_HALF, 1},
+    {NOTE_D4, NOTE_TYPE_HALF, 0},
     {NOTE_D4, NOTE_TYPE_QUARTER, 0},
     {NOTE_CS4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_B3, NOTE_TYPE_EIGHTH, 0},

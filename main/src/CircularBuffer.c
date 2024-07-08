@@ -50,12 +50,46 @@ void CircularBuffer_Free(CircularBuffer *cb)
   memset(cb, 0, sizeof(*cb));
 }
 
-// Pushes an item to the back of the circular pBuffer.
-// 
-// @param cb Pointer to the circular pBuffer structure.
-// @param item Pointer to the item to be pushed into the circular pBuffer.
-// 
-// @return ESP_OK if the item was successfully pushed, ESP_FAIL if the circular pBuffer is full.
+/**
+ * Clears the circular buffer and resets size back to 0.
+ *
+ * @param cb Pointer to the circular buffer structure.
+ *
+ * @return void
+ *
+ * @throws None
+ */
+void CircularBuffer_Clear(CircularBuffer *cb)
+{
+  cb->count = 0;
+  cb->pHead = cb->pBuffer;
+  cb->pTail = cb->pBuffer;
+}
+
+/**
+ * Returns the number of elements in the circular buffer.
+ *
+ * @param cb Pointer to the circular buffer structure.
+ *
+ * @return The number of elements in the circular buffer.
+ *
+ * @throws None
+ */
+int CircularBuffer_Count(CircularBuffer *cb)
+{
+  return cb->count;
+}
+
+/**
+ * Pushes an item to the back of the circular pBuffer.
+ * 
+ * @param cb Pointer to the circular pBuffer structure.
+ * @param item Pointer to the item to be pushed into the circular pBuffer.
+ * 
+ * @return ESP_OK if the item was successfully pushed, ESP_FAIL if the circular pBuffer is full.
+ * 
+ * @throws None
+ */
 esp_err_t CircularBuffer_PushBack(CircularBuffer *cb, const void *item)
 {
   if(cb->count == cb->capacity)
@@ -63,12 +97,14 @@ esp_err_t CircularBuffer_PushBack(CircularBuffer *cb, const void *item)
     ESP_LOGE(TAG, "Circular pBuffer is full");
     return ESP_FAIL;
   }
+
   memcpy(cb->pHead, item, cb->size);
   cb->pHead = (char*)cb->pHead + cb->size;
   if(cb->pHead == cb->pBufferEnd)
   {
     cb->pHead = cb->pBuffer;
   }
+
   cb->count++;
   return ESP_OK;
 }
@@ -90,12 +126,61 @@ esp_err_t CircularBuffer_PopFront(CircularBuffer *cb, void *item)
     ESP_LOGE(TAG, "Circular pBuffer is empty");
     return ESP_FAIL;
   }
+
   memcpy(item, cb->pTail, cb->size);
   cb->pTail = (char*)cb->pTail + cb->size;
   if(cb->pTail == cb->pBufferEnd)
   {
     cb->pTail = cb->pBuffer;
   }
+
   cb->count--;
+  return ESP_OK;
+}
+
+/**
+ * Matches the last N elements of the sequence in the circular buffer.
+ * 
+ * @param cb Pointer to the circular buffer structure.
+ * @param sequence Pointer to the sequence to be matched.
+ * @param sequence_length Length of the sequence.
+ * 
+ * @return ESP_OK if the sequence is found at the end, ESP_FAIL otherwise.
+ */
+esp_err_t CircularBuffer_MatchSequence(CircularBuffer *cb, const void *sequence, size_t sequence_length)
+{
+  if(sequence_length > cb->count)
+  {
+    ESP_LOGE(TAG, "Sequence length is greater than the number of elements in the circular buffer");
+    return ESP_FAIL;
+  }
+
+  // Pointer to the current position in the circular buffer
+  const char *current = (const char *)cb->pTail + (cb->count - sequence_length) * cb->size;
+  const char *seq = (const char *)sequence;
+
+  // Wrap around if we reach the end of the buffer
+  if(current >= (const char *)cb->pBufferEnd)
+  {
+    current -= (cb->pBufferEnd - cb->pBuffer);
+  }
+
+  for(size_t i = 0; i < sequence_length; i++)
+  {
+    if(memcmp(current, seq, cb->size) != 0)
+    {
+      return ESP_FAIL;
+    }
+
+    current = (const char *)current + cb->size;
+    seq += cb->size;
+
+    // Wrap around if we reach the end of the buffer
+    if(current == cb->pBufferEnd)
+    {
+      current = cb->pBuffer;
+    }
+  }
+
   return ESP_OK;
 }

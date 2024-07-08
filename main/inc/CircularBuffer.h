@@ -21,7 +21,10 @@ typedef struct CircularBuffer_t
 
 esp_err_t CircularBuffer_Init(CircularBuffer *cb, size_t capacity, size_t size);
 void CircularBuffer_Free(CircularBuffer *cb);
+void CircularBuffer_Clear(CircularBuffer *cb);
+int CircularBuffer_Count(CircularBuffer *cb);
 esp_err_t CircularBuffer_PushBack(CircularBuffer *cb, const void *item);
 esp_err_t CircularBuffer_PopFront(CircularBuffer *cb, void *item);
+esp_err_t CircularBuffer_MatchSequence(CircularBuffer *cb, const void *sequence, size_t sequenceLength);
 
 #endif // CIRCULAR_BUFFER_H_

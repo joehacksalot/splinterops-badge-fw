@@ -4,7 +4,7 @@
 const SongNotes SongOfStorms = {
   "Song of Storms",
   180,  // Tempo
-  35,   // Number of Notes
+  43,   // Number of Notes
   {
     {NOTE_D3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_F3, NOTE_TYPE_EIGHTH, 0},
@@ -22,22 +22,22 @@ const SongNotes SongOfStorms = {
     {NOTE_E4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_C4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_A3, NOTE_TYPE_HALF, 0},
-    //13
 
+    // --
 
     {NOTE_A3, NOTE_TYPE_QUARTER, 0},
     {NOTE_D3, NOTE_TYPE_QUARTER, 0},
     {NOTE_F3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_G3, NOTE_TYPE_EIGHTH, 0},
-
     {NOTE_A3, NOTE_TYPE_HALF_DOT, 0},
 
-    {NOTE_E4, NOTE_TYPE_QUARTER_DOT, 0},
-    {NOTE_F4, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_E4, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_F4, NOTE_TYPE_EIGHTH, 0},
-    //9
+    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_D3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_F3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_G3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_E3, NOTE_TYPE_HALF_DOT, 0},
 
+    // --
 
     {NOTE_D3, NOTE_TYPE_EIGHTH, 0},
     {NOTE_F3, NOTE_TYPE_EIGHTH, 0},
@@ -54,7 +54,17 @@ const SongNotes SongOfStorms = {
 
     {NOTE_E4, NOTE_TYPE_EIGHTH, 0},
     {NOTE_C4, NOTE_TYPE_EIGHTH, 0},
-    {NOTE_A3, NOTE_TYPE_HALF, 0}
-    //13
+    {NOTE_A3, NOTE_TYPE_HALF, 0},
+
+    // --
+
+    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_D3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_F3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_G3, NOTE_TYPE_EIGHTH, 0},
+    {NOTE_A3, NOTE_TYPE_HALF, 0},
+
+    {NOTE_A3, NOTE_TYPE_QUARTER, 0},
+    {NOTE_D3, NOTE_TYPE_HALF_DOT, 0},
   }
 };
