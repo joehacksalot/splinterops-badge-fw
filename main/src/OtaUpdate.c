@@ -67,12 +67,12 @@ static esp_err_t CheckUpdateRequired(OtaUpdate * this, esp_app_desc_t * new_app_
             ESP_LOG_BUFFER_HEX_LEVEL(TAG, new_app_info->app_elf_sha256, sizeof(new_app_info->app_elf_sha256), ESP_LOG_INFO);
             if (memcmp(new_app_info->app_elf_sha256, running_app_info.app_elf_sha256, sizeof(new_app_info->app_elf_sha256)) == 0) 
             {
-                printf("Current version matches update. OTA Skip\n");
+                ESP_LOGI(TAG, "Current version matches update. OTA Skip\n");
             }
             else
             {
                 // TODO: Do we need to validate this version?
-                printf("OTA Update Starting\n");
+                ESP_LOGI(TAG, "OTA Update Starting\n");
                 ret = ESP_OK;
                 NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_REQUIRED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
             }
@@ -163,7 +163,7 @@ static void OtaUpdateTask(void *pvParameters)
                             float current_percent = ((float)esp_https_ota_get_image_len_read(https_ota_handle)) / ota_image_size * 100;
                             if(current_percent > print_percent)
                             {
-                                printf("Firmware image download progress(%.0f%%)\n", current_percent);
+                                ESP_LOGI(TAG, "Firmware image download progress(%.0f%%)\n", current_percent);
                                 print_percent += OTA_STATUS_PRINT_STEP;
                             }
                         }
@@ -171,12 +171,12 @@ static void OtaUpdateTask(void *pvParameters)
                         // Check if transfer completed
                         if(esp_https_ota_is_complete_data_received(https_ota_handle))
                         {
-                            printf("Firmware image download complete\n");
+                            ESP_LOGI(TAG, "Firmware image download complete\n");
 
                             esp_err_t ota_finish_err = esp_https_ota_finish(https_ota_handle);
                             if ((ota_status == ESP_OK) && (ota_finish_err == ESP_OK)) 
                             {
-                                printf("Firmware upgrade successful. Rebooting in one\n");
+                                ESP_LOGI(TAG, "Firmware upgrade successful. Rebooting in one\n");
                                 NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                                 vTaskDelay(pdMS_TO_TICKS(1000));
                                 esp_restart();

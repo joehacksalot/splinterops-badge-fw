@@ -4,7 +4,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 
-#include "AudioUtils.h"
 #include "NotificationDispatcher.h"
 #include "TaskPriorities.h"
 #include "TouchSensor.h"

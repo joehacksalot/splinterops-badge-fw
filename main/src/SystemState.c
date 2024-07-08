@@ -86,7 +86,7 @@ SystemState* SystemState_GetInstance(void)
 {
     if (pSystemState == NULL)
     {
-        pSystemState = (SystemState*)malloc(sizeof(SystemState));
+        pSystemState = heap_caps_malloc(sizeof(SystemState), MALLOC_CAP_SPIRAM);
     }
     return pSystemState;
 }

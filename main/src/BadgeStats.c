@@ -32,7 +32,7 @@ esp_err_t BadgeStats_Init(BadgeStats *this)
     }
     BadgeStats_IncrementNumPowerOns(this);
 
-    // xTaskCreate(BadgeStatsTask, "BadgeStatsTask", configMINIMAL_STACK_SIZE * 5, this, BADGE_STAT_TASK_PRIORITY, NULL);
+    // xTaskCreate(BadgeStatsTask, "BadgeStatsTask", configMINIMAL_STACK_SIZE * 5, this, BADGE_STAT_TASK_PRIORITY, NULL); // Commented to prevent disk writes. statistics will still be captured, but not saved to disk
     return ESP_OK;
 }
 
@@ -320,7 +320,7 @@ static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this)
             int status = remove(STATS_FILE_NAME);
             if(status != 0)
             {
-                printf("Error: unable to remove the file. %s", STATS_FILE_NAME);
+                ESP_LOGE(TAG, "Error: unable to remove the file. %s", STATS_FILE_NAME);
             }
             FILE * fp = fopen(STATS_FILE_NAME, "wb");
             if (fp != 0)
