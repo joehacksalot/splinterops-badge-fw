@@ -20,20 +20,19 @@ static const char *TAG = "CBUF";
  */
 esp_err_t CircularBuffer_Init(CircularBuffer *cb, size_t capacity, size_t size)
 {
-    cb->pBuffer = malloc(capacity * size);
-    if(cb->pBuffer == NULL)
-    {
-        ESP_LOGE(TAG, "Could not allocate circular pBuffer");
-        return ESP_FAIL;
-    }
-
-    cb->pBufferEnd = (char *)cb->pBuffer + capacity * size;
-    cb->capacity = capacity;
-    cb->count = 0;
-    cb->size = size;
-    cb->pHead = cb->pBuffer;
-    cb->pTail = cb->pBuffer;
-    return ESP_OK;
+  cb->pBuffer = heap_caps_malloc(capacity * size, MALLOC_CAP_SPIRAM);
+  if(cb->pBuffer == NULL)
+  {
+    ESP_LOGE(TAG, "Could not allocate circular pBuffer");
+    return ESP_FAIL;
+  }
+  cb->pBufferEnd = (char *)cb->pBuffer + capacity * size;
+  cb->capacity = capacity;
+  cb->count = 0;
+  cb->size = size;
+  cb->pHead = cb->pBuffer;
+  cb->pTail = cb->pBuffer;
+  return ESP_OK;
 }
 
 /**
@@ -47,8 +46,8 @@ esp_err_t CircularBuffer_Init(CircularBuffer *cb, size_t capacity, size_t size)
  */
 void CircularBuffer_Free(CircularBuffer *cb)
 {
-    free(cb->pBuffer);
-    memset(cb, 0, sizeof(*cb));
+  free(cb->pBuffer);
+  memset(cb, 0, sizeof(*cb));
 }
 
 /**
@@ -62,9 +61,9 @@ void CircularBuffer_Free(CircularBuffer *cb)
  */
 void CircularBuffer_Clear(CircularBuffer *cb)
 {
-    cb->count = 0;
-    cb->pHead = cb->pBuffer;
-    cb->pTail = cb->pBuffer;
+  cb->count = 0;
+  cb->pHead = cb->pBuffer;
+  cb->pTail = cb->pBuffer;
 }
 
 /**
@@ -78,7 +77,7 @@ void CircularBuffer_Clear(CircularBuffer *cb)
  */
 int CircularBuffer_Count(CircularBuffer *cb)
 {
-    return cb->count;
+  return cb->count;
 }
 
 /**
@@ -93,21 +92,21 @@ int CircularBuffer_Count(CircularBuffer *cb)
  */
 esp_err_t CircularBuffer_PushBack(CircularBuffer *cb, const void *item)
 {
-    if(cb->count == cb->capacity)
-    {
-        ESP_LOGE(TAG, "Circular pBuffer is full");
-        return ESP_FAIL;
-    }
+  if(cb->count == cb->capacity)
+  {
+    ESP_LOGE(TAG, "Circular pBuffer is full");
+    return ESP_FAIL;
+  }
 
-    memcpy(cb->pHead, item, cb->size);
-    cb->pHead = (char*)cb->pHead + cb->size;
-    if(cb->pHead == cb->pBufferEnd)
-    {
-        cb->pHead = cb->pBuffer;
-    }
+  memcpy(cb->pHead, item, cb->size);
+  cb->pHead = (char*)cb->pHead + cb->size;
+  if(cb->pHead == cb->pBufferEnd)
+  {
+    cb->pHead = cb->pBuffer;
+  }
 
-    cb->count++;
-    return ESP_OK;
+  cb->count++;
+  return ESP_OK;
 }
 
 /**
@@ -122,21 +121,21 @@ esp_err_t CircularBuffer_PushBack(CircularBuffer *cb, const void *item)
  */
 esp_err_t CircularBuffer_PopFront(CircularBuffer *cb, void *item)
 {
-    if(cb->count == 0)
-    {
-        ESP_LOGE(TAG, "Circular pBuffer is empty");
-        return ESP_FAIL;
-    }
+  if(cb->count == 0)
+  {
+    ESP_LOGE(TAG, "Circular pBuffer is empty");
+    return ESP_FAIL;
+  }
 
-    memcpy(item, cb->pTail, cb->size);
-    cb->pTail = (char*)cb->pTail + cb->size;
-    if(cb->pTail == cb->pBufferEnd)
-    {
-        cb->pTail = cb->pBuffer;
-    }
+  memcpy(item, cb->pTail, cb->size);
+  cb->pTail = (char*)cb->pTail + cb->size;
+  if(cb->pTail == cb->pBufferEnd)
+  {
+    cb->pTail = cb->pBuffer;
+  }
 
-    cb->count--;
-    return ESP_OK;
+  cb->count--;
+  return ESP_OK;
 }
 
 /**
@@ -150,38 +149,38 @@ esp_err_t CircularBuffer_PopFront(CircularBuffer *cb, void *item)
  */
 esp_err_t CircularBuffer_MatchSequence(CircularBuffer *cb, const void *sequence, size_t sequence_length)
 {
-    if(sequence_length > cb->count)
+  if(sequence_length > cb->count)
+  {
+    ESP_LOGE(TAG, "Sequence length is greater than the number of elements in the circular buffer");
+    return ESP_FAIL;
+  }
+
+  // Pointer to the current position in the circular buffer
+  const char *current = (const char *)cb->pTail + (cb->count - sequence_length) * cb->size;
+  const char *seq = (const char *)sequence;
+
+  // Wrap around if we reach the end of the buffer
+  if(current >= (const char *)cb->pBufferEnd)
+  {
+    current -= (cb->pBufferEnd - cb->pBuffer);
+  }
+
+  for(size_t i = 0; i < sequence_length; i++)
+  {
+    if(memcmp(current, seq, cb->size) != 0)
     {
-        ESP_LOGE(TAG, "Sequence length is greater than the number of elements in the circular buffer");
-        return ESP_FAIL;
+      return ESP_FAIL;
     }
 
-    // Pointer to the current position in the circular buffer
-    const char *current = (const char *)cb->pTail + (cb->count - sequence_length) * cb->size;
-    const char *seq = (const char *)sequence;
+    current = (const char *)current + cb->size;
+    seq += cb->size;
 
     // Wrap around if we reach the end of the buffer
-    if(current >= (const char *)cb->pBufferEnd)
+    if(current == cb->pBufferEnd)
     {
-        current -= (cb->pBufferEnd - cb->pBuffer);
+      current = cb->pBuffer;
     }
+  }
 
-    for(size_t i = 0; i < sequence_length; i++)
-    {
-      if(memcmp(current, seq, cb->size) != 0)
-      {
-          return ESP_FAIL;
-      }
-
-      current = (const char *)current + cb->size;
-      seq += cb->size;
-
-      // Wrap around if we reach the end of the buffer
-      if(current == cb->pBufferEnd)
-      {
-          current = cb->pBuffer;
-      }
-    }
-
-    return ESP_OK;
+  return ESP_OK;
 }

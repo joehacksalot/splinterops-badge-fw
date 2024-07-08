@@ -13,7 +13,7 @@
 
 static const char *TAG = "OCAR";
 
-const OcarinaKeySet OcarinaSongKeySets[] =
+const OcarinaKeySet OcarinaSongKeySets[OCARINA_NUM_SONGS] =
 {
   {"Zelda's Lullaby",    6, SONG_ZELDAS_LULLABY,        {OCARINA_KEY_X,  OCARINA_KEY_A,  OCARINA_KEY_Y,  OCARINA_KEY_X,  OCARINA_KEY_A,  OCARINA_KEY_Y}},
   {"Epona's Song",       6, SONG_EPONAS_SONG,           {OCARINA_KEY_A,  OCARINA_KEY_X,  OCARINA_KEY_Y,  OCARINA_KEY_A,  OCARINA_KEY_X,  OCARINA_KEY_Y}},
@@ -37,7 +37,9 @@ esp_err_t Ocarina_Init(Ocarina *this, NotificationDispatcher *pNotificationDispa
     memset(this, 0, sizeof(Ocarina));
     if (this->initialized == false)
     {
+        this->initialized = true;
         assert(CircularBuffer_Init(&this->ocarinaKeys, OCARINA_MAX_SONG_KEYS, sizeof(OcarinaKey)) == ESP_OK);
+        this->enabled = false;
         this->pNotificationDispatcher = pNotificationDispatcher;
         this->pUserSettings = pUserSettings;
         ESP_LOGI(TAG, "Ocarina successfully handcrafted");
@@ -48,6 +50,20 @@ esp_err_t Ocarina_Init(Ocarina *this, NotificationDispatcher *pNotificationDispa
     return ESP_FAIL;
 }
 
+esp_err_t Ocarina_SetModeEnabled(Ocarina *this, bool enabled)
+{
+    assert(this);
+    esp_err_t ret = ESP_FAIL;
+    if (this->initialized)
+    {
+        ESP_LOGI(TAG, "Setting Ocarina enabled to %s", enabled ? "true" : "false");
+        this->enabled = enabled;
+        ret = ESP_OK;
+    }
+
+    return ret;
+}
+
 static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
@@ -55,6 +71,11 @@ static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t 
     assert(this);
     assert(notificationData);
     TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
+    if (!this->enabled)
+    {
+        return;
+    }
+
     if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_TOUCHED)
     {
         OcarinaKey key = touchNotificationData.touchSensorIdx;
@@ -67,7 +88,7 @@ static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t 
         CircularBuffer_PushBack(&this->ocarinaKeys, &key);
         
         // Check the ocarina keys in the buffer against the song key sets
-        for (int i = 0; i < sizeof(OcarinaSongKeySets) / sizeof(OcarinaKeySet); i++)
+        for (int i = 0; i < OCARINA_NUM_SONGS; i++)
         {
             OcarinaKeySet songKeySet = OcarinaSongKeySets[i];
             if (CircularBuffer_Count(&this->ocarinaKeys) >= songKeySet.NumKeys)
@@ -82,6 +103,15 @@ static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t 
                     PlaySongEventNotificationData ocarinaPlaySongNotificationData;
                     ocarinaPlaySongNotificationData.song = songKeySet.Song;
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &ocarinaPlaySongNotificationData, sizeof(ocarinaPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    if (!this->songStatus[i].unlocked)
+                    {
+                        ESP_LOGI(TAG, "Unlocked song: %s", songKeySet.Name);
+                        this->songStatus[i].unlocked = true;
+                        PlaySongEventNotificationData unlockSongNotificationData;
+                        unlockSongNotificationData.song = SONG_SECRET_SOUND;
+                        NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &unlockSongNotificationData, sizeof(unlockSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    }
+
                     CircularBuffer_Clear(&this->ocarinaKeys);
                     break;
                 }

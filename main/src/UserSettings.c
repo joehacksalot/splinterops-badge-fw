@@ -295,7 +295,7 @@ static esp_err_t UserSettings_WriteUserSettingsFileToDisk(UserSettings *this)
             int status = remove(SETTINGS_FILE_NAME);
             if(status != 0)
             {
-                printf("Error: unable to remove the file. %s", SETTINGS_FILE_NAME);
+                ESP_LOGE(TAG, "Error: unable to remove the file. %s", SETTINGS_FILE_NAME);
             }
 
             FILE * fp = fopen(SETTINGS_FILE_NAME, "wb");

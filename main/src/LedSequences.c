@@ -12,11 +12,11 @@
 #include <unistd.h>
 #include <string.h>
 
-#define LED_SEQ_TAG "LED_SEQ" 
-
 #define LED_SEQ_NUM_BUILT_IN_SEQUENCES 3
 #define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 #define NUM_LED_SEQUENCES (LED_SEQ_NUM_BUILT_IN_SEQUENCES + LED_SEQ_NUM_CUSTOM_SEQUENCES)
+
+static const char * TAG = "LEDS";
 
 char * custom_led_sequences[LED_SEQ_NUM_CUSTOM_SEQUENCES] = {0};
 char custom_led_sequences_sharecodes[LED_SEQ_NUM_CUSTOM_SEQUENCES][NUM_SHARECODE_BYTES] = {0};
@@ -72,12 +72,12 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
 {
     if (index >= LED_SEQ_NUM_CUSTOM_SEQUENCES)
     {
-        ESP_LOGE(LED_SEQ_TAG, "Invalid index\n");
+        ESP_LOGE(TAG, "Invalid index\n");
         return ESP_FAIL;
     }
     if (sequence_size > MAX_CUSTOM_LED_SEQUENCE_SIZE)
     {
-        ESP_LOGE(LED_SEQ_TAG, "Sequence size too large. %d\n", sequence_size);
+        ESP_LOGE(TAG, "Sequence size too large. %d\n", sequence_size);
         return ESP_FAIL;
     }
 
@@ -87,17 +87,17 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
     snprintf(filename, sizeof(filename), "%s/custom%d.txt", MOUNT_PATH, index);
     // Open and overwrite file
 
-    int status = remove(filename);
+    int status = remove(filename); // TODO: not protected from being written at low battery, risk corrupting flash if brownout occurs
     if (status != 0)
     {
-        printf("Error: unable to remove the file. %s", filename);
+        ESP_LOGE(TAG, "Error: unable to remove the file. %s", filename);
     }
     if (pBatterySensor != NULL && BatterySensor_GetBatteryPercent(pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
     {
         FILE * fp = fopen(filename, "wb");
         if (fp == 0)
         {
-          ESP_LOGE(LED_SEQ_TAG, "Open of %s failed\n", filename);
+          ESP_LOGE(TAG, "Open of %s failed\n", filename);
           return ESP_FAIL;
         }
 
@@ -105,13 +105,13 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
         fclose(fp);
         if (bytes_written != MAX_CUSTOM_LED_SEQUENCE_SIZE)
         {
-          ESP_LOGE(LED_SEQ_TAG, "Write failed %d\n", bytes_written);
+          ESP_LOGE(TAG, "Write failed %d\n", bytes_written);
           return ESP_FAIL;
         }
     }
     else
     {
-        ESP_LOGE(LED_SEQ_TAG, "Battery too low to write to flash");
+        ESP_LOGE(TAG, "Battery too low to write to flash");
         return ESP_FAIL;
     }
     
@@ -135,7 +135,7 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
 
   esp_err_t ret = ESP_OK;
   // json file loading / creation
-  ESP_LOGI(LED_SEQ_TAG, "JSON file management");
+  ESP_LOGI(TAG, "JSON file management");
   for (int i = 0; i < LED_SEQ_NUM_CUSTOM_SEQUENCES; i++)
   {
     char filename[30] = "";
@@ -149,17 +149,17 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
         ssize_t file_size = ftell(fp);
         if (file_size != MAX_CUSTOM_LED_SEQUENCE_SIZE)
         {
-            ESP_LOGI(LED_SEQ_TAG, "Actual: %d, Expected: %d, Overwriting", file_size, MAX_CUSTOM_LED_SEQUENCE_SIZE);
+            ESP_LOGI(TAG, "Actual: %d, Expected: %d, Overwriting", file_size, MAX_CUSTOM_LED_SEQUENCE_SIZE);
             
             // Overwrite file
             fclose(fp);
 
             if (pBatterySensor != NULL && BatterySensor_GetBatteryPercent(pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
             {
-                int status = remove(filename);
+                int status = remove(filename); // TODO: not protected from being written at low battery, risk corrupting flash if brownout occurs
                 if(status != 0)
                 {
-                    printf("Error: unable to remove the file. %s", filename);
+                    ESP_LOGE(TAG, "Error: unable to remove the file. %s", filename);
                 }
                 FILE * fp = fopen(filename, "wb");
                 if(fp != NULL)
@@ -167,19 +167,19 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
                   ssize_t bytes_written = fwrite((void *)custom_led_sequences[i], 1, MAX_CUSTOM_LED_SEQUENCE_SIZE, fp);
                   if(bytes_written != MAX_CUSTOM_LED_SEQUENCE_SIZE)
                   {
-                    ESP_LOGE(LED_SEQ_TAG, "Overwrite failed. %d\n", bytes_written);
+                    ESP_LOGE(TAG, "Overwrite failed. %d\n", bytes_written);
                     // ret = ESP_FAIL;
                   }
                   fclose(fp);
                 }
                 else
                 {
-                  ESP_LOGE(LED_SEQ_TAG, "Failed to overwrite");
+                  ESP_LOGE(TAG, "Failed to overwrite");
                 }
             }
             else
             {
-                ESP_LOGE(LED_SEQ_TAG, "Battery too low to write to flash");
+                ESP_LOGE(TAG, "Battery too low to write to flash");
             }
       }
       else
@@ -188,7 +188,7 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
         fseek(fp, 0, SEEK_SET);
         if(fread(custom_led_sequences[i], 1, MAX_CUSTOM_LED_SEQUENCE_SIZE, fp) != MAX_CUSTOM_LED_SEQUENCE_SIZE)
         {
-          ESP_LOGW(LED_SEQ_TAG, "Partial read completed into custom offset %d", i);
+          ESP_LOGW(TAG, "Partial read completed into custom offset %d", i);
         }
         fclose(fp);
       }
@@ -199,18 +199,18 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
       FILE * fp = fopen(filename, "wb");
       if (fp != 0)
       {
-        ESP_LOGI(LED_SEQ_TAG, "Creating file %s with size %d", filename, MAX_CUSTOM_LED_SEQUENCE_SIZE);
+        ESP_LOGI(TAG, "Creating file %s with size %d", filename, MAX_CUSTOM_LED_SEQUENCE_SIZE);
         ssize_t bytes_written = fwrite((void *)custom_led_sequences[i], 1, MAX_CUSTOM_LED_SEQUENCE_SIZE, fp);
         fclose(fp);
         if (bytes_written != MAX_CUSTOM_LED_SEQUENCE_SIZE)
         {
-          ESP_LOGE(LED_SEQ_TAG, "Write failed. %d\n", bytes_written);
+          ESP_LOGE(TAG, "Write failed. %d\n", bytes_written);
           // ret = ESP_FAIL;
         }
       }
       else
       {
-        ESP_LOGE(LED_SEQ_TAG, "Creation of %s failed", filename);
+        ESP_LOGE(TAG, "Creation of %s failed", filename);
         // ret = ESP_FAIL;
       }
     }

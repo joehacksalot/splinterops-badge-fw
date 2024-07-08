@@ -52,7 +52,7 @@ static esp_err_t LedControl_ServiceDrawBleEnabledSequence(LedControl *this, bool
 static esp_err_t LedControl_ServiceDrawBleConnectedSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawStatusIndicatorSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
-static esp_err_t LedControl_ServiceDraSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_LoadJsonLedSequence(LedControl * this);
 static esp_err_t LedControll_FillPixels(LedControl *this, rgb_t color, int intensity, int ledStartIndex, int numLedsToFill);
 static esp_err_t LedControl_SetPixel(LedControl * this, color_t in_color, int pix_num);
@@ -385,7 +385,7 @@ static void LedControlTask(void *pvParameters)
         LedControl_ServiceDrawBleConnectedSequence     ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_XFER_CONNECTED, false                                                                          );
         LedControl_ServiceDrawStatusIndicatorSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_STATUS_INDICATOR,   this->ledControlModeSettings.innerLedState == INNER_LED_STATE_STATUS_INDICATOR );
         LedControl_ServiceDrawNetworkTestSequence      ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_NETWORK_TEST,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_NETWORK_TEST     );
-        LedControl_ServiceDraSongModeSequence          ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_SONG_MODE,          false);
+        LedControl_ServiceDrawSongModeSequence         ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_SONG_MODE,          false);
         LedControl_FlushLedStrip(this);
         vTaskDelay(pdMS_TO_TICKS(LED_CONTROL_TASK_PERIOD));
     }
@@ -882,7 +882,7 @@ static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl* this, boo
 }
 
 
-static esp_err_t LedControl_ServiceDraSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
+static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
 {
     esp_err_t ret = ESP_OK;
     assert(this);
@@ -1306,10 +1306,8 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
     {
         case LED_MODE_NORMAL:
             ESP_LOGD(TAG, "Setting LED mode to normal");
-            this->touchModeRuntimeInfo.nextOuterDrawTime = TimeUtils_GetCurTimeTicks();
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
 // #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
 // #endif
             break;
@@ -1317,7 +1315,6 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             ESP_LOGD(TAG, "Setting LED mode to song mode");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_SONG_MODE);
 // #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            this->ledControlModeSettings.nextNormalModeInnerStateCycleTime = TimeUtils_GetFutureTimeTicks(this->ledControlModeSettings.ledNormalModeInnerLedCycleHoldtime);
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
 // #endif
             break;

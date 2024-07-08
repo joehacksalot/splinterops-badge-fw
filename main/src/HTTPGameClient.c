@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -10,6 +11,8 @@
 #include "esp_ota_ops.h"
 #include "esp_https_ota.h"
 #include "esp_crt_bundle.h"
+
+#include "cJSON.h"
 
 #include "BatterySensor.h"
 #include "GameState.h"
@@ -257,7 +260,6 @@ void _HTTPGameClient_RemoveExpiredFromList(HTTPGameClient * this)
         }
     }
 }
-#include "cJSON.h"
 
 esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
 {
@@ -412,11 +414,11 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                     struct timeval tv;
 
                     gettimeofday(&tv, NULL);
-                    printf("Successfully set the system time to %s", ctime(&tv.tv_sec));
+                    ESP_LOGI(TAG, "Successfully set the system time to %s", ctime(&tv.tv_sec));
                 }
                 else
                 {
-                    printf("Failed to set the system time");
+                    ESP_LOGE(TAG, "Failed to set the system time");
                 }
             }
             else
@@ -697,7 +699,9 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     memcpy(eventIdStr, pRequest->gameStateData.status.currentEventIdB64, sizeof(pRequest->gameStateData.status.currentEventIdB64));
 
     // Prepare full request json
-    HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
+    // HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
+    HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)heap_caps_malloc(sizeof(HTTPGameClient_Request), MALLOC_CAP_SPIRAM);
+    
     pHttpRequest->methodType = HTTPGAMECLIENT_HTTPMETHOD_POST;
     pHttpRequest->requestType = HTTPGAMECLIENT_HTTPREQUEST_HEARTBEAT;
     pHttpRequest->waitTimeMs = pRequest->waitTimeMs;
@@ -740,7 +744,8 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     {
         ESP_LOGE(TAG, "GameStateRequest failed to obtain mutex");
     }
-    free((void*)pHttpRequest);
+    // free((void*)pHttpRequest);
+    heap_caps_free((void*)pHttpRequest);
 }
 
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)

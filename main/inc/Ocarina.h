@@ -11,6 +11,7 @@
 
 #define OCARINA_SONG_MAX_NAME_LENGTH 32
 #define OCARINA_MAX_SONG_KEYS 8
+#define OCARINA_NUM_SONGS 12
 
 typedef enum OcarinaKey_t
 {
@@ -34,14 +35,24 @@ typedef struct OcarinaKeySet_t {
 } OcarinaKeySet;
 
 
+typedef struct OcarinaSongStatus_t
+{
+    bool unlocked;
+} OcarinaSongStatus;
+
+
 typedef struct Ocarina_t
 {
     bool initialized;
+    bool enabled;
     CircularBuffer ocarinaKeys;
+    OcarinaSongStatus songStatus[OCARINA_NUM_SONGS];
     NotificationDispatcher* pNotificationDispatcher;
     UserSettings* pUserSettings;
 } Ocarina;
 
+
 esp_err_t Ocarina_Init(Ocarina* this, NotificationDispatcher* pNotificationDispatcher, UserSettings* userSettings);
+esp_err_t Ocarina_SetModeEnabled(Ocarina *this, bool enabled);
 
 #endif // OCARINA_H_

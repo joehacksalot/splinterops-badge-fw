@@ -4,7 +4,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 
-#include "AudioUtils.h"
 #include "NotificationDispatcher.h"
 #include "TaskPriorities.h"
 #include "TouchSensor.h"
@@ -358,7 +357,10 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
         }
         else
         {
-            SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+            if (this->touchSoundEnabled)
+            {
+                SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+            }
         }
     }
 }
