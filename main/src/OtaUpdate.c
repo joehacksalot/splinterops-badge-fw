@@ -110,6 +110,7 @@ static void OtaUpdateTask(void *pvParameters)
 {
     OtaUpdate * this = (OtaUpdate *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
 
     char * response_buffer = calloc(1, HTTP_RESPONSE_BUFFER_SIZE + 1); // +1 for null terminator
     // Subscribe to wifi client events

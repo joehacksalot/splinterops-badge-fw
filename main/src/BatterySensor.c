@@ -109,6 +109,7 @@ static void BatterySensorTask(void *pvParameters)
 {
     BatterySensor *this = (BatterySensor *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     
     //Continuously sample ADC1
     while (true)

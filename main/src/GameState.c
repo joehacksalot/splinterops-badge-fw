@@ -10,6 +10,7 @@
 #include "NotificationDispatcher.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
+#include "Utilities.h"
 
 #define GAME_STATUS_FILE_NAME MOUNT_PATH "/game"
 #define MUTEX_MAX_WAIT_MS                (50)
@@ -61,6 +62,7 @@ static void GameState_Task(void *pvParameters)
 {
     GameState *this = (GameState *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
 
     // TEST CODE
     // vTaskDelay(pdMS_TO_TICKS(20000));

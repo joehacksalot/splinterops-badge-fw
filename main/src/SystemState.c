@@ -230,6 +230,7 @@ static void SystemStateTask(void *pvParameters)
 {
     SystemState * this = (SystemState *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     bool prevNetworkTestActive = this->networkTestActive;
     while (true)
     {

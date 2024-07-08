@@ -23,6 +23,7 @@
 #include "console_system.h"
 #include "Console.h"
 #include "TaskPriorities.h"
+#include "Utilities.h"
 
 #ifdef CONFIG_ESP_CONSOLE_USB_CDC
 #error Incompatible with USB CDC console
@@ -172,6 +173,7 @@ esp_err_t Console_Init(void)
 
 static void ConsoleTask(void *pvParameters)
 {
+    registerCurrentTaskInfo();
     // Main loop 
     while(true) 
     {

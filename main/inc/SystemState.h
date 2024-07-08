@@ -43,7 +43,6 @@ typedef struct SystemState_t
     BadgeStats badgeStats;
     BatterySensor batterySensor;
     BleControl *pBleControl;
-    // BleCameControl *pBleGameControl;
     GameState gameState;
     GpioControl gpioControl;
     LedControl ledControl;

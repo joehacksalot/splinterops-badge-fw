@@ -13,6 +13,7 @@
 
 #include "console_system.h"
 #include "Console.h"
+#include "Utilities.h"
 
 static const char *TAG = "console_system";
 
@@ -65,6 +66,7 @@ static int get_task_info(int argc, char **argv)
     vTaskList(task_list_buffer);
     fputs(task_list_buffer, stdout);
     free(task_list_buffer);
+    displayTaskInfoArray();
     return 0;
 }
 #endif // CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS

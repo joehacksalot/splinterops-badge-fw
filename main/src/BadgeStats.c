@@ -9,6 +9,7 @@
 #include "BatterySensor.h"
 #include "DiscUtils.h"
 #include "TaskPriorities.h"
+#include "Utilities.h"
 
 #define STATS_FILE_NAME       MOUNT_PATH "/stats"
 #define BADGE_WRITE_PERIOD_MS (15 * 60 * 1000)
@@ -49,6 +50,7 @@ static void BadgeStatsTask(void *pvParameters)
 {
     BadgeStats *this = (BadgeStats *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     while (true)
     {
         if (this->updateNeeded)

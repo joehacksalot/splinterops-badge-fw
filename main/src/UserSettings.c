@@ -81,6 +81,7 @@ static void UserSettings_Task(void *pvParameters)
 {
     UserSettings *this = (UserSettings *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     while (true)
     {
         if (this->updateNeeded)

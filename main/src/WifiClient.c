@@ -7,6 +7,7 @@
 #include "NotificationDispatcher.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
+#include "Utilities.h"
 
 // Define events for wifi
 #define WIFI_CONNECTED          BIT0
@@ -197,6 +198,7 @@ static void _WifiTask(void *pvParameters)
     WifiClient *this = (WifiClient *)pvParameters;
     assert(this);
     assert(this->clientMutex);
+    registerCurrentTaskInfo();
 
     while (true)
     {

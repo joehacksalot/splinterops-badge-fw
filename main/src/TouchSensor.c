@@ -11,6 +11,7 @@
 #include "NotificationDispatcher.h"
 #include "TouchSensor.h"
 #include "TaskPriorities.h"
+#include "Utilities.h"
 
 // Touch pad settings
 #define TOUCH_THRESHOLD_NONE 0
@@ -81,6 +82,7 @@ static void TouchSensorTask(void *pvParameters)
 {
     TouchSensor *this = (TouchSensor *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     while (true)
     {
         MonitorTouchSensors(this);
@@ -164,7 +166,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
             {
                 if (this->touchSensorActive[i] != TOUCH_SENSOR_EVENT_RELEASED)
                 {
-                    ESP_LOGI(TOUCH_TAG, "Touch %d Released", i);
+                    ESP_LOGD(TOUCH_TAG, "Touch %d Released", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_RELEASED;
                     this->touchSensorActiveTimeStamp[i] = curTime;
 

@@ -373,6 +373,7 @@ static void LedControlTask(void *pvParameters)
 {
     LedControl * this = (LedControl *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     while (true)
     {
         LedControl_ServiceDrawJsonLedSequence          ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_LED_SEQUENCE,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_LED_SEQUENCE     );

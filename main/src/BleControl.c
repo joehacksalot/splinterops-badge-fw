@@ -748,6 +748,7 @@ static void BleXferControlTask(void *pvParameters)
 {
     BleControl *this = (BleControl *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
     while (true)
     {
         if(this->bleXferDisableSem)

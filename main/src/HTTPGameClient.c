@@ -577,6 +577,7 @@ static void HTTPGameClientTask(void *pvParameters)
 {
     HTTPGameClient * this = (HTTPGameClient *)pvParameters;
     assert(this);
+    registerCurrentTaskInfo();
 
     while(true)
     {
