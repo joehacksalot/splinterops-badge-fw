@@ -32,8 +32,8 @@ const OcarinaKeySet OcarinaSongKeySets[OCARINA_NUM_SONGS] =
 //   OCARINA_KEY_A       D4   TOUCH_SENSOR_LEFT_WING_FEATHER_2    T7
 //   OCARINA_KEY_X       B3   TOUCH_SENSOR_LEFT_WING_FEATHER_4    T5
 //   OCARINA_KEY_Y       A3   TOUCH_SENSOR_TAIL_FEATHER           T4
-//   OCARINA_KEY_L       D3   TOUCH_SENSOR_RIGHT_WING_FEATHER_1   T0
 //   OCARINA_KEY_R       F3   TOUCH_SENSOR_RIGHT_WING_FEATHER_3   T2
+//   OCARINA_KEY_L       D3   TOUCH_SENSOR_RIGHT_WING_FEATHER_1   T0
 
 
 static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
