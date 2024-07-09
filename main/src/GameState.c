@@ -58,6 +58,31 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     return ESP_OK;
 }
 
+void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs)
+{
+    ESP_LOGI(TAG, "Current heartbeat time %d", waitTimeMs);
+    this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(waitTimeMs);
+    this->sendHeartbeatImmediately = false;
+    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    {
+        HeartBeatRequest heartBeatRequest = { .gameStateData = this->gameStateData, .badgeStats = this->pBadgeStats->badgeStats, .waitTimeMs = 0, .numPeerReports = this->numPeerReports };
+        memcpy(heartBeatRequest.badgeIdB64, this->pUserSettings->badgeIdB64, sizeof(heartBeatRequest.badgeIdB64));
+        memcpy(heartBeatRequest.keyB64, this->pUserSettings->keyB64, sizeof(heartBeatRequest.keyB64));
+        memcpy(heartBeatRequest.peerReports, this->peerReports, sizeof(heartBeatRequest.peerReports));
+        NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, &heartBeatRequest, sizeof(heartBeatRequest), DEFAULT_NOTIFY_WAIT_DURATION);
+        hashmap_clear(&this->peerMap);
+        memset(this->peerReports, 0, sizeof(this->peerReports));
+        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        {
+            ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
+        }
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
+    }
+}
+
 static void GameState_Task(void *pvParameters)
 {
     GameState *this = (GameState *)pvParameters;
@@ -107,27 +132,7 @@ static void GameState_Task(void *pvParameters)
                 waitTimeMs = GAME_HEARTBEAT_INTERVAL_MS;
             }
 
-            ESP_LOGI(TAG, "Current heartbeat time %d", waitTimeMs);
-            this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(waitTimeMs);
-            this->sendHeartbeatImmediately = false;
-            if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
-            {
-                HeartBeatRequest heartBeatRequest = { .gameStateData = this->gameStateData, .badgeStats = this->pBadgeStats->badgeStats, .waitTimeMs = 0, .numPeerReports = this->numPeerReports };
-                memcpy(heartBeatRequest.badgeIdB64, this->pUserSettings->badgeIdB64, sizeof(heartBeatRequest.badgeIdB64));
-                memcpy(heartBeatRequest.keyB64, this->pUserSettings->keyB64, sizeof(heartBeatRequest.keyB64));
-                memcpy(heartBeatRequest.peerReports, this->peerReports, sizeof(heartBeatRequest.peerReports));
-                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, &heartBeatRequest, sizeof(heartBeatRequest), DEFAULT_NOTIFY_WAIT_DURATION);
-                hashmap_clear(&this->peerMap);
-                memset(this->peerReports, 0, sizeof(this->peerReports));
-                if (xSemaphoreGive(this->mutex) != pdTRUE)
-                {
-                    ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
-                }
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
-            }
+            GameState_SendHeartBeat(this, waitTimeMs);
         }
 
         vTaskDelay(pdMS_TO_TICKS(GAME_TASK_DELAY_MS));
