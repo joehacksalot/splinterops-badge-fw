@@ -7,5 +7,6 @@
 
 extern void registerCurrentTaskInfo(void);
 extern void displayTaskInfoArray(void);
+extern int GetBadgeType(void);
 
 #endif // UTILITIES_H_

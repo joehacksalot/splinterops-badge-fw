@@ -170,26 +170,32 @@ void _WifiClient_Enable(WifiClient *this)
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_scan_count, ap_info));  // esp_wifi_scan_get_ap_records clears memory allocated from scan_start
         ESP_LOGI(TAG, "Total APIs scanned: %d", ap_scan_count);
 
+
         for(uint32_t i = 0; i < ap_scan_count; ++i)
         {
             if(strncmp((char*)ap_info[i].ssid, CUSTOM_SSID, sizeof(ap_info[i].ssid)) == 0)
             {
-                ESP_LOGI(TAG, "Found AP(%s)", CUSTOM_SSID);
+                ESP_LOGI(TAG, "Custom AP Found (%s)", CUSTOM_SSID);
                 strncpy((char*)this->wifiConfig.sta.ssid, CUSTOM_SSID, sizeof(this->wifiConfig.sta.ssid));
                 strncpy((char*)this->wifiConfig.sta.password, CUSTOM_PASS, sizeof(this->wifiConfig.sta.password));
                 ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
                 ESP_ERROR_CHECK(esp_wifi_start());
                 break;
-            }else if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
-            {
-                ESP_LOGI(TAG, "Found AP(%s)", CONFIG_WIFI_SSID);
-                strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
-                strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
-                ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
-                ESP_ERROR_CHECK(esp_wifi_start());
-                break;
             }
         }
+
+        // for(uint32_t i = 0; i < ap_scan_count; ++i)
+        // {
+        //     if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
+        //     {
+        //         ESP_LOGI(TAG, "Hardcoded AP Found (%s)", CONFIG_WIFI_SSID);
+        //         strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
+        //         strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
+        //         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
+        //         ESP_ERROR_CHECK(esp_wifi_start());
+        //         break;
+        //     }
+        // }
 
         this->state = WIFI_CLIENT_STATE_ATTEMPTING;
     }

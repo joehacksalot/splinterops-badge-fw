@@ -1251,16 +1251,7 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
 
         // Write Badge_Type
         length = 1;
-        int coded_badge_type;
-        #if defined(TRON_BADGE)
-            coded_badge_type = 1;
-        #elif defined(REACTOR_BADGE)
-            coded_badge_type = 2;
-        #elif defined(CREST_BADGE)
-            coded_badge_type = 3;
-        #else
-            coded_badge_type = 0;
-        #endif
+        int coded_badge_type = GetBadgeType();
         memcpy((void*)&rsp.attr_value.value+printed_bytes, &coded_badge_type, length);
         printed_bytes += length;
         
