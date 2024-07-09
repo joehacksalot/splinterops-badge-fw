@@ -198,7 +198,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
     ESP_ERROR_CHECK(BleControl_Init(this->pBleControl, &this->notificationDispatcher, &this->userSettings, &this->gameState));
-    ESP_ERROR_CHECK(WifiClient_Init(&this->wifiClient, &this->notificationDispatcher));
+    ESP_ERROR_CHECK(WifiClient_Init(&this->wifiClient, &this->notificationDispatcher, &this->userSettings));
     ESP_ERROR_CHECK(OtaUpdate_Init(&this->otaUpdate, &this->wifiClient, &this->notificationDispatcher));
     ESP_ERROR_CHECK(HTTPGameClient_Init(&this->httpGameClient, &this->wifiClient, &this->notificationDispatcher, &this->batterySensor));
 
@@ -540,6 +540,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
             {
                 ESP_LOGW(TAG, "Failed to update user settings");
             }
+            GameState_SendHeartBeat(&this->gameState, 0);
         }
         else
         {

@@ -42,3 +42,19 @@ void displayTaskInfoArray(void) {
         ESP_LOGI("TaskInfo", "Task name: %s, Core: %d", taskInfoArray[i].taskName, taskInfoArray[i].coreID);
     }
 }
+
+int GetBadgeType(void)
+{
+    int coded_badge_type;
+    #if defined(TRON_BADGE)
+        coded_badge_type = 1;
+    #elif defined(REACTOR_BADGE)
+        coded_badge_type = 2;
+    #elif defined(CREST_BADGE)
+        coded_badge_type = 3;
+    #else
+        coded_badge_type = 0;
+    #endif
+    return coded_badge_type;
+}
+

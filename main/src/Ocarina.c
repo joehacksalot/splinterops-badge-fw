@@ -77,15 +77,15 @@ static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t 
     Ocarina *this = (Ocarina *)pObj;
     assert(this);
     assert(notificationData);
-    TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
+    TouchSensorEventNotificationData *touchNotificationData = (TouchSensorEventNotificationData *)notificationData;
     if (!this->enabled)
     {
         return;
     }
 
-    if (touchNotificationData.touchSensorEvent == TOUCH_SENSOR_EVENT_TOUCHED)
+    if (touchNotificationData->touchSensorEvent == TOUCH_SENSOR_EVENT_TOUCHED)
     {
-        OcarinaKey key = touchNotificationData.touchSensorIdx;
+        OcarinaKey key = touchNotificationData->touchSensorIdx;
         if (CircularBuffer_Count(&this->ocarinaKeys) == OCARINA_MAX_SONG_KEYS)
         {
             OcarinaKey discard;

@@ -10,6 +10,7 @@
 #include "esp_err.h"
 
 #include "NotificationDispatcher.h"
+#include "UserSettings.h"
 
 typedef enum WifiClient_State_e
 {
@@ -38,9 +39,10 @@ typedef struct WifiClient_t
     int32_t numClients;
 
     NotificationDispatcher *pNotificationDispatcher;
+    UserSettings *pUserSettings;
 } WifiClient;
 
-esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher);
+esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings);
 
 // Immediately enable wifi
 // DOES NOT turn wifi off on its own

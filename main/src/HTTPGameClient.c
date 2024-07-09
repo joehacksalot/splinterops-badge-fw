@@ -36,7 +36,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
 #define HTTP_REQUEST_EXPIRE_TIME_MS WIFI_WAIT_TIMEOUT_MS
 
 static const char * TAG             = "HGC";
-static const char * HEARTBEAT_URL   = "https://heartbeat-l6sklay5ca-uc.a.run.app/";
+static const char * HEARTBEAT_URL   = "https://us-central1-iwc-dc32.cloudfunctions.net/heartbeat";
 static const char * PEER_REPORT_JSON_TEMPLATE = "{\"uuid\":\"%s\", \"peakRssi\":%d, \"eventUuid\":\"%s\"}";
 static const char * HEARTBEAT_JSON_TEMPLATE   = 
 "{\
@@ -45,6 +45,8 @@ static const char * HEARTBEAT_JSON_TEMPLATE   =
     \"provisionKey\": \"0ec91eff86a15baad0759477770f0698\",\
     \"peerReport\": [%s],\
     \"enrolledEvent\": \"%s\",\
+    \"badgeType\": \"%d\",\
+    \"songs\": %s,\
     \"stats\":{\
       \"numPowerOns\": %d,\
       \"numTouches\": %d,\
@@ -691,9 +693,10 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         }
         else
         {
+            // TODO: CHECK OUTPUT OF SNPRINTF BEFORE ADDING
             offset += snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, ",");
         }
-        offset += snprintf(this->peerReport + offset, sizeof(this->peerReport), PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].badgeIdB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
+        offset += snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].badgeIdB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
     }
 
     char eventIdStr[sizeof(pRequest->gameStateData.status.currentEventIdB64)+1] = {0};
@@ -709,10 +712,14 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     
     struct timeval tv;
     gettimeofday(&tv, NULL); // timezone structure is obsolete
+    int coded_badge_type = GetBadgeType();
+    char songsStr[64] = "[1,2,3,6,7]";
 
     int len = snprintf((char *)pHttpRequest->pData, sizeof(pHttpRequest->pData), HEARTBEAT_JSON_TEMPLATE, 
                         pRequest->badgeIdB64, pRequest->keyB64, this->peerReport,
                         eventIdStr,
+                        coded_badge_type,
+                        songsStr,
                         pRequest->badgeStats.numPowerOns,
                         pRequest->badgeStats.numTouches,
                         pRequest->badgeStats.numTouchCmds,
