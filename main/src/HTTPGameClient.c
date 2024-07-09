@@ -693,6 +693,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         }
         else
         {
+            // TODO: CHECK OUTPUT OF SNPRINTF BEFORE ADDING
             offset += snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, ",");
         }
         offset += snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].badgeIdB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
