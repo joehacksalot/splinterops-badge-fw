@@ -540,6 +540,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
             {
                 ESP_LOGW(TAG, "Failed to update user settings");
             }
+            WifiClient_RequestConnect(&this->wifiClient, 0);
         }
         else
         {

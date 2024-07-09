@@ -161,9 +161,6 @@ void _WifiClient_Enable(WifiClient *this)
             ESP_LOGE(TAG, "Failed to start WiFi. error code = %s", esp_err_to_name(ret));
         }
 
-        // TODO: Change this to use actual AP list from user
-        // CONFIG_WIFI_SSID
-        // CONFIG_WIFI_PASSWORD
         char CUSTOM_SSID[sizeof(this->pUserSettings->settings.wifiSettings.ssid)];
         char CUSTOM_PASS[sizeof(this->pUserSettings->settings.wifiSettings.password)];
         strncpy(CUSTOM_SSID, this->pUserSettings->settings.wifiSettings.ssid, sizeof(CUSTOM_SSID));
