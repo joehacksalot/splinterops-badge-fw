@@ -540,6 +540,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
             {
                 ESP_LOGW(TAG, "Failed to update user settings");
             }
+            WifiClient_Disconnect(&this->wifiClient);
             GameState_SendHeartBeat(&this->gameState, 0);
         }
         else
