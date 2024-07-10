@@ -48,11 +48,10 @@ typedef struct Ocarina_t
     CircularBuffer ocarinaKeys;
     OcarinaSongStatus songStatus[OCARINA_NUM_SONGS];
     NotificationDispatcher* pNotificationDispatcher;
-    UserSettings* pUserSettings;
 } Ocarina;
 
 
-esp_err_t Ocarina_Init(Ocarina* this, NotificationDispatcher* pNotificationDispatcher, UserSettings* userSettings);
+esp_err_t Ocarina_Init(Ocarina* this, NotificationDispatcher* pNotificationDispatcher);
 esp_err_t Ocarina_SetModeEnabled(Ocarina *this, bool enabled);
 
 #endif // OCARINA_H_

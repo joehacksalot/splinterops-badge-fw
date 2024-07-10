@@ -46,7 +46,7 @@ static const char * HEARTBEAT_JSON_TEMPLATE   =
     \"peerReport\": [%s],\
     \"enrolledEvent\": \"%s\",\
     \"badgeType\": \"%d\",\
-    \"songs\": %s,\
+    \"songs\": [%s],\
     \"stats\":{\
       \"numPowerOns\": %d,\
       \"numTouches\": %d,\
@@ -274,7 +274,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
         if (root != NULL)
         {
             HeartBeatResponse tmpHeartBeatResponse = {0};
-            cJSON *stonesArray = cJSON_GetObjectItem(root,"stones");
+            cJSON *stonesArray = cJSON_GetObjectItem(root, "stones");
             if (stonesArray != NULL)
             {
                 int stonesArraySize = cJSON_GetArraySize(stonesArray);
@@ -284,27 +284,27 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                     char * colorStr = color->valuestring;
                     if (strcmp(colorStr, "Red") == 0)
                     {
-                        tmpHeartBeatResponse.status.red = 1;
+                        tmpHeartBeatResponse.status.colorBits |= (1 << RED_SHIFT);
                     }
                     else if (strcmp(colorStr, "Green") == 0)
                     {
-                        tmpHeartBeatResponse.status.green = 1;
+                        tmpHeartBeatResponse.status.colorBits |= (1 << GREEN_SHIFT);
                     }
                     else if (strcmp(colorStr, "Yellow") == 0)
                     {
-                        tmpHeartBeatResponse.status.yellow = 1;
+                        tmpHeartBeatResponse.status.colorBits |= (1 << YELLOW_SHIFT);
                     }
                     else if (strcmp(colorStr, "Magenta") == 0)
                     {
-                        tmpHeartBeatResponse.status.magenta = 1;
+                        tmpHeartBeatResponse.status.colorBits |= (1 << MAGENTA_SHIFT);
                     }
                     else if (strcmp(colorStr, "Blue") == 0)
                     {
-                        tmpHeartBeatResponse.status.blue = 1;
+                        tmpHeartBeatResponse.status.colorBits |= (1 << BLUE_SHIFT);
                     }
                     else if (strcmp(colorStr, "Cyan") == 0)
                     {
-                        tmpHeartBeatResponse.status.cyan = 1;
+                        tmpHeartBeatResponse.status.colorBits |= (1 << CYAN_SHIFT);
                     }
                     else
                     {
@@ -316,10 +316,10 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
             // {
                 // ESP_LOGE(TAG, "No stones array found");
             // }
-            cJSON *event = cJSON_GetObjectItem(root,"event");
+            cJSON *event = cJSON_GetObjectItem(root, "event");
             if (event != NULL)
             {
-                cJSON *eventId = cJSON_GetObjectItem(event,"event");
+                cJSON *eventId = cJSON_GetObjectItem(event, "event");
                 if (eventId != NULL)
                 {
                     strncpy((char *)tmpHeartBeatResponse.status.currentEventIdB64, eventId->valuestring, sizeof(tmpHeartBeatResponse.status.currentEventIdB64));
@@ -335,7 +335,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 //     // TEST CODE
                 //     strcpy((char *) tmpHeartBeatResponse.status.currentEventIdB64, "event112233!");
                 // }
-                cJSON *stoneColor = cJSON_GetObjectItem(event,"stoneColor");
+                cJSON *stoneColor = cJSON_GetObjectItem(event, "stoneColor");
                 if (stoneColor != NULL)
                 {
                     char * colorStr = stoneColor->valuestring;
@@ -375,7 +375,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 //     tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
                 // }
                 
-                cJSON *power = cJSON_GetObjectItem(event,"power");
+                cJSON *power = cJSON_GetObjectItem(event, "power");
                 if (power != NULL)
                 {
                     double powerDbl = power->valuedouble;
@@ -388,7 +388,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 //     tmpHeartBeatResponse.status.powerLevel = 70;
                 // }
                 
-                cJSON *msRemaining = cJSON_GetObjectItem(event,"msRemaining");
+                cJSON *msRemaining = cJSON_GetObjectItem(event, "msRemaining");
                 if (msRemaining != NULL)
                 {
                     tmpHeartBeatResponse.status.mSecRemaining = (uint32_t)msRemaining->valueint;
@@ -405,7 +405,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 strncpy((char *)tmpHeartBeatResponse.status.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.currentEventIdB64));
             }
             
-            cJSON *timestamp = cJSON_GetObjectItem(root,"timestamp");
+            cJSON *timestamp = cJSON_GetObjectItem(root, "timestamp");
             if (timestamp != NULL)
             {
                 struct timeval newTime = { .tv_sec = (time_t)timestamp->valueint, .tv_usec = 0 };
@@ -428,6 +428,28 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 ESP_LOGE(TAG, "No timestamp found");
             //     // TEST CODE
             //     tmpHeartBeatResponse.status.mSecRemaining = 30*1000;
+            }
+
+            cJSON *songsArray = cJSON_GetObjectItem(root, "songs");
+            if (songsArray != NULL)
+            {
+                int songsArraySize = cJSON_GetArraySize(songsArray);
+                for (int songsIndex = 0; songsIndex < songsArraySize; songsIndex++)
+                {
+                    cJSON *song = cJSON_GetArrayItem(songsArray, songsIndex);
+                    int songIndex = (int)song->valuedouble;
+                    if (songIndex > 0 && songIndex <= OCARINA_NUM_SONGS) {
+                        tmpHeartBeatResponse.status.songUnlockedBits |= (1 << (songIndex - 1));
+                    }
+                    else
+                    {
+                        ESP_LOGE(TAG, "Song index %d out of range", songIndex);
+                    }
+                }
+            }
+            else
+            {
+                ESP_LOGE(TAG, "No timestamp found");
             }
             cJSON_Delete(root);
             this->responseStruct = tmpHeartBeatResponse;
@@ -683,20 +705,35 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
 
     // Prepare peer report json
     memset(this->peerReport, 0, sizeof(this->peerReport));
-    bool first = true;
     int offset = 0;
-    for (int i = 0; i < MIN(pRequest->numPeerReports, MAX_PEER_MAP_DEPTH); i++)
+    if (pRequest->numPeerReports > 0)
     {
-        if (first)
+        offset = snprintf(this->peerReport, sizeof(this->peerReport), PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[0].badgeIdB64, pRequest->peerReports[0].peakRssi, pRequest->peerReports[0].eventIdB64);
+        if (offset < 0)
         {
-            first = false;
+            ESP_LOGE(TAG, "Failed to add peer report to json");
+            return;
         }
-        else
+    }
+
+    for (int i = 1; i < MIN(pRequest->numPeerReports, MAX_PEER_MAP_DEPTH); i++)
+    {
+        int res1 = snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, ",");
+        if (res1 < 0)
         {
-            // TODO: CHECK OUTPUT OF SNPRINTF BEFORE ADDING
-            offset += snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, ",");
+            ESP_LOGE(TAG, "Failed to add peer report to json");
+            return;
         }
-        offset += snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].badgeIdB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
+
+        offset += res1;
+        int res2 = snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].badgeIdB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
+        if (res2 < 0)
+        {
+            ESP_LOGE(TAG, "Failed to add peer report to json");
+            return;
+        }
+
+        offset += res2;
     }
 
     char eventIdStr[sizeof(pRequest->gameStateData.status.currentEventIdB64)+1] = {0};
@@ -713,7 +750,39 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     struct timeval tv;
     gettimeofday(&tv, NULL); // timezone structure is obsolete
     int coded_badge_type = GetBadgeType();
-    char songsStr[64] = "[1,2,3,6,7]";
+    char songsStr[27] = {0}; // size based on max possible size of song string with null terminator: "1,2,3,4,5,6,7,8,9,10,11,12"
+    int songStrOffset = 0;
+    bool first = true;
+    for (int i = 0; i < OCARINA_NUM_SONGS; i++)
+    {
+        if (pRequest->gameStateData.status.songUnlockedBits & (1 << i))
+        {
+            if (first)
+            {
+                first = false;
+            }
+            else
+            {
+                int res1 = snprintf(songsStr + songStrOffset, sizeof(songsStr) - songStrOffset, ",");
+                if (res1 < 0)
+                {
+                    ESP_LOGE(TAG, "Failed to add song to json");
+                    return;
+                }
+
+                songStrOffset += res1;
+            }
+
+            int res2 = snprintf(songsStr + songStrOffset, sizeof(songsStr) - songStrOffset, "%d", i + 1);
+            if (res2 < 0)
+            {
+                ESP_LOGE(TAG, "Failed to add song to json");
+                return;
+            }
+
+            songStrOffset += res2;
+        }
+    }
 
     int len = snprintf((char *)pHttpRequest->pData, sizeof(pHttpRequest->pData), HEARTBEAT_JSON_TEMPLATE, 
                         pRequest->badgeIdB64, pRequest->keyB64, this->peerReport,

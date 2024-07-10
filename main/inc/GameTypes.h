@@ -13,6 +13,12 @@
 #define MAX_OBSERVED_EVENT_QUEUE_SIZE (10)
 #define EVENT_ID_SIZE                 (8)
 #define EVENT_ID_B64_SIZE             (13)
+#define RED_SHIFT                     (0)
+#define YELLOW_SHIFT                  (1)
+#define BLUE_SHIFT                    (2)
+#define CYAN_SHIFT                    (3)
+#define MAGENTA_SHIFT                 (4)
+#define GREEN_SHIFT                   (5)
 
 typedef enum GameState_EventColor_e
 {
@@ -27,16 +33,12 @@ typedef enum GameState_EventColor_e
 
 typedef struct GameStatus_t
 {
-    uint8_t red;
-    uint8_t yellow;
-    uint8_t blue;
-    uint8_t cyan;
-    uint8_t magenta;
-    uint8_t green;
+    uint8_t colorBits; // Red, Yellow, Blue, Cyan, Magenta, Green
     char currentEventIdB64[EVENT_ID_B64_SIZE];
     GameState_EventColor currentEventColor;
     uint8_t powerLevel;
     uint32_t mSecRemaining;
+    uint16_t songUnlockedBits;
 } GameStatus;
 
 typedef struct PeerReport_t // Sent from BleControl 
