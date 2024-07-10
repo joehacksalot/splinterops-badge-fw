@@ -181,7 +181,7 @@ void _WifiClient_Enable(WifiClient *this)
                 ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
                 ESP_ERROR_CHECK(esp_wifi_start());
                 break;
-            }else if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
+            } else if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
             {
                 ESP_LOGI(TAG, "Hardcoded AP Found (%s)", CONFIG_WIFI_SSID);
                 strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
@@ -191,6 +191,19 @@ void _WifiClient_Enable(WifiClient *this)
                 break;
             }
         }
+
+        // for(uint32_t i = 0; i < ap_scan_count; ++i)
+        // {
+        //     if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
+        //     {
+        //         ESP_LOGI(TAG, "Hardcoded AP Found (%s)", CONFIG_WIFI_SSID);
+        //         strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
+        //         strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
+        //         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
+        //         ESP_ERROR_CHECK(esp_wifi_start());
+        //         break;
+        //     }
+        // }
 
         this->state = WIFI_CLIENT_STATE_ATTEMPTING;
     }

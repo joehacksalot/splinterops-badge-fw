@@ -9,9 +9,10 @@
 #include "BadgeStats.h"
 #include "GameTypes.h"
 #include "NotificationDispatcher.h"
+#include "Ocarina.h"
 #include "UserSettings.h"
 
-#define EVENT_HEARTBEAT_INTERVAL_MS      (60*1000)
+#define EVENT_HEARTBEAT_INTERVAL_MS (60 * 1000)
 
 typedef HASHMAP(char, char) SeenEventMap_t;
 

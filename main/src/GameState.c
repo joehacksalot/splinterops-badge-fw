@@ -8,6 +8,7 @@
 #include "DiscUtils.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
+#include "SynthModeNotifications.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
 #include "Utilities.h"
@@ -38,7 +39,6 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     for (int i = 0; i < MAX_PEER_MAP_DEPTH; ++i)
     {
         mapIndices[i] = i;
-
     }
 
     hashmap_init(&this->peerMap, hashmap_hash_string, strcmp);
@@ -54,6 +54,7 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     assert(this->mutex);
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &GameState_NotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &GameState_NotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, &GameState_NotificationHandler, this));
     xTaskCreate(GameState_Task, "GameStateTask", configMINIMAL_STACK_SIZE * 10, this, GAME_STATE_TASK_PRIORITY, NULL);
     return ESP_OK;
 }
@@ -343,10 +344,8 @@ static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespons
         {
             strncpy(oldEventIdB64, this->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
             this->gameStateData.status = response.status;
-
             ESP_LOGI(TAG, "Old event id: %s", oldEventIdB64);
             ESP_LOGI(TAG, "New status received from cloud. Updating local record");
-
             if (strncmp(oldEventIdB64, response.status.currentEventIdB64, EVENT_ID_B64_SIZE) != 0)
             {
                 if (!_GameState_IsBlankEvent(response.status.currentEventIdB64))
@@ -365,6 +364,7 @@ static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespons
             {
                 ESP_LOGD(TAG, "Event id did not change");
             }
+
             if (xSemaphoreGive(this->mutex) != pdTRUE)
             {
                 ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
@@ -374,7 +374,6 @@ static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespons
         {
             ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
         }
-
     }
 }
 
@@ -440,6 +439,26 @@ static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase
             else
             {
                 ESP_LOGE(TAG, "NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV event with NULL notification data");
+            }
+            break;
+        case NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED:
+            ESP_LOGI(TAG, "Ocarina song match notification received");
+            if (notificationData != NULL)
+            {
+                int songIndex = *((int *)notificationData);
+                ESP_LOGI(TAG, "Song index %d matched, checking unlock status", songIndex);
+                if (!(this->gameStateData.status.songUnlockedBits & (1 << songIndex)))
+                {
+                    ESP_LOGI(TAG, "Unlocked song with index %d", songIndex);
+                    this->gameStateData.status.songUnlockedBits |= (1 << songIndex); 
+                    PlaySongEventNotificationData unlockSongNotificationData;
+                    unlockSongNotificationData.song = SONG_SECRET_SOUND;
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &unlockSongNotificationData, sizeof(unlockSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                }
+            }
+            else
+            {
+                ESP_LOGE(TAG, "NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED event with NULL notification data");
             }
             break;
         default:

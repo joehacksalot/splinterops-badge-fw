@@ -38,7 +38,7 @@ const OcarinaKeySet OcarinaSongKeySets[OCARINA_NUM_SONGS] =
 
 static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 
-esp_err_t Ocarina_Init(Ocarina *this, NotificationDispatcher *pNotificationDispatcher, UserSettings* pUserSettings)
+esp_err_t Ocarina_Init(Ocarina *this, NotificationDispatcher *pNotificationDispatcher)
 {
     assert(this);
     memset(this, 0, sizeof(Ocarina));
@@ -48,9 +48,8 @@ esp_err_t Ocarina_Init(Ocarina *this, NotificationDispatcher *pNotificationDispa
         assert(CircularBuffer_Init(&this->ocarinaKeys, OCARINA_MAX_SONG_KEYS, sizeof(OcarinaKey)) == ESP_OK);
         this->enabled = false;
         this->pNotificationDispatcher = pNotificationDispatcher;
-        this->pUserSettings = pUserSettings;
         ESP_LOGI(TAG, "Ocarina successfully handcrafted");
-        NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &Ocarina_TouchSensorNotificationHandler, this);
+        ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &Ocarina_TouchSensorNotificationHandler, this));
         return ESP_OK;
     }
 
@@ -103,23 +102,14 @@ static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t 
                 if (CircularBuffer_MatchSequence(&this->ocarinaKeys, songKeySet.Keys, songKeySet.NumKeys) == ESP_OK)
                 {
                     ESP_LOGI(TAG, "Song Matched: %s", songKeySet.Name);
-                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                     PlaySongEventNotificationData successPlaySongNotificationData;
                     successPlaySongNotificationData.song = SONG_SUCCESS_SOUND;
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     PlaySongEventNotificationData ocarinaPlaySongNotificationData;
                     ocarinaPlaySongNotificationData.song = songKeySet.Song;
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &ocarinaPlaySongNotificationData, sizeof(ocarinaPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
-                    if (!this->songStatus[i].unlocked)
-                    {
-                        ESP_LOGI(TAG, "Unlocked song: %s", songKeySet.Name);
-                        this->songStatus[i].unlocked = true;
-                        PlaySongEventNotificationData unlockSongNotificationData;
-                        unlockSongNotificationData.song = SONG_SECRET_SOUND;
-                        NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &unlockSongNotificationData, sizeof(unlockSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
-                    }
-
                     CircularBuffer_Clear(&this->ocarinaKeys);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, &i, sizeof(int), DEFAULT_NOTIFY_WAIT_DURATION);
                     break;
                 }
             }
