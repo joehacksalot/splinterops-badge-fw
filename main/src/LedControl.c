@@ -33,6 +33,8 @@
 #define MAX_EVENT_TIME_MSEC (15*60*1000)
 
 #define LED_CONTROL_TASK_PERIOD (50)
+#define NUM_LED_NOTES (15)
+#define TOUCH_NOTE_OFFSET (7)
 
 // Internal Function Declarations
 static void LedControlTask(void *pvParameters);
@@ -91,35 +93,41 @@ typedef struct TouchMap_t
     int indexes[MAX_TOUCH_MAP_INDEX_COUNT];
 } LedMap;
 
-static const LedMap songMap[NUM_BASE_NOTES] = 
+static const LedMap songMap[NUM_LED_NOTES] = 
 {
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 // TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
-    {.numIndexes=6, .indexes={24,25,47}}, // 12  C
-    {.numIndexes=2, .indexes={26,27,24}}, // 1   C#
-    {.numIndexes=3, .indexes={28,29,30}}, // 2   D
-    {.numIndexes=3, .indexes={29,30,31}}, // 2.5 D#
-    {.numIndexes=3, .indexes={30,31,32}}, // 4   E
-    {.numIndexes=2, .indexes={33,34,24}}, // 5   F
-    {.numIndexes=0, .indexes={35,36,37}}, // 6   F#
-    {.numIndexes=2, .indexes={38,39,24}}, // 7   G
-    {.numIndexes=3, .indexes={40,41,42}}, // 8   A
-    {.numIndexes=3, .indexes={41,42,43}}, // 8.5 G#
-    {.numIndexes=3, .indexes={42,43,44}}, // 10  A#
-    {.numIndexes=2, .indexes={45,46,47}}  // 11  G
+    {.numIndexes=3, .indexes={24,25,47}}, // 12  D
+    {.numIndexes=3, .indexes={25,26,27}}, // 12.5 D#
+    {.numIndexes=3, .indexes={26,27,24}}, // 1   E
+    {.numIndexes=3, .indexes={28,29,30}}, // 2   F
+    {.numIndexes=3, .indexes={29,30,31}}, // 2.5 F#
+    {.numIndexes=3, .indexes={30,31,32}}, // 4   G
+    {.numIndexes=3, .indexes={31,32,33}}, // 4.5 G#
+    {.numIndexes=3, .indexes={33,34,24}}, // 5   A
+    {.numIndexes=3, .indexes={35,36,37}}, // 6   A#
+    {.numIndexes=3, .indexes={38,39,24}}, // 7   B
+    {.numIndexes=3, .indexes={40,41,42}}, // 8   C
+    {.numIndexes=3, .indexes={41,42,43}}, // 8.5 C#
+    {.numIndexes=3, .indexes={42,43,44}}, // 10  D
+    {.numIndexes=3, .indexes={44,45,46}}, // 10.5 D#
+    {.numIndexes=3, .indexes={45,46,47}}  // 11  E
 #elif defined(CREST_BADGE)
-    {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0    NOTE_BASE_C
-    {.numIndexes=7, .indexes={11,12,13,15,16}},      // 0.5  NOTE_BASE_CS
-    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1    NOTE_BASE_D
-    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1    NOTE_BASE_DS
-    {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2    NOTE_BASE_E
-    {.numIndexes=3, .indexes={28,29,30}},            // 3    NOTE_BASE_F
-    {.numIndexes=3, .indexes={31,32,33}},            // 4    NOTE_BASE_FS
-    {.numIndexes=3, .indexes={34,35,36}},            // 5    NOTE_BASE_G
-    {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6    NOTE_BASE_GS
-    {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7    NOTE_BASE_A
-    {.numIndexes=4, .indexes={47,48,51,52}},         // 7.5  NOTE_BASE_AS
-    {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8    NOTE_BASE_B
+    {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0    NOTE_BASE_D
+    {.numIndexes=5, .indexes={11,12,13,15,16}},      // 0.5  NOTE_BASE_DS
+    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1    NOTE_BASE_E
+    {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2    NOTE_BASE_F
+    {.numIndexes=5, .indexes={24,25,26,28,29}},      // 2.5  NOTE_BASE_FS
+    {.numIndexes=3, .indexes={28,29,30}},            // 3    NOTE_BASE_G
+    {.numIndexes=3, .indexes={30,31,32}},            // 3.5  NOTE_BASE_GS
+    {.numIndexes=3, .indexes={31,32,33}},            // 4    NOTE_BASE_A
+    {.numIndexes=3, .indexes={33,34,35}},            // 4.5  NOTE_BASE_AS
+    {.numIndexes=3, .indexes={34,35,36}},            // 5    NOTE_BASE_B
+    {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6    NOTE_BASE_C
+    {.numIndexes=5, .indexes={41,42,44,45,46}},      // 6.5  NOTE_BASE_CS
+    {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7    NOTE_BASE_D
+    {.numIndexes=5, .indexes={47,48,51,52,53}},      // 7.5  NOTE_BASE_DS
+    {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8    NOTE_BASE_E
 #endif
 };
 
@@ -141,15 +149,15 @@ static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] =
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 // TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
     {.numIndexes=6, .indexes={24,25,47,35,36,37}},  // 0  12
-    {.numIndexes=2, .indexes={26,27,24}},  // 1  1
+    {.numIndexes=3, .indexes={26,27,24}},  // 1  1
     {.numIndexes=3, .indexes={28,29,30}},  // 2  2
     {.numIndexes=3, .indexes={30,31,32}},  // 3  4
-    {.numIndexes=2, .indexes={33,34,24}},  // 4  5
+    {.numIndexes=3, .indexes={33,34,24}},  // 4  5
     // {.numIndexes=0, .indexes={0,  0,  0   }},  // 5  6
-    {.numIndexes=2, .indexes={38,39,24}},  // 6  7
+    {.numIndexes=3, .indexes={38,39,24}},  // 6  7
     {.numIndexes=3, .indexes={40,41,42}},  // 7  8
     {.numIndexes=3, .indexes={42,43,44}},  // 8  10
-    {.numIndexes=2, .indexes={45,46,47}}   // 9  11
+    {.numIndexes=3, .indexes={45,46,47}}   // 9  11
 #elif defined(CREST_BADGE)
     {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0  0
     {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1  1
@@ -900,10 +908,11 @@ static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool a
                 NoteParts parts = GetNoteParts(this->songModeRuntimeInfo.lastSongNoteChangeEventNotificationData.note);
                 if (parts.base != NOTE_BASE_NONE && parts.octave != NOTE_OCTAVE_NONE)
                 {
-                    for (int ledIndexIter = 0; ledIndexIter < songMap[parts.base].numIndexes; ledIndexIter++)
+                    int mapIndex = (parts.base + TOUCH_NOTE_OFFSET + (parts.octave * NUM_BASE_NOTES)) % NUM_LED_NOTES;
+                    for (int ledIndexIter = 0; ledIndexIter < songMap[mapIndex].numIndexes; ledIndexIter++)
                     {
                         color_t color = songColorMap[parts.octave];
-                        ret = LedControl_SetPixel(this, color, correctedPixelOffset[songMap[parts.base].indexes[ledIndexIter]]);
+                        ret = LedControl_SetPixel(this, color, correctedPixelOffset[songMap[mapIndex].indexes[ledIndexIter]]);
                     }
                 }
                 else
