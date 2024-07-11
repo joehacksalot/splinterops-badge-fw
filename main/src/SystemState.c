@@ -489,7 +489,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
         }
         {
             PlaySongEventNotificationData playSongNotificationData;
-            playSongNotificationData.song = SONG_SECRET_SOUND;
+            playSongNotificationData.song = SONG_SUCCESS_SOUND;
             NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &playSongNotificationData.song, sizeof(playSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
         }
         break;

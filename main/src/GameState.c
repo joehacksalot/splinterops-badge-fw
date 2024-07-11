@@ -421,7 +421,7 @@ static void _GameState_SendHeartbeatHandler(void *pObj, esp_event_base_t eventBa
     }
 }
 
-static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     GameState *this = (GameState *)pObj;
     assert(this);
