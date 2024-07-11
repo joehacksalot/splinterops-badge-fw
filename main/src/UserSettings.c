@@ -4,6 +4,7 @@
 #include "sha/sha_parallel_engine.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 
 #include "cJSON.h"
 
@@ -100,7 +101,7 @@ esp_err_t UserSettings_SetSelectedIndex(UserSettings *this, uint32_t selectedInd
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        ESP_LOGI(TAG, "Updating selected index to %d", selectedIndex);
+        ESP_LOGI(TAG, "Updating selected index to %lu", selectedIndex);
         this->settings.selectedIndex = selectedIndex;
         this->updateNeeded = true;
         ret = ESP_OK;

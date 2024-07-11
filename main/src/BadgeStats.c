@@ -16,7 +16,7 @@
 #define MUTEX_MAX_WAIT_MS     (50)
 static const char *TAG = "STA";
 
-static void BadgeStatsTask(void *pvParameters);
+//static void BadgeStatsTask(void *pvParameters);
 static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this);
 static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this);
 
@@ -46,22 +46,22 @@ esp_err_t BadgeStats_RegisterBatterySensor(BadgeStats *this, BatterySensor *pBat
 }
 
 
-static void BadgeStatsTask(void *pvParameters)
-{
-    BadgeStats *this = (BadgeStats *)pvParameters;
-    assert(this);
-    registerCurrentTaskInfo();
-    while (true)
-    {
-        if (this->updateNeeded)
-        {
-            ESP_LOGI(TAG, "Writing Stats File");
-            BadgeStats_WriteBadgeStatsFileToDisk(this);
-            this->updateNeeded = false;
-        }
-        vTaskDelay(pdMS_TO_TICKS(BADGE_WRITE_PERIOD_MS));
-    }
-}
+// static void BadgeStatsTask(void *pvParameters)
+// {
+//     BadgeStats *this = (BadgeStats *)pvParameters;
+//     assert(this);
+//     registerCurrentTaskInfo();
+//     while (true)
+//     {
+//         if (this->updateNeeded)
+//         {
+//             ESP_LOGI(TAG, "Writing Stats File");
+//             BadgeStats_WriteBadgeStatsFileToDisk(this);
+//             this->updateNeeded = false;
+//         }
+//         vTaskDelay(pdMS_TO_TICKS(BADGE_WRITE_PERIOD_MS));
+//     }
+// }
 
 void BadgeStats_IncrementNumPowerOns(BadgeStats *this)
 {

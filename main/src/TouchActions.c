@@ -7,7 +7,7 @@
 
 // Internal Function Declarations
 static esp_err_t CommandDetected(TouchActions *this, TouchActionsCmd touchActionCmd);
-static void TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static TouchActionsCmd GetTouchAction(TouchActions *this);
 
 // Internal Constants
@@ -367,7 +367,7 @@ static TouchActionsCmd GetTouchAction(TouchActions *this)
 #endif
 }
 
-static void TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
     TouchActions *this = (TouchActions *)pObj;

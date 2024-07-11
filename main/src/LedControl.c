@@ -1,5 +1,7 @@
 
 #include <stdio.h>
+#include <string.h>
+
 #include "cJSON.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -38,10 +40,10 @@
 
 // Internal Function Declarations
 static void LedControlTask(void *pvParameters);
-static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static esp_err_t LedControl_InitServiceDrawBatteryIndicatorSequence(LedControl *this);
 static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawBatteryIndicatorSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
@@ -56,9 +58,9 @@ static esp_err_t LedControl_ServiceDrawStatusIndicatorSequence(LedControl *this,
 static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_LoadJsonLedSequence(LedControl * this);
-static esp_err_t LedControll_FillPixels(LedControl *this, rgb_t color, int intensity, int ledStartIndex, int numLedsToFill);
+static esp_err_t LedControll_FillPixels(LedControl *this, rgb_t color, int ledStartIndex, int numLedsToFill);
+static esp_err_t LedControll_FillPixelsWithIntensity(LedControl *this, rgb_t color, int intensity, int ledStartIndex, int numLedsToFill);
 static esp_err_t LedControl_SetPixel(LedControl * this, color_t in_color, int pix_num);
-static esp_err_t LedControl_SetPixelFromValues(LedControl * this, int n, int r, int g, int b, int i, bool *pChangeDetected);
 static esp_err_t LedControl_SetPixelFromJson(LedControl * this, int n, cJSON *r, cJSON *g, cJSON *b, cJSON *i, bool *pChangeDetected);
 static esp_err_t LedControl_FlushLedStrip(LedControl * this);
 static void * malloc_fn(size_t sz);
@@ -296,24 +298,31 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     this->networkTestRuntimeInfo.success = false;
 
     // Initialize LED strip
-    spinlock_initialize(&this->stripMutex);
-    rgb_t initColor = { .r = 0, .g = 0, .b = 0 };
-    this->ledStrip.type = LED_TYPE,
-    this->ledStrip.length = LED_STRIP_LEN,
-    this->ledStrip.gpio = LED_STRIP_GPIO,
-    this->ledStrip.buf = NULL,
-    this->ledStrip.brightness = BRIGHTNESS_NORMAL,
-    led_strip_install();
-    ret = led_strip_init(&this->ledStrip);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "led_strip_init failed (%s)", esp_err_to_name(ret));
-    }
-    ret = led_strip_fill(&this->ledStrip, 0, this->ledStrip.length, initColor);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "led_strip_fill failed (%s)", esp_err_to_name(ret));
-    }
+    this->ledStrip.strip_gpio_num = LED_STRIP_GPIO;
+    this->ledStrip.max_leds = LED_STRIP_LEN;
+    this->ledStrip.led_model = LED_TYPE;
+    this->ledStrip.led_pixel_format = LED_PIXEL_FORMAT_GRB;
+    this->ledStrip.flags.invert_out = false;
+
+    // Configuration for RMT driver
+// #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+//     this->ledStripRmt.rmt_channel = 0;
+// #else
+//     this->ledStripRmt.clk_src           = RMT_CLK_SRC_DEFAULT;
+//     this->ledStripRmt.resolution_hz     = LED_STRIP_RMT_RES_HZ;
+//     this->ledStripRmt.flags.with_dma    = false;                   // DMA feature is available on ESP target like ESP32-S3;
+// #endif
+
+//     ESP_ERROR_CHECK(led_strip_new_rmt_device(&this->ledStrip, &this->ledStripRmt, &this->ledStripHandle));
+
+
+    // Configuration for SPI
+#if ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(5, 0, 0)
+    this->ledStripSpi.clk_src = SPI_CLK_SRC_DEFAULT;    // different clock source can lead to different power consumption
+    this->ledStripSpi.flags.with_dma = true;            // Using DMA can improve performance and help drive more LEDs
+    this->ledStripSpi.spi_bus = SPI2_HOST;              // SPI bus ID
+#endif
+    ESP_ERROR_CHECK(led_strip_new_spi_device(&this->ledStrip, &this->ledStripSpi, &this->ledStripHandle));
 
     this->ledControlModeSettings.innerLedState = INNER_LED_STATE_LED_SEQUENCE;
     this->ledControlModeSettings.outerLedState = OUTER_LED_STATE_LED_SEQUENCE;
@@ -406,8 +415,8 @@ static esp_err_t LedControl_FlushLedStrip(LedControl *this)
     if (this->flushNeeded)
     {
         this->flushNeeded = false;
-        // ESP_LOGI(TAG, "Flushing led strip");
-        ret = led_strip_flush(&this->ledStrip);
+        // ESP_LOGI(TAG, "Refreshing led strip");
+        ret = led_strip_refresh(this->ledStripHandle);
     }
     return ret;
 }
@@ -424,10 +433,10 @@ static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl *this, bool al
     if (this->loadRequired)
     {
         this->loadRequired = false;
-        ESP_LOGI(TAG, "Loading json sequence %d", this->selectedIndex);
+        ESP_LOGI(TAG, "Loading json sequence %lu", this->selectedIndex);
         if (LedControl_LoadJsonLedSequence(this) != ESP_OK)
         {
-            ESP_LOGE(TAG, "Failed to load json sequence %d", this->selectedIndex);
+            ESP_LOGE(TAG, "Failed to load json sequence %lu", this->selectedIndex);
         }
         UserSettings_SetSelectedIndex(this->pUserSettings, this->selectedIndex);
         this->ledLoadedIndex = this->selectedIndex;
@@ -460,7 +469,7 @@ static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl *this, bool al
 
                 if(this->jsonSequenceRuntimeInfo.curFrameIndex <= 2)
                 {
-                    ESP_LOGD(TAG, "Starting sequence. hold_time=%d, pixels_array_size=%d, frame_idx=%d", hold_time, 
+                    ESP_LOGD(TAG, "Starting sequence. hold_time=%lu, pixels_array_size=%d, frame_idx=%d", hold_time,
                             pixelsArraySize, this->jsonSequenceRuntimeInfo.curFrameIndex);
                 }
 
@@ -600,8 +609,8 @@ static esp_err_t LedControl_InitServiceDrawBatteryIndicatorSequence(LedControl *
     this->batteryIndicatorRuntimeInfo.nextInnerFrameDrawTime = this->batteryIndicatorRuntimeInfo.startDrawTime;
 
     memset(this->pixelColorState, 0, sizeof(this->pixelColorState));
-    ESP_ERROR_CHECK(led_strip_fill(&this->ledStrip, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT, this->batteryIndicatorRuntimeInfo.initColor));
-    ESP_ERROR_CHECK(led_strip_fill(&this->ledStrip, 0, INNER_RING_LED_COUNT, this->batteryIndicatorRuntimeInfo.initColor));
+    ESP_ERROR_CHECK(LedControll_FillPixels(this, this->batteryIndicatorRuntimeInfo.initColor, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT));
+    ESP_ERROR_CHECK(LedControll_FillPixels(this, this->batteryIndicatorRuntimeInfo.initColor, 0, INNER_RING_LED_COUNT));
     return ESP_OK;
 }
 
@@ -671,20 +680,20 @@ static esp_err_t LedControl_ServiceDrawPercentCompleteSequence(LedControl *this,
     {
         int numOuterLeds = MAX(1, (int)(OUTER_RING_LED_COUNT * this->bleXferPercentRuntimeInfo.percentComplete / 100.0));
         int numInnerLeds = MAX(1, (int)(INNER_RING_LED_COUNT * this->bleXferPercentRuntimeInfo.percentComplete / 100.0));
-        ESP_LOGD(TAG, "perc=%d numOuterLeds=%d numInnerLeds=%d", this->bleXferPercentRuntimeInfo.percentComplete, numOuterLeds, numInnerLeds);
+        ESP_LOGD(TAG, "perc=%lu numOuterLeds=%d numInnerLeds=%d", this->bleXferPercentRuntimeInfo.percentComplete, numOuterLeds, numInnerLeds);
         this->bleXferPercentRuntimeInfo.prevPercentComplete = this->bleXferPercentRuntimeInfo.percentComplete;
 
         if (allowDrawOuterRing)
         {
             this->flushNeeded = true;
-            LedControll_FillPixels(this, initColor, 0, OUTER_RING_LED_OFFSET+numOuterLeds, OUTER_RING_LED_COUNT-numOuterLeds);
-            LedControll_FillPixels(this, this->bleXferPercentRuntimeInfo.color, 100, OUTER_RING_LED_OFFSET, numOuterLeds);
+            LedControll_FillPixelsWithIntensity(this, initColor, 0, OUTER_RING_LED_OFFSET+numOuterLeds, OUTER_RING_LED_COUNT-numOuterLeds);
+            LedControll_FillPixelsWithIntensity(this, this->bleXferPercentRuntimeInfo.color, 100, OUTER_RING_LED_OFFSET, numOuterLeds);
         }
         if (allowDrawInnerRing)
         {
             this->flushNeeded = true;
-            LedControll_FillPixels(this, initColor, 0, INNER_RING_LED_OFFSET+numInnerLeds, INNER_RING_LED_COUNT-numInnerLeds);
-            LedControll_FillPixels(this, this->bleXferPercentRuntimeInfo.color, 100, INNER_RING_LED_OFFSET, numInnerLeds);
+            LedControll_FillPixelsWithIntensity(this, initColor, 0, INNER_RING_LED_OFFSET+numInnerLeds, INNER_RING_LED_COUNT-numInnerLeds);
+            LedControll_FillPixelsWithIntensity(this, this->bleXferPercentRuntimeInfo.color, 100, INNER_RING_LED_OFFSET, numInnerLeds);
         }
     }
 
@@ -700,7 +709,7 @@ static esp_err_t LedControl_DrawStatusIndicator(LedControl *this, color_t color,
         uint32_t holdTime = 1000 / (OUTER_RING_LED_COUNT * this->ledStatusIndicatorRuntimeInfo.revolutionsPerSecond);
         this->ledStatusIndicatorRuntimeInfo.nextOuterDrawTime = TimeUtils_GetFutureTimeTicks(holdTime);
 
-        LedControll_FillPixels(this, this->ledStatusIndicatorRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+        LedControll_FillPixelsWithIntensity(this, this->ledStatusIndicatorRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
         for (int i = 0; i < this->ledStatusIndicatorRuntimeInfo.outerLedWidth; i++)
         {
             int pixelIndex = ((this->ledStatusIndicatorRuntimeInfo.curOuterPosition+i) % OUTER_RING_LED_COUNT);
@@ -714,7 +723,7 @@ static esp_err_t LedControl_DrawStatusIndicator(LedControl *this, color_t color,
         this->flushNeeded = true;
         int holdTime = 1000 / (INNER_RING_LED_COUNT * this->ledStatusIndicatorRuntimeInfo.revolutionsPerSecond);
         this->ledStatusIndicatorRuntimeInfo.nextInnerDrawTime = TimeUtils_GetFutureTimeTicks(holdTime);
-        LedControll_FillPixels(this, this->ledStatusIndicatorRuntimeInfo.initColor, 100, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
+        LedControll_FillPixelsWithIntensity(this, this->ledStatusIndicatorRuntimeInfo.initColor, 100, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
 
         for (int i = 0; i < this->ledStatusIndicatorRuntimeInfo.innerLedWidth; i++)
         {
@@ -803,7 +812,7 @@ static esp_err_t LedControl_InitDrawGameEventSequence(LedControl * this)
     this->gameEventRuntimeInfo.curOuterPosition = 0;
     this->gameEventRuntimeInfo.curPulseDirection = 1;
     this->gameEventRuntimeInfo.curIntensity = 0;
-    ESP_LOGI(TAG, "Init Draw Game Event. %d %d %d", xTaskGetTickCount(), this->gameEventRuntimeInfo.nextOuterDrawTime, this->gameEventRuntimeInfo.nextInnerDrawTime);
+    ESP_LOGI(TAG, "Init Draw Game Event. %lu %lu %lu", xTaskGetTickCount(), this->gameEventRuntimeInfo.nextOuterDrawTime, this->gameEventRuntimeInfo.nextInnerDrawTime);
 
     return ESP_OK;
 }
@@ -824,7 +833,7 @@ static esp_err_t LedControl_ServiceDrawGameEventSequence(LedControl * this, bool
             int holdTime = 1000 / (OUTER_RING_LED_COUNT * this->gameEventRuntimeInfo.revolutionsPerSecond);
             this->gameEventRuntimeInfo.nextOuterDrawTime = TimeUtils_GetFutureTimeTicks(holdTime);
 
-            LedControll_FillPixels(this, this->gameEventRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+            LedControll_FillPixelsWithIntensity(this, this->gameEventRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
             for (int i = 0; i < this->gameEventRuntimeInfo.outerLedWidth; i++)
             {
                 int pixelIndex = ((this->gameEventRuntimeInfo.curOuterPosition+i) % OUTER_RING_LED_COUNT);
@@ -864,8 +873,8 @@ static esp_err_t LedControl_ServiceDrawGameEventSequence(LedControl * this, bool
                 this->gameEventRuntimeInfo.curPulseDirection = 1;
             }
 
-            LedControll_FillPixels(this, this->gameEventRuntimeInfo.initColor, 0, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
-            LedControll_FillPixels(this, color, (uint32_t)this->gameEventRuntimeInfo.curIntensity, INNER_RING_LED_OFFSET, numInnerLeds);
+            LedControll_FillPixelsWithIntensity(this, this->gameEventRuntimeInfo.initColor, 0, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
+            LedControll_FillPixelsWithIntensity(this, color, (uint32_t)this->gameEventRuntimeInfo.curIntensity, INNER_RING_LED_OFFSET, numInnerLeds);
         }
         return ret;
     }
@@ -901,7 +910,7 @@ static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool a
         {
             this->songModeRuntimeInfo.updateNeeded = false;
             this->flushNeeded = true;
-            LedControll_FillPixels(this, this->touchModeRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+            LedControll_FillPixelsWithIntensity(this, this->touchModeRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
 
             if (this->songModeRuntimeInfo.lastSongNoteChangeEventNotificationData.action == SONG_NOTE_CHANGE_TYPE_TONE_START)
             {
@@ -936,12 +945,12 @@ static esp_err_t LedControl_ServiceDrawTouchLightingSequence(LedControl *this, b
         if (allowDrawOuterRing && TimeUtils_IsTimeExpired(this->touchModeRuntimeInfo.nextOuterDrawTime))
         {
             this->flushNeeded = true;
-            LedControll_FillPixels(this, this->touchModeRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+            LedControll_FillPixelsWithIntensity(this, this->touchModeRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
         }
         if (allowDrawInnerRing && TimeUtils_IsTimeExpired(this->touchModeRuntimeInfo.nextInnerDrawTime))
         {
             this->flushNeeded = true;
-            LedControll_FillPixels(this, this->touchModeRuntimeInfo.initColor, 100, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
+            LedControll_FillPixelsWithIntensity(this, this->touchModeRuntimeInfo.initColor, 100, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
         }
 
         for (int touchIndex = 0; touchIndex < TOUCH_SENSOR_NUM_BUTTONS; touchIndex++)
@@ -1005,7 +1014,7 @@ esp_err_t LedControl_SetCurrentLedSequenceIndex(LedControl *this, int newLedSequ
     }
     this->selectedIndex = newLedSequenceIndex;
     this->loadRequired = true;
-    ESP_LOGI(TAG, "this->selectedIndex = %d", this->selectedIndex);
+    ESP_LOGI(TAG, "this->selectedIndex = %lu", this->selectedIndex);
     
     return ESP_OK;
 }
@@ -1059,7 +1068,22 @@ int LedControl_GetCurrentLedSequenceIndex(LedControl *this)
     return this->selectedIndex;
 }
 
-static esp_err_t LedControll_FillPixels(LedControl *this, rgb_t rgb, int intensity, int ledStartIndex, int numLedsToFill)
+static esp_err_t LedControll_FillPixels(LedControl *this, rgb_t rgb, int ledStartIndex, int numLedsToFill)
+{
+    esp_err_t ret = ESP_OK;
+    color_t color = { .r = rgb.r, .g = rgb.g, .b = rgb.b, .i = 100 };
+    for (int i = 0; i < numLedsToFill; i++)
+    {
+        if (LedControl_SetPixel(this, color, correctedPixelOffset[i+ledStartIndex]) != ESP_OK)
+        {
+            ESP_LOGE(TAG, "LedControl_SetPixel failed for index %d", i);
+            ret = ESP_FAIL;
+        }
+    }
+    return ret;
+}
+
+static esp_err_t LedControll_FillPixelsWithIntensity(LedControl *this, rgb_t rgb, int intensity, int ledStartIndex, int numLedsToFill)
 {
     esp_err_t ret = ESP_OK;
     color_t color = { .r = rgb.r, .g = rgb.g, .b = rgb.b, .i = intensity };
@@ -1078,58 +1102,13 @@ static esp_err_t LedControl_SetPixel(LedControl *this, color_t in_color, int pix
 {
     assert(this);
     rgb_t color = { .r = (int)(in_color.r * (in_color.i / 100.0)), .g = (int)(in_color.g * (in_color.i / 100.0)), .b = (int)(in_color.b * (in_color.i / 100.0)) };
-    esp_err_t ret = led_strip_set_pixel(&this->ledStrip, pix_num, color);
+    color.r = (int)(color.r * BRIGHTNESS_NORMAL / 255.0);
+    color.g = (int)(color.g * BRIGHTNESS_NORMAL / 255.0);
+    color.b = (int)(color.b * BRIGHTNESS_NORMAL / 255.0);
+    esp_err_t ret = led_strip_set_pixel(this->ledStripHandle, pix_num, color.red, color.green, color.blue);
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "led_strip_set_pixel failed. pixnum= %d, error = %s", pix_num, esp_err_to_name(ret));
-    }
-    return ret;
-}
-
-static esp_err_t LedControl_SetPixelFromValues(LedControl *this, int n, int r, int g, int b, int i, bool *pChangeDetected)
-{
-    esp_err_t ret = ESP_FAIL;
-    assert(this);
-    assert(pChangeDetected);
-    if ((n < 0) || (n >= LED_STRIP_LEN))
-    {
-        ESP_LOGE(TAG, "LedControl_SetPixelFromValues was provided invalid n=%d", n);
-        return ret;
-    }
-
-    int newR = MAX(0, MIN(255, r));
-    int newG = MAX(0, MIN(255, g));
-    int newB = MAX(0, MIN(255, b));
-    int newI = MAX(0, MIN(100, i));
-
-    *pChangeDetected = false;
-    if (newR != this->pixelColorState[n].r)
-    {
-        this->pixelColorState[n].r = MAX(0, MIN(255, r));
-        *pChangeDetected = true;
-    }
-    if (newG != this->pixelColorState[n].g)
-    {
-        this->pixelColorState[n].g = MAX(0, MIN(255, g));
-        *pChangeDetected = true;
-    }
-    if (newB != this->pixelColorState[n].b)
-    {
-        this->pixelColorState[n].b = MAX(0, MIN(255, b));
-        *pChangeDetected = true;
-    }
-    if (newI != this->pixelColorState[n].i)
-    {
-        this->pixelColorState[n].i = MAX(0, MIN(100, i));
-        *pChangeDetected = true;
-    }
-    if (*pChangeDetected)
-    {
-        ret = LedControl_SetPixel(this, this->pixelColorState[n], n);
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE(TAG, "LedControl_SetPixel failed. error = %s", esp_err_to_name(ret));
-        }
     }
     return ret;
 }
@@ -1287,7 +1266,7 @@ static void * malloc_fn(size_t sz)
     return buffer;
 }
 
-static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
     LedControl *this = (LedControl *)pObj;
@@ -1400,18 +1379,18 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
     return ret;
 }
 
-static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
-    ESP_LOGD(TAG, "Handling BLE Xfer Percent Changed Notification %d", *((uint32_t *) notificationData));
+    ESP_LOGD(TAG, "Handling BLE Xfer Percent Changed Notification %lu", *((uint32_t *) notificationData));
 
     LedControl *this = (LedControl *)pObj;
     assert(this);
     this->bleXferPercentRuntimeInfo.percentComplete = *((uint32_t *) notificationData);
 }
 
-static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
-    ESP_LOGD(TAG, "Handling Game State Notification %d", *((uint32_t *) notificationData));
+    ESP_LOGD(TAG, "Handling Game State Notification %lu", *((uint32_t *) notificationData));
 
     LedControl *this = (LedControl *)pObj;
     assert(this);
@@ -1421,13 +1400,13 @@ static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_
             this->gameStatusRuntimeInfo.updateNeeded = true;
             break;
         default:
-            ESP_LOGE(TAG, "Invalid notification event: %d", notificationEvent);
+            ESP_LOGE(TAG, "Invalid notification event: %lu", notificationEvent);
             break;
     }
 }
 
 
-static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
     LedControl *this = (LedControl *)pObj;

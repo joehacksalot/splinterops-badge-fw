@@ -4,6 +4,9 @@ dependencies:
   ## Required IDF version
   idf:
     version: ">=4.1.0"
+  espressif/led_strip:
+    version: '2.5.4'
+
   # # Put list of dependencies here
   # # For components maintained by Espressif:
   # component: "~1.0.0"
