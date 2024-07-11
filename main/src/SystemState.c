@@ -178,13 +178,13 @@ esp_err_t SystemState_Init(SystemState *this)
     memset(this->pBleControl, 0, sizeof(*this->pBleControl));
 
     ESP_ERROR_CHECK(Console_Init());
+    ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher));
+    ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(BadgeStats_Init(&this->badgeStats));
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));
-    ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher));
     ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings)); // uses bootloader random enable logic
 
     // ESP_ERROR_CHECK(AudioPlayer_Init(&this->audioPlayer, &this->notificationDispatcher));
-    ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher));
     LedSequences_Init(&this->batterySensor);
     UserSettings_RegisterBatterySensor(&this->userSettings, &this->batterySensor);
     BadgeStats_RegisterBatterySensor(&this->badgeStats, &this->batterySensor);

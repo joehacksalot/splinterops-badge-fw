@@ -2,7 +2,7 @@
 #define CONSOLE_TASK_H
 
 #include "esp_err.h"
-#include "DiskUtilities.h"
+#include "DiskDefines.h"
 
 /* Console command history can be stored to and loaded from a file.
  * The easiest way to do this is to use FATFS filesystem on top of

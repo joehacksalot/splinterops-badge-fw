@@ -3,6 +3,7 @@
 #include "esp_vfs_fat.h"
 #include "nvs_flash.h"
 
+#include "DiskDefines.h"
 #include "DiskUtilities.h"
 
 #define TAG  "FS"
@@ -57,9 +58,11 @@ esp_err_t DiskUtilities_InitFs(void)
     return ret;
 }
 
-esp_err_t ReadFileFromDisk(char *filename, char *buffer, int buffer_size, int expected_file_size)
+esp_err_t ReadFileFromDisk(char *filename, char *buffer, int bufferSize, int * pBytesRead, int expectedFileSize)
 {
     esp_err_t ret = ESP_FAIL;
+    assert(filename);
+    assert(buffer);
 
     // Read current position file from flash filesystem
     ESP_LOGI(TAG, "Reading %s file", filename);
@@ -69,14 +72,20 @@ esp_err_t ReadFileFromDisk(char *filename, char *buffer, int buffer_size, int ex
         // Check file size matches
         fseek(fp, 0L, SEEK_END);
         ssize_t fileSize = ftell(fp);
-        if (expected_file_size > 0 && fileSize == expected_file_size) // expected_file_size of > 0 signals enforce expected file size check
+        if (expectedFileSize > 0 && fileSize == expectedFileSize) // expectedFileSize of > 0 signals enforce expected file size check
         {
-            int bytesToRead = MAX(buffer_size, fileSize);
+            int bytesToRead = MAX(bufferSize, fileSize);
+            int bytesRead = 0;
             // File size matches expected, read data into offset
             fseek(fp, 0, SEEK_SET);
-            if (fread(buffer, 1, , fp) == buffer_size)
+            bytesRead = fread(buffer, 1, bytesToRead, fp);
+            if (bytesRead == bytesToRead)
             {
                 ret = ESP_OK;
+                if (pBytesRead != NULL)
+                {
+                    *pBytesRead = bytesRead;
+                }
             }
             else
             {
@@ -86,18 +95,20 @@ esp_err_t ReadFileFromDisk(char *filename, char *buffer, int buffer_size, int ex
         else
         {
             // File size doesn't match expected
-            ESP_LOGE(TAG, "ERROR: Actual: %d, Expected: %d", fileSize, expected_file_size);
+            ESP_LOGE(TAG, "ERROR: Actual: %d, Expected: %d", fileSize, expectedFileSize);
         }
         fclose(fp);
     }
     return ret;
 }
 
-esp_err_t WriteFileToDisk(BatterySensor * pBatterySensor, char *filename, char *buffer, int buffer_size)
+esp_err_t WriteFileToDisk(BatterySensor * pBatterySensor, char *filename, char *buffer, int bufferSize)
 {
     esp_err_t ret = ESP_FAIL;
-    assert(this);
-    if (this->pBatterySensor != NULL && BatterySensor_GetBatteryPercent(this->pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
+    assert(pBatterySensor);
+    assert(filename);
+    assert(buffer);
+    if (pBatterySensor != NULL && BatterySensor_GetBatteryPercent(pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
     {
         int status = remove(filename);
         if(status != 0)
@@ -108,15 +119,15 @@ esp_err_t WriteFileToDisk(BatterySensor * pBatterySensor, char *filename, char *
         FILE * fp = fopen(filename, "wb");
         if (fp != 0)
         {
-            ssize_t bytesWritten = fwrite(buffer, 1, buffer_size, fp);
-            if (bytesWritten == buffer_size)
+            ssize_t bytesWritten = fwrite(buffer, 1, bufferSize, fp);
+            if (bytesWritten == bufferSize)
             {
                 ESP_LOGI(TAG, "Write completed for %s", filename);
                 ret = ESP_OK;
             }
             else
             {
-                ESP_LOGE(TAG, "Write of selected sequence index file failed. fwrite return did not match byte write size. expected=%d, actual=%d\n", sizeof(this->settings), bytesWritten);
+                ESP_LOGE(TAG, "Write failed for %s of size %d", filename, bufferSize);
             }
             fclose(fp);
         }

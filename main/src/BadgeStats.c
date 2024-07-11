@@ -7,6 +7,7 @@
 
 #include "BadgeStats.h"
 #include "BatterySensor.h"
+#include "DiskDefines.h"
 #include "DiskUtilities.h"
 #include "TaskPriorities.h"
 #include "Utilities.h"
@@ -27,10 +28,10 @@ esp_err_t BadgeStats_Init(BadgeStats *this)
     this->pBatterySensor = NULL;
     this->mutex = xSemaphoreCreateMutex();
     assert(this->mutex);
-    if (BadgeStats_ReadBadgeStatsFileFromDisk(this) != ESP_OK)
-    {
-        BadgeStats_WriteBadgeStatsFileToDisk(this);
-    }
+    // if (BadgeStats_ReadBadgeStatsFileFromDisk(this) != ESP_OK)
+    // {
+    //     BadgeStats_WriteBadgeStatsFileToDisk(this);
+    // }
     BadgeStats_IncrementNumPowerOns(this);
 
     // xTaskCreate(BadgeStatsTask, "BadgeStatsTask", configMINIMAL_STACK_SIZE * 5, this, BADGE_STAT_TASK_PRIORITY, NULL); // Commented to prevent disk writes. statistics will still be captured, but not saved to disk
@@ -250,11 +251,11 @@ static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this)
     assert(this);
 
     BadgeStatsFile badgeStatsFile;
-    if (ReadFileFromDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile), sizeof(badgeStatsFile)) == ESP_OK)
+    if (ReadFileFromDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile), NULL, sizeof(badgeStatsFile)) == ESP_OK)
     {
         if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
         {
-            this->badgeStats = tmpStats;
+            this->badgeStats = badgeStatsFile;
             ret = ESP_OK;
             if (xSemaphoreGive(this->mutex) != pdTRUE)
             {
@@ -284,7 +285,7 @@ static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this)
         {
             ESP_LOGE(TAG, "Failed to give mutex in %s", __FUNCTION__);
         }
-        ret = WriteFileToDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile));
+        ret = WriteFileToDisk(this->pBatterySensor, STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile));
         if (ret != ESP_OK)
         {
             ESP_LOGE(TAG, "Failed to write badge stats file");

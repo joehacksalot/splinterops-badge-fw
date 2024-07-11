@@ -45,6 +45,7 @@ static const char * HEARTBEAT_JSON_TEMPLATE   =
     \"provisionKey\": \"0ec91eff86a15baad0759477770f0698\",\
     \"peerReport\": [%s],\
     \"enrolledEvent\": \"%s\",\
+    \"badgeRequestTime\": %d,\
     \"badgeType\": \"%d\",\
     \"songs\": [%s],\
     \"stats\":{\
@@ -784,11 +785,16 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         }
     }
 
+    TickType_t curTimeTicks = TimeUtils_GetCurTimeTicks();
     int len = snprintf((char *)pHttpRequest->pData, sizeof(pHttpRequest->pData), HEARTBEAT_JSON_TEMPLATE, 
-                        pRequest->badgeIdB64, pRequest->keyB64, this->peerReport,
-                        eventIdStr,
-                        coded_badge_type,
-                        songsStr,
+                        pRequest->badgeIdB64,  // uuid %s
+                        pRequest->keyB64,      // key %s
+                                               // provisionKey hard coded
+                        this->peerReport,      // peerReport %s 
+                        eventIdStr,            // enrolledEvent %s
+                        curTimeTicks,          // badgeRequestTime %d
+                        coded_badge_type,      // badgeType %d
+                        songsStr,              // songs %s
                         pRequest->badgeStats.numPowerOns,
                         pRequest->badgeStats.numTouches,
                         pRequest->badgeStats.numTouchCmds,

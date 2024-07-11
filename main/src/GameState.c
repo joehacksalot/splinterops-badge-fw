@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include "mbedtls/base64.h"
 
+#include "DiskDefines.h"
 #include "DiskUtilities.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
@@ -24,6 +25,7 @@ static int mapIndices[MAX_PEER_MAP_DEPTH];
 
 static void _GameState_Task(void *pvParameters);
 static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void _GameState_SendHeartbeatHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
 static esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport);
 static bool _GameState_IsCurrentEvent(GameState *this);
 static bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64);
@@ -59,6 +61,7 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     _GameState_ReadGameStatusDataFileFromDisk(this);
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &_GameState_NotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &_GameState_NotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SEND_HEARTBEAT, &_GameState_SendHeartbeatHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, &_GameState_NotificationHandler, this));
     xTaskCreate(_GameState_Task, "GameStateTask", configMINIMAL_STACK_SIZE * 10, this, GAME_STATE_TASK_PRIORITY, NULL);
     return ESP_OK;
@@ -403,6 +406,21 @@ bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64)
     return false;
 }
 
+static void _GameState_SendHeartbeatHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+{
+    GameState *this = (GameState *)pObj;
+    assert(this);
+    switch (notificationEvent)
+    {
+        case NOTIFICATION_EVENTS_SEND_HEARTBEAT:
+            ESP_LOGI(TAG, "NOTIFICATION_EVENTS_SEND_HEARTBEAT event");
+            this->sendHeartbeatImmediately = true;
+            break;
+        default:
+            break;
+    }
+}
+
 static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
 {
     GameState *this = (GameState *)pObj;
@@ -465,6 +483,7 @@ static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBas
                     PlaySongEventNotificationData unlockSongNotificationData;
                     unlockSongNotificationData.song = SONG_SECRET_SOUND;
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &unlockSongNotificationData, sizeof(unlockSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SEND_HEARTBEAT, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                 }
             }
             else
@@ -485,7 +504,7 @@ static esp_err_t _GameState_ReadGameStatusDataFileFromDisk(GameState *this)
     assert(this);
 
     GameStatusData gameStatusData;
-    if (ReadFileFromDisk(GAME_STATUS_FILE_NAME, (char *)&gameStatusData, sizeof(gameStatusData), sizeof(gameStatusData)) == ESP_OK)
+    if (ReadFileFromDisk(GAME_STATUS_FILE_NAME, (char *)&gameStatusData, sizeof(gameStatusData), NULL, sizeof(gameStatusData)) == ESP_OK)
     {
         if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
         {
