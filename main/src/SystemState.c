@@ -189,11 +189,10 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));
     ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings)); // uses bootloader random enable logic
 
-    ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher));
     LedSequences_Init(&this->batterySensor);
     UserSettings_RegisterBatterySensor(&this->userSettings, &this->batterySensor);
     BadgeStats_RegisterBatterySensor(&this->badgeStats, &this->batterySensor);
-ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings, &this->batterySensor));
+    ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings, &this->batterySensor));
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
