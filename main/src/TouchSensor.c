@@ -16,7 +16,7 @@
 // Touch pad settings
 #define TOUCH_THRESHOLD_NONE 0
 #define TOUCH_FILTER_MODE_EN 1
-#define TOUCH_FILTER_PERIOD_MS 100                  // Changing to meet CPU0 watchdog
+#define TOUCH_FILTER_PERIOD_MS 50                   // Changing to meet CPU0 watchdog
 
 // Touch sensor settings
 #define TOUCH_ACTIVE_DELTA_THRESHOLD         (150)

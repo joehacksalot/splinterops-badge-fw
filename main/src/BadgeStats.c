@@ -18,8 +18,8 @@
 static const char *TAG = "STA";
 
 //static void BadgeStatsTask(void *pvParameters);
-static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this);
-static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this);
+//static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this);
+//static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this);
 
 esp_err_t BadgeStats_Init(BadgeStats *this)
 {
@@ -245,55 +245,55 @@ void BadgeStats_IncrementNumNetworkTests(BadgeStats *this)
     }
 }
 
-static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this)
-{
-    esp_err_t ret = ESP_FAIL;
-    assert(this);
+// static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this)
+// {
+//     esp_err_t ret = ESP_FAIL;
+//     assert(this);
 
-    BadgeStatsFile badgeStatsFile;
-    if (ReadFileFromDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile), NULL, sizeof(badgeStatsFile)) == ESP_OK)
-    {
-        if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
-        {
-            this->badgeStats = badgeStatsFile;
-            ret = ESP_OK;
-            if (xSemaphoreGive(this->mutex) != pdTRUE)
-            {
-                ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
-            }
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
-        }
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Failed to read game status file");
-    }
-    return ret;
-}
+//     BadgeStatsFile badgeStatsFile;
+//     if (ReadFileFromDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile), NULL, sizeof(badgeStatsFile)) == ESP_OK)
+//     {
+//         if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+//         {
+//             this->badgeStats = badgeStatsFile;
+//             ret = ESP_OK;
+//             if (xSemaphoreGive(this->mutex) != pdTRUE)
+//             {
+//                 ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
+//             }
+//         }
+//         else
+//         {
+//             ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
+//         }
+//     }
+//     else
+//     {
+//         ESP_LOGE(TAG, "Failed to read game status file");
+//     }
+//     return ret;
+// }
 
-static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this)
-{
-    esp_err_t ret = ESP_FAIL;
-    assert(this);
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
-    {
-        BadgeStatsFile badgeStatsFile = this->badgeStats;
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
-        {
-            ESP_LOGE(TAG, "Failed to give mutex in %s", __FUNCTION__);
-        }
-        ret = WriteFileToDisk(this->pBatterySensor, STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile));
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE(TAG, "Failed to write badge stats file");
-        }
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
-    }
-    return ret;
-}
+// static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this)
+// {
+//     esp_err_t ret = ESP_FAIL;
+//     assert(this);
+//     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+//     {
+//         BadgeStatsFile badgeStatsFile = this->badgeStats;
+//         if (xSemaphoreGive(this->mutex) != pdTRUE)
+//         {
+//             ESP_LOGE(TAG, "Failed to give mutex in %s", __FUNCTION__);
+//         }
+//         ret = WriteFileToDisk(this->pBatterySensor, STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile));
+//         if (ret != ESP_OK)
+//         {
+//             ESP_LOGE(TAG, "Failed to write badge stats file");
+//         }
+//     }
+//     else
+//     {
+//         ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
+//     }
+//     return ret;
+// }
