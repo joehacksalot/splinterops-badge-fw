@@ -1,6 +1,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+
 #include "cJSON.h"
 #include "esp_check.h"
 #include "esp_log.h"

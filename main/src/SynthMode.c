@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "driver/ledc.h"
 #include "esp_err.h"
 #include "esp_log.h"
@@ -65,8 +67,8 @@ const int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] =
 #endif
 
 static void SynthModeTask(void *pvParameters);
-static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void SynthMode_PlaySongNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SynthMode_PlaySongNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static esp_err_t SynthMode_ConfigurePWM(SynthMode *this);
 static esp_err_t SynthMode_StopTone(SynthMode* this);
 static esp_err_t SynthMode_PlaySong(SynthMode* this, Song song);
@@ -342,7 +344,7 @@ esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled)
 }
 
 
-static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
     SynthMode *this = (SynthMode *)pObj;
@@ -367,7 +369,7 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
 }
 
 
-static void SynthMode_PlaySongNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SynthMode_PlaySongNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGI(TAG, "Handling Play Song Notification");
     SynthMode *this = (SynthMode *)pObj;

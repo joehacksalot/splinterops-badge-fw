@@ -16,7 +16,7 @@
 // Touch pad settings
 #define TOUCH_THRESHOLD_NONE 0
 #define TOUCH_FILTER_MODE_EN 1
-#define TOUCH_FILTER_PERIOD_MS 10
+#define TOUCH_FILTER_PERIOD_MS 100                  // Changing to meet CPU0 watchdog
 
 // Touch sensor settings
 #define TOUCH_ACTIVE_DELTA_THRESHOLD         (150)
@@ -24,7 +24,7 @@
 #define TOUCH_SHORT_PRESS_THRESHOLD          (1000)
 #define TOUCH_LONG_PRESS_THRESHOLD           (3000)
 #define TOUCH_SUPER_LONG_PRESS_THRESHOLD     (5000)
-#define TOUCH_STUCK_RELEASE_THRESHOLD  (7000)
+#define TOUCH_STUCK_RELEASE_THRESHOLD        (7000)
 
 // Internal Function Declarations
 static void TouchSensorTask(void *pvParameters);

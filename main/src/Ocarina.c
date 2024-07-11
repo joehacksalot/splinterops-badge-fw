@@ -36,7 +36,7 @@ const OcarinaKeySet OcarinaSongKeySets[OCARINA_NUM_SONGS] =
 //   OCARINA_KEY_L       D3   TOUCH_SENSOR_RIGHT_WING_FEATHER_1   T0
 
 
-static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 
 esp_err_t Ocarina_Init(Ocarina *this, NotificationDispatcher *pNotificationDispatcher)
 {
@@ -70,7 +70,7 @@ esp_err_t Ocarina_SetModeEnabled(Ocarina *this, bool enabled)
     return ret;
 }
 
-static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void Ocarina_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
     Ocarina *this = (Ocarina *)pObj;

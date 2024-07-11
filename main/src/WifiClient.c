@@ -29,42 +29,42 @@ static const char * TAG = "wifi_client";
 static void _WifiTask(void *pvParameters);
 void _WifiClient_Enable(WifiClient *this);
 
-static void _WifiClient_Print_Authmode(int authmode)
-{
-    switch (authmode)
-    {
-    case WIFI_AUTH_OPEN:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_OPEN");
-        break;
-    case WIFI_AUTH_WEP:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WEP");
-        break;
-    case WIFI_AUTH_WPA_PSK:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_PSK");
-        break;
-    case WIFI_AUTH_WPA2_PSK:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_PSK");
-        break;
-    case WIFI_AUTH_WPA_WPA2_PSK:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_WPA2_PSK");
-        break;
-    case WIFI_AUTH_WPA2_ENTERPRISE:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_ENTERPRISE");
-        break;
-    case WIFI_AUTH_WPA3_PSK:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA3_PSK");
-        break;
-    case WIFI_AUTH_WPA2_WPA3_PSK:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_WPA3_PSK");
-        break;
-    case WIFI_AUTH_WAPI_PSK:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WAPI_PSK");
-        break;
-    default:
-        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_UNKNOWN");
-        break;
-    }
-}
+// static void _WifiClient_Print_Authmode(int authmode)
+// {
+//     switch (authmode)
+//     {
+//     case WIFI_AUTH_OPEN:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_OPEN");
+//         break;
+//     case WIFI_AUTH_WEP:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WEP");
+//         break;
+//     case WIFI_AUTH_WPA_PSK:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_PSK");
+//         break;
+//     case WIFI_AUTH_WPA2_PSK:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_PSK");
+//         break;
+//     case WIFI_AUTH_WPA_WPA2_PSK:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_WPA2_PSK");
+//         break;
+//     case WIFI_AUTH_WPA2_ENTERPRISE:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_ENTERPRISE");
+//         break;
+//     case WIFI_AUTH_WPA3_PSK:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA3_PSK");
+//         break;
+//     case WIFI_AUTH_WPA2_WPA3_PSK:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_WPA3_PSK");
+//         break;
+//     case WIFI_AUTH_WAPI_PSK:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WAPI_PSK");
+//         break;
+//     default:
+//         ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_UNKNOWN");
+//         break;
+//     }
+// }
 
 // Should be called by app_main on boot to prevent race condition on initial initialization
 esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings)
@@ -169,7 +169,6 @@ void _WifiClient_Enable(WifiClient *this)
         ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_scan_count, ap_info));  // esp_wifi_scan_get_ap_records clears memory allocated from scan_start
         ESP_LOGI(TAG, "Total APIs scanned: %d", ap_scan_count);
-
 
         for(uint32_t i = 0; i < ap_scan_count; ++i)
         {
@@ -294,7 +293,7 @@ WifiClient_State WifiClient_RequestConnect(WifiClient *this, uint32_t waitTimeMS
                     this->desiredStartTime = this->pendingStartTime + pdMS_TO_TICKS(waitTimeMS);
 
                     // TODO: Change this to DEBUG
-                    ESP_LOGI(TAG, "WifiClient_RequestConnect: pending request started: %d", waitTimeMS);
+                    ESP_LOGI(TAG, "WifiClient_RequestConnect: pending request started: %lu", waitTimeMS);
                 }
             }
             // Handle tick rollovers by using pendingStartTime as the reference
@@ -305,12 +304,12 @@ WifiClient_State WifiClient_RequestConnect(WifiClient *this, uint32_t waitTimeMS
                 this->desiredStartTime = this->pendingStartTime + pdMS_TO_TICKS(waitTimeMS);
 
                 // TODO: Change this to DEBUG
-                ESP_LOGI(TAG, "WifiClient_RequestConnect: pending request shortened: %d", waitTimeMS);
+                ESP_LOGI(TAG, "WifiClient_RequestConnect: pending request shortened: %lu", waitTimeMS);
             }
         }
 
         // TODO: Change this to DEBUG
-        ESP_LOGI(TAG, "WifiClient_RequestConnect: numClients(%d)", this->numClients);
+        ESP_LOGI(TAG, "WifiClient_RequestConnect: numClients(%lu)", this->numClients);
         xSemaphoreGive(this->clientMutex);
     }
     else
@@ -340,7 +339,7 @@ esp_err_t WifiClient_WaitForConnected(WifiClient *this)
     }
     else
     {
-        ESP_LOGE(TAG, "Unknown event bits: %d", bits);
+        ESP_LOGE(TAG, "Unknown event bits: %lx", bits);
     }
 
     return ret;
@@ -367,13 +366,12 @@ WifiClient_State WifiClient_GetState(WifiClient *this)
 
 void WifiClient_TestConnect(WifiClient *this)
 {
-    WifiClient_State state = WifiClient_RequestConnect(this, 0);
+    WifiClient_RequestConnect(this, 0);
     bool success = (ESP_OK == WifiClient_WaitForConnected(this));
     esp_err_t err;
     if ((err = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE, (void*)&success, sizeof(success), DEFAULT_NOTIFY_WAIT_DURATION)) != ESP_OK) {
         ESP_LOGE(TAG, "NotificationDispatcher_NotifyEvent NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE failed: %s", esp_err_to_name(err));
     }
-
     WifiClient_Disconnect(this);
 }
 

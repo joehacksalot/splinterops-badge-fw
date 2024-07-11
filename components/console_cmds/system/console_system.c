@@ -4,9 +4,10 @@
 #include <unistd.h>
 
 #include "esp_log.h"
+#include "esp_chip_info.h"
 #include "esp_console.h"
 #include "esp_system.h"
-#include "esp_spi_flash.h"
+#include "esp_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
@@ -21,31 +22,35 @@ int get_version(int argc, char **argv)
 {
     esp_chip_info_t info;
     esp_chip_info(&info);
+
+    uint32_t size_flash_chip;
+    esp_flash_get_size(NULL, &size_flash_chip);
+
     printf("Build info: %s %s\r\n", __DATE__, __TIME__);
     printf("IDF Version:%s\r\n", esp_get_idf_version());
     printf("Chip info:\r\n");
     printf("\tModel:%s\r\n", info.model == CHIP_ESP32 ? "ESP32" : "Unknown");
     printf("\tCores:%d\r\n", info.cores);
-    printf("\tFeature:%s%s%s%s%d%s\r\n",
+    printf("\tFeature:%s%s%s%s%lu%s\r\n",
            info.features & CHIP_FEATURE_WIFI_BGN ? "/802.11bgn" : "",
            info.features & CHIP_FEATURE_BLE ? "/BLE" : "",
            info.features & CHIP_FEATURE_BT ? "/BT" : "",
            info.features & CHIP_FEATURE_EMB_FLASH ? "/Embedded-Flash:" : "/External-Flash:",
-           spi_flash_get_chip_size() / (1024 * 1024), " MB");
+           size_flash_chip / (1024 * 1024), " MB");
     printf("\tRevision number:%d\r\n", info.revision);
     return 0;
 }
 
 static int get_free_mem(int argc, char **argv)
 {
-    printf("%d\n", esp_get_free_heap_size());
+    printf("%lu\n", esp_get_free_heap_size());
     return 0;
 }
 
 static int get_minimum_heap(int argc, char **argv)
 {
     uint32_t heap_size = heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT);
-    printf("minimum heap size: %u\n", heap_size);
+    printf("minimum heap size: %lu\n", heap_size);
     return 0;
 }
 

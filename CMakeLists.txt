@@ -4,7 +4,7 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.5)
 
-list(APPEND EXTRA_COMPONENT_DIRS "${CMAKE_SOURCE_DIR}/esp-idf-lib/components" "${CMAKE_SOURCE_DIR}/components" $ENV{IDF_PATH}/components)
+list(APPEND EXTRA_COMPONENT_DIRS "${CMAKE_SOURCE_DIR}/components" $ENV{IDF_PATH}/components)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(2024-badge-app)

@@ -23,7 +23,7 @@ static const char *TAG = "GME";
 static int mapIndices[MAX_PEER_MAP_DEPTH];
 
 static void GameState_Task(void *pvParameters);
-static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport);
 bool _GameState_IsCurrentEvent(GameState *this);
 bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64);
@@ -61,7 +61,7 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
 
 void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs)
 {
-    ESP_LOGI(TAG, "Current heartbeat time %d", waitTimeMs);
+    ESP_LOGI(TAG, "Current heartbeat time %lu", waitTimeMs);
     this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(waitTimeMs);
     this->sendHeartbeatImmediately = false;
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -351,7 +351,7 @@ static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespons
                 if (!_GameState_IsBlankEvent(response.status.currentEventIdB64))
                 {
                     this->eventEndTime = TimeUtils_GetFutureTimeTicks(this->gameStateData.status.mSecRemaining);
-                    ESP_LOGI(TAG, "New event id: %s  endtime: %d", this->gameStateData.status.currentEventIdB64, (uint32_t)this->eventEndTime);
+                    ESP_LOGI(TAG, "New event id: %s  endtime: %lu", this->gameStateData.status.currentEventIdB64, (uint32_t)this->eventEndTime);
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED, (void*)this->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE, DEFAULT_NOTIFY_WAIT_DURATION);                    
                 }
                 else
@@ -392,7 +392,7 @@ bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64)
     return false;
 }
 
-static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     GameState *this = (GameState *)pObj;
     assert(this);
@@ -462,7 +462,7 @@ static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase
             }
             break;
         default:
-            ESP_LOGE(TAG, "Unexpected notification event: %d", notificationEvent);
+            ESP_LOGE(TAG, "Unexpected notification event: %lu", notificationEvent);
             break;
     }
 }
