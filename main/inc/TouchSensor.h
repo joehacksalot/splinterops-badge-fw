@@ -34,7 +34,6 @@ typedef enum TouchSensorNames_t
     TOUCH_SENSOR_8_OCLOCK,  // 6
     TOUCH_SENSOR_10_OCLOCK, // 7
     TOUCH_SENSOR_11_OCLOCK, // 8
-    
     TOUCH_SENSOR_NUM_BUTTONS // 9
 } TouchSensorNames;
 
