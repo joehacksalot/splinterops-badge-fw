@@ -1,5 +1,7 @@
 
 #include <stdint.h>
+#include <string.h>
+
 #include "esp_check.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -97,8 +99,8 @@ esp_err_t NotificationDispatcher_RegisterNotificationEventHandler(NotificationDi
     assert(this);
     return esp_event_handler_instance_register_with(this->eventLoopHandle,
                                                     this->notificationEventBase,
-                                                    notificationEvent, 
-                                                    eventHandler, 
-                                                    eventHandlerArgs, 
+                                                    notificationEvent,
+                                                    eventHandler,
+                                                    eventHandlerArgs,
                                                     NULL);
 }

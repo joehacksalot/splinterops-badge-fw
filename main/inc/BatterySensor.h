@@ -5,7 +5,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "esp_err.h"
-#include "esp_adc_cal.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
 
 #include "NotificationDispatcher.h"
 
@@ -13,7 +15,11 @@
 
 typedef struct BatterySensorHwData_t
 {
-    esp_adc_cal_characteristics_t *adc_chars;
+    adc_oneshot_unit_handle_t adc_handle;
+    adc_oneshot_unit_init_cfg_t adc_init_config;
+    adc_oneshot_chan_cfg_t adc_channel_config;
+    adc_cali_handle_t adc_cali_chan_handle;
+    bool adc_calibrated;
 } BatterySensorHwData;
 
 typedef struct BatterySensor_t

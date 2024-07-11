@@ -1,10 +1,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "esp_adc_cal.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "driver/adc.h"
 
 #include "TaskPriorities.h"
 #include "BatterySensor.h"
@@ -13,22 +11,17 @@
 
 #define BAT_MIN         3.0
 #define BAT_MAX         4.18
-#define DEFAULT_VREF    1100        // Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   64          // Multisampling
-#define DIVIDER_VALUE   2
 
 
 // Internal Function Declarations
-static void CheckEFuse(void);
-static void PrintCharValueType(esp_adc_cal_value_t val_type);
 static float GetBatteryVoltage(BatterySensor *this);
 static void BatterySensorTask(void *pvParameters);
 
 // Internal Constants
-static const adc_channel_t channel = ADC_CHANNEL_7;     // GPIO35 if ADC1
-static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
-static const adc_atten_t atten = ADC_ATTEN_DB_11;       // 150 mV ~ 2450 mV
-static const adc_unit_t unit = ADC_UNIT_1;
+static const adc_channel_t ADC_CHANNEL  = ADC_CHANNEL_7;    // GPIO35 if ADC1
+static const adc_atten_t ADC_ATTEN      = ADC_ATTEN_DB_12;
+static const adc_unit_t ADC_UNIT        = ADC_UNIT_1;
 
 static const char * TAG = "BAT";
 
@@ -46,21 +39,76 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
         this->batteryPercentMutex = xSemaphoreCreateMutex();
         assert(this->batteryPercentMutex);
 
-        // Check if Two Point or Vref are burned into eFuse
-        CheckEFuse();
-
         // Configure ADC1
-        adc1_config_width(width);
-        adc1_config_channel_atten(channel, atten);
+        this->hwData.adc_init_config.unit_id = ADC_UNIT;
+        ESP_ERROR_CHECK(adc_oneshot_new_unit(&this->hwData.adc_init_config, &this->hwData.adc_handle));
 
-        // Characterize ADC
-        this->hwData.adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
-        esp_adc_cal_value_t val_type = esp_adc_cal_characterize(unit, atten, width, DEFAULT_VREF, this->hwData.adc_chars);
-        PrintCharValueType(val_type);
-     
+        this->hwData.adc_channel_config.bitwidth   = ADC_BITWIDTH_DEFAULT;
+        this->hwData.adc_channel_config.atten      = ADC_ATTEN;
+        ESP_ERROR_CHECK(adc_oneshot_config_channel(this->hwData.adc_handle, ADC_CHANNEL, &this->hwData.adc_channel_config));
+
+        // ADC1 Calibration Init
+        this->hwData.adc_cali_chan_handle = NULL;
+        this->hwData.adc_calibrated = false;
+#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
+        if (!this->hwData.adc_calibrated) 
+        {
+            ESP_LOGI(TAG, "ADC Calibration scheme is Curve Fitting");
+            adc_cali_curve_fitting_config_t cali_config = 
+            {
+                .unit_id = ADC_UNIT,
+                .chan = ADC_CHANNEL,
+                .atten = ADC_ATTEN,
+                .bitwidth = ADC_BITWIDTH_DEFAULT,
+            };
+            retVal = adc_cali_create_scheme_curve_fitting(&cali_config, &this->hwData.adc_cali_chan_handle);
+            if (retVal == ESP_OK) 
+            {
+                this->hwData.adc_calibrated = true;
+            }
+            else
+            {
+                ESP_LOGE(TAG, "ADC Curve Fitting Calibration scheme Failed: %s", esp_err_to_name(retVal));
+            }
+        }
+#endif
+
+#if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
+        if (!this->hwData.adc_calibrated) 
+        {
+            ESP_LOGI(TAG, "ADC Calibration scheme is Line Fitting");
+            adc_cali_line_fitting_config_t cali_config = 
+            {
+                .unit_id = ADC_UNIT,
+                .atten = ADC_ATTEN,
+                .bitwidth = ADC_BITWIDTH_DEFAULT,
+            };
+            retVal = adc_cali_create_scheme_line_fitting(&cali_config, &this->hwData.adc_cali_chan_handle);
+            if (retVal == ESP_OK)
+            {
+                this->hwData.adc_calibrated = true;
+            }
+            else
+            {
+                ESP_LOGE(TAG, "ADC Line Fitting Calibration scheme Failed: %s", esp_err_to_name(retVal));
+            }
+        }
+#endif
+
+        switch(retVal)
+        {
+            case ESP_OK:
+                ESP_LOGI(TAG, "ADC Calibration successful");
+                break;
+            case ESP_ERR_NOT_SUPPORTED:
+                ESP_LOGE(TAG, "ADC Calibration failed: Not Supported");
+                break;
+            default:
+                ESP_LOGE(TAG, "ADC Calibration failed: Unknown Error");
+                break;
+        }
+
         xTaskCreate(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 5, this, BATT_SENSE_TASK_PRIORITY, NULL);
-
-        retVal = ESP_OK;
     }
 
     return retVal;
@@ -128,69 +176,31 @@ static void BatterySensorTask(void *pvParameters)
     }
 }
 
-static void CheckEFuse(void)
-{
-    //Check if TP is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK)
-    {
-        ESP_LOGD(TAG, "eFuse Two Point: Supported");
-    }
-    else
-    {
-        ESP_LOGW(TAG, "eFuse Two Point: NOT supported");
-    }
-    //Check Vref is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK)
-    {
-        ESP_LOGD(TAG, "eFuse Vref: Supported");
-    }
-    else
-    {
-        ESP_LOGW(TAG, "eFuse Vref: NOT supported");
-    }
-}
-
-static void PrintCharValueType(esp_adc_cal_value_t valType)
-{
-    if (valType == ESP_ADC_CAL_VAL_EFUSE_TP)
-    {
-        ESP_LOGD(TAG, "Characterized using Two Point Value");
-    }
-    else if (valType == ESP_ADC_CAL_VAL_EFUSE_VREF)
-    {
-        ESP_LOGD(TAG, "Characterized using eFuse Vref");
-    }
-    else
-    {
-        ESP_LOGD(TAG, "Characterized using Default Vref");
-    }
-}
-
 static float GetBatteryVoltage(BatterySensor *this)
 {
     assert(this);
     float retVal = 0;
-    if(this->initialized)
+    if(this->initialized && this->hwData.adc_calibrated)
     {
-        uint32_t adc_reading = 0;
+        // Read the raw value
+        int adc_average = 0;
+        int adc_reading = 0;
+
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++)
         {
-            if (unit == ADC_UNIT_1)
-            {
-                adc_reading += adc1_get_raw((adc1_channel_t)channel);
-            }
-            else
-            {
-                int raw;
-                adc2_get_raw((adc2_channel_t)channel, width, &raw);
-                adc_reading += raw;
-            }
+            ESP_ERROR_CHECK(adc_oneshot_read(this->hwData.adc_handle, ADC_CHANNEL, &adc_reading));
+            ESP_LOGD(TAG, "ADC%d Channel[%d] Raw Data: %d", ADC_UNIT, ADC_CHANNEL, adc_reading);
+            adc_average += adc_reading;
         }
-        adc_reading /= NO_OF_SAMPLES;
+        adc_average /= NO_OF_SAMPLES;
+
+        int milliVoltage = 0;
+        ESP_ERROR_CHECK(adc_cali_raw_to_voltage(this->hwData.adc_cali_chan_handle, adc_average, &milliVoltage));
+        ESP_LOGD(TAG, "ADC%d Channel[%d] Cali Voltage: %d mV", ADC_UNIT, ADC_CHANNEL, milliVoltage);
+
         // Convert adc_reading to voltage
-        // Multiply by divider to get full batt voltage
-        retVal = (float)esp_adc_cal_raw_to_voltage(adc_reading, this->hwData.adc_chars) / 1000 * DIVIDER_VALUE;
+        retVal = (float)(milliVoltage) / 1000;
     }
     return retVal;
 }

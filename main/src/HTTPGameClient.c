@@ -24,7 +24,7 @@
 // Internal Function Declarations
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt);
 static void HTTPGameClientTask(void *pvParameters);
-static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 
 
 // Internal Constants
@@ -268,7 +268,8 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
 {
     esp_err_t ret = ESP_FAIL;
     assert(this);
-    if (this->response.pData != 0)
+    // Verify first byte is not NULL
+    if (this->response.pData[0] != 0)
     {
         ESP_LOGI(TAG, "Parsing JSON Response: %s", this->response.pData);
         cJSON * root = cJSON_Parse((char *)this->response.pData);
@@ -545,7 +546,7 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient * this)
                 this->response.statusCode =  esp_http_client_get_status_code(client);
                 this->response.dataLength = esp_http_client_get_content_length(client);
 
-                ESP_LOGI(TAG, "HTTP Status = %d, content_length = %d", this->response.statusCode, this->response.dataLength);
+                ESP_LOGI(TAG, "HTTP Status = %lu, content_length = %lu", this->response.statusCode, this->response.dataLength);
                 ESP_LOGI(TAG, "Response: %s", this->response.pData);
 
                 switch(pCurr->request.requestType)
@@ -697,7 +698,7 @@ static void HTTPGameClientTask(void *pvParameters)
     ESP_LOGE(TAG, "HTTPGameClientTask exiting...");
 }
 
-static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     assert(pObj);
     assert(notificationData);
@@ -811,7 +812,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     ESP_LOGI(TAG, "Heartbeat JSON: %s", pHttpRequest->pData);
     pHttpRequest->dataLength = len;
 
-    ESP_LOGI(TAG, "Handling GameState Request Notification: %s, %d", eventBase, notificationEvent);
+    ESP_LOGI(TAG, "Handling GameState Request Notification: %s, %lu", eventBase, notificationEvent);
 
     if(xSemaphoreTake(this->requestMutex, pdMS_TO_TICKS(MUTEX_WAIT_TIME_MS)) == pdTRUE)
     {
@@ -890,6 +891,12 @@ static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)
                 ESP_LOGI(TAG, "Last mbedtls failure: 0x%x", mbedtls_err);
             }
             output_len = 0;
+            break;
+        case HTTP_EVENT_REDIRECT:
+            ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
+            // Not going to follow redirect for now
+            // esp_http_client_set_header(evt->client, "Accept", "text/html");
+            //esp_http_client_set_redirection(evt->client);
             break;
     }
     return ESP_OK;

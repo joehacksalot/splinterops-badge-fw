@@ -1,5 +1,7 @@
 
 #include <stdio.h>
+#include <string.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "esp_check.h"
@@ -70,12 +72,12 @@ static esp_err_t SystemState_ResetLedSequencePreviewActiveTimer(SystemState *thi
 static esp_err_t SystemState_LedGameStatusToggleTimerExpired(SystemState *this);
 static void SystemState_LedGameStatusToggleTimerCallback(TimerHandle_t xTimer);
 
-static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
-static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData);
+static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 
 static void SystemStateTask(void *pvParameters);
 
@@ -174,6 +176,9 @@ esp_err_t SystemState_Init(SystemState *this)
         ESP_LOGE(TAG, "Failed to initialize FATFS. error code = %s", esp_err_to_name(ret));
     }
 
+    // Initialize ESP Timers
+    esp_timer_init();
+
     this->pBleControl = BleControl_GetInstance();
     memset(this->pBleControl, 0, sizeof(*this->pBleControl));
 
@@ -184,7 +189,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));
     ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings)); // uses bootloader random enable logic
 
-    // ESP_ERROR_CHECK(AudioPlayer_Init(&this->audioPlayer, &this->notificationDispatcher));
+    ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher));
     LedSequences_Init(&this->batterySensor);
     UserSettings_RegisterBatterySensor(&this->userSettings, &this->batterySensor);
     BadgeStats_RegisterBatterySensor(&this->badgeStats, &this->batterySensor);
@@ -387,7 +392,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
     }
 }
 
-static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
 
@@ -400,7 +405,7 @@ static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_bas
     }
 }
 
-static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Action Notification");
 
@@ -410,7 +415,7 @@ static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_bas
     SystemState_ProcessTouchActionCmd(this, touchCmd);
 }
 
-static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     SystemState *this = (SystemState *)pObj;
     assert(this);
@@ -584,7 +589,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
     }
 }
 
-static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGI(TAG, "Handling Game Event Notification");
     SystemState *this = (SystemState *)pObj;
@@ -845,7 +850,7 @@ static void SystemState_LedGameStatusToggleTimerCallback(TimerHandle_t xTimer)
     SystemState_LedGameStatusToggleTimerExpired(systemState);
 }
 
-static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGI(TAG, "Handling Network Test Notification: %d", *((bool *) notificationData));
 
@@ -856,7 +861,7 @@ static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_bas
     SystemState_ResetNetworkTestSuccessTimer(this);
 }
 
-static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
+static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Song Note Change Notification: %d", *((bool *) notificationData));
 

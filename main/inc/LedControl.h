@@ -15,7 +15,23 @@
 
 // Hardware configuration
 #define LED_STRIP_GPIO 25
-#define LED_TYPE LED_STRIP_WS2812
+#define LED_TYPE LED_MODEL_WS2812
+
+typedef struct
+{
+    union {
+        uint8_t r;
+        uint8_t red;
+    };
+    union {
+        uint8_t g;
+        uint8_t green;
+    };
+    union {
+        uint8_t b;
+        uint8_t blue;
+    };
+} rgb_t;
 
 // LED Ring configurations
 #if defined(TRON_BADGE)
@@ -218,8 +234,10 @@ typedef struct LedControl_t
     uint32_t ledLoadedIndex;
     color_t pixelColorState[LED_STRIP_LEN];
     bool flushNeeded;
-    led_strip_t ledStrip;
-    portMUX_TYPE stripMutex;
+    led_strip_config_t ledStrip;
+    led_strip_rmt_config_t ledStripRmt;
+    led_strip_spi_config_t ledStripSpi;
+    led_strip_handle_t ledStripHandle;
     SemaphoreHandle_t jsonMutex;
     uint32_t selectedIndex;
     uint32_t loadRequired;

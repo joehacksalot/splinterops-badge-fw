@@ -235,7 +235,6 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     this->bleXferDisableTimerHandleArgs.callback = &BleXferDisableTimeoutEventHandler;
     this->bleXferDisableTimerHandleArgs.arg = (void*)(this); // argument specified here will be passed to timer callback function
     this->bleXferDisableTimerHandleArgs.name = "ble-xfer-timeout";
-    esp_timer_init();
     ESP_ERROR_CHECK(esp_timer_create(&this->bleXferDisableTimerHandleArgs, &this->bleXferDisableTimerHandle));
 
     // Create tasks to disable BLE and BLE Xfer
@@ -1230,7 +1229,7 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
         break;
     case ESP_GATTS_READ_EVT: 
     {
-        ESP_LOGI(TAG, "GATT_READ_EVT, connId %d, trans_id %d, handle %d", param->read.conn_id, param->read.trans_id, param->read.handle);
+        ESP_LOGI(TAG, "GATT_READ_EVT, connId %d, trans_id %lu, handle %d", param->read.conn_id, param->read.trans_id, param->read.handle);
         esp_gatt_rsp_t rsp;
         memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
         rsp.attr_value.handle = param->read.handle;

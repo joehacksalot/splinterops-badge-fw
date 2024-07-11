@@ -16,7 +16,7 @@
 
 
 // Internal Function Declarations
-static esp_err_t GpioControl_StopTimer(GpioControl *this, GpioFeatures feature);
+// static esp_err_t GpioControl_StopTimer(GpioControl *this, GpioFeatures feature);
 static esp_err_t GpioControl_ResetTimer(GpioControl *this, GpioFeatures feature, uint32_t durationMs);
 static esp_err_t GpioControl_TimeoutEventHandlerAction(GpioControl *this, GpioFeatures feature);
 static void GpioControl_LeftEyeTimeoutEventHandler(void* arg);
@@ -31,7 +31,6 @@ esp_err_t GpioControl_Init(GpioControl *this)
 {
     esp_err_t ret = ESP_OK;
     assert(this);
-    esp_timer_init();
 
     this->timerHandleArgs[GPIO_FEATURE_LEFT_EYE].callback = &GpioControl_LeftEyeTimeoutEventHandler;
     this->timerHandleArgs[GPIO_FEATURE_LEFT_EYE].arg = (void*)(this);
@@ -99,20 +98,20 @@ esp_err_t GpioControl_Control(GpioControl *this, GpioFeatures feature, bool stat
     }
 
     ESP_ERROR_CHECK(gpio_set_level(gpioPinNumber, state? 1 : 0));
-    ESP_LOGI(TAG, "Gpio feature %d set to %d for %d ms", feature, state, durationMs);
+    ESP_LOGI(TAG, "Gpio feature %d set to %d for %lu ms", feature, state, durationMs);
 
     return ESP_OK;
 }
 
-static esp_err_t GpioControl_StopTimer(GpioControl *this, GpioFeatures feature)
-{
-    assert(this);
-    assert(feature >= 0);
-    assert(feature < NUM_GPIO_FEATURES);
+// static esp_err_t GpioControl_StopTimer(GpioControl *this, GpioFeatures feature)
+// {
+//     assert(this);
+//     assert(feature >= 0);
+//     assert(feature < NUM_GPIO_FEATURES);
 
-    this->timerRunning[feature] = 0;
-    return esp_timer_stop(this->timers[feature]);
-}
+//     this->timerRunning[feature] = 0;
+//     return esp_timer_stop(this->timers[feature]);
+// }
 
 static esp_err_t GpioControl_ResetTimer(GpioControl *this, GpioFeatures feature, uint32_t durationMs)
 {

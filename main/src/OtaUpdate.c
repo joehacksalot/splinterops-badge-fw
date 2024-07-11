@@ -297,6 +297,12 @@ static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)
             }
             output_len = 0;
             break;
+        case HTTP_EVENT_REDIRECT:
+            ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
+            // Not going to follow redirect for now
+            // esp_http_client_set_header(evt->client, "Accept", "text/html");
+            //esp_http_client_set_redirection(evt->client);
+            break;
     }
     return ESP_OK;
 }
