@@ -8,7 +8,7 @@
 
 // #include "JsonUtils.h"
 #include "BatterySensor.h"
-#include "DiscUtils.h"
+#include "DiskUtilities.h"
 #include "GameState.h"
 #include "JsonUtils.h"
 #include "LedControl.h"
@@ -808,9 +808,9 @@ static esp_err_t LedControl_ServiceDrawGameEventSequence(LedControl * this, bool
     {
         if (allowDrawOuterRing && TimeUtils_IsTimeExpired(this->gameEventRuntimeInfo.nextOuterDrawTime))
         {
-            color_t color = { .r = stoneColorMap[this->pGameState->gameStateData.status.currentEventColor].r, 
-                              .g = stoneColorMap[this->pGameState->gameStateData.status.currentEventColor].g,
-                              .b = stoneColorMap[this->pGameState->gameStateData.status.currentEventColor].b, 
+            color_t color = { .r = stoneColorMap[this->pGameState->gameStateData.status.eventData.currentEventColor].r, 
+                              .g = stoneColorMap[this->pGameState->gameStateData.status.eventData.currentEventColor].g,
+                              .b = stoneColorMap[this->pGameState->gameStateData.status.eventData.currentEventColor].b, 
                               .i = 100 };
             this->flushNeeded = true;
             int holdTime = 1000 / (OUTER_RING_LED_COUNT * this->gameEventRuntimeInfo.revolutionsPerSecond);
@@ -834,11 +834,11 @@ static esp_err_t LedControl_ServiceDrawGameEventSequence(LedControl * this, bool
 
         if (allowDrawInnerRing && TimeUtils_IsTimeExpired(this->gameEventRuntimeInfo.nextInnerDrawTime))
         {
-            rgb_t color = stoneColorMap[this->pGameState->gameStateData.status.currentEventColor];
+            rgb_t color = stoneColorMap[this->pGameState->gameStateData.status.eventData.currentEventColor];
             this->flushNeeded = true;
             this->gameEventRuntimeInfo.nextInnerDrawTime = TimeUtils_GetFutureTimeTicks(this->gameEventRuntimeInfo.updatePeriod);
-            uint32_t numInnerLeds = (uint32_t)((INNER_RING_LED_COUNT * this->pGameState->gameStateData.status.powerLevel)/100.0);
-            double pulsesPerSecond = this->gameEventRuntimeInfo.minEventPulsesPerSecond + ((this->gameEventRuntimeInfo.maxEventPulsesPerSecond - this->gameEventRuntimeInfo.minEventPulsesPerSecond) * (1-(this->pGameState->gameStateData.status.mSecRemaining/(double)MAX_EVENT_TIME_MSEC)));
+            uint32_t numInnerLeds = (uint32_t)((INNER_RING_LED_COUNT * this->pGameState->gameStateData.status.eventData.powerLevel)/100.0);
+            double pulsesPerSecond = this->gameEventRuntimeInfo.minEventPulsesPerSecond + ((this->gameEventRuntimeInfo.maxEventPulsesPerSecond - this->gameEventRuntimeInfo.minEventPulsesPerSecond) * (1-(this->pGameState->gameStateData.status.eventData.mSecRemaining/(double)MAX_EVENT_TIME_MSEC)));
             double updatesPerSecond = (1000.0 / this->gameEventRuntimeInfo.updatePeriod);
             double totalIncrementsPerSecond = 200 * pulsesPerSecond;
             double increment = totalIncrementsPerSecond/updatesPerSecond;

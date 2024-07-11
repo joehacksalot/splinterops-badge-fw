@@ -21,7 +21,7 @@ typedef struct BatterySensor_t
     bool initialized;
     float batteryPercent;
     float batteryVoltage;
-    SemaphoreHandle_t procSyncMutex;
+    SemaphoreHandle_t batteryPercentMutex;
     BatterySensorHwData hwData;
     NotificationDispatcher *pNotificationDispatcher;
 } BatterySensor;

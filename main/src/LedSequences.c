@@ -6,7 +6,7 @@
 #include "led_sequences_json.hpp"
 #include "BatterySensor.h"
 #include "LedControl.h"
-#include "DiscUtils.h"
+#include "DiskUtilities.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -91,6 +91,11 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
     if (status != 0)
     {
         ESP_LOGE(TAG, "Error: unable to remove the file. %s", filename);
+    }
+    esp_err_t ret = WriteFileToDisk(filename, (void *)custom_led_sequences[index], MAX_CUSTOM_LED_SEQUENCE_SIZE, -1);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to write badge stats file");
     }
     if (pBatterySensor != NULL && BatterySensor_GetBatteryPercent(pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
     {

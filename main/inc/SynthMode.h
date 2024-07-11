@@ -23,7 +23,6 @@ typedef struct SynthMode_t
     SemaphoreHandle_t queueMutex;
     SemaphoreHandle_t toneMutex;
     TickType_t nextNotePlayTime;
-    SemaphoreHandle_t procSyncMutex;
     NotificationDispatcher* pNotificationDispatcher;
     UserSettings* pUserSettings;
 } SynthMode;

@@ -19,7 +19,7 @@
 #include "argtable3/argtable3.h"
 #include "esp_vfs_fat.h"
 
-#include "DiscUtils.h"
+#include "DiskUtilities.h"
 #include "console_system.h"
 #include "Console.h"
 #include "TaskPriorities.h"

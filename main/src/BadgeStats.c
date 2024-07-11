@@ -7,7 +7,7 @@
 
 #include "BadgeStats.h"
 #include "BatterySensor.h"
-#include "DiscUtils.h"
+#include "DiskUtilities.h"
 #include "TaskPriorities.h"
 #include "Utilities.h"
 
@@ -249,57 +249,27 @@ static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this)
     esp_err_t ret = ESP_FAIL;
     assert(this);
 
-    // Read current position file from flash filesystem
-    ESP_LOGI(TAG, "Reading badge stats file");
-    FILE * fp = fopen(STATS_FILE_NAME, "rb");
-    if (fp != 0)
+    BadgeStatsFile badgeStatsFile;
+    if (ReadFileFromDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile), sizeof(badgeStatsFile)) == ESP_OK)
     {
-        // Check file size matches
-        fseek(fp, 0L, SEEK_END);
-        ESP_LOGD(TAG, "Checking file size");
-        ssize_t fileSize = ftell(fp);
-        if (fileSize == sizeof(this->badgeStats))
+        if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
         {
-            // File size matches expected, read data into offset
-            ESP_LOGD(TAG, "File size matches expected, reading data");
-            fseek(fp, 0, SEEK_SET);
-            BadgeStatsFile tmpStats;
-            if (fread(&tmpStats, 1, sizeof(tmpStats), fp) == sizeof(tmpStats))
+            this->badgeStats = tmpStats;
+            ret = ESP_OK;
+            if (xSemaphoreGive(this->mutex) != pdTRUE)
             {
-                if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
-                {
-                    this->badgeStats = tmpStats;
-                    if (xSemaphoreGive(this->mutex) != pdTRUE)
-                    {
-                        ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
-                    }
-
-                    ESP_LOGI(TAG, "Stats file found and read");
-                    ret = ESP_OK;
-                }
-                else
-                {
-                    ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
-                }
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Partial read completed");
+                ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
             }
         }
         else
         {
-            // File size doesn't match expected
-            ESP_LOGE(TAG, "ERROR: Stats file size not as expected. Actual: %d, Expected: %d", fileSize, sizeof(this->badgeStats));
+            ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
         }
-
-        fclose(fp);
     }
     else
     {
-        ESP_LOGI(TAG, "Stats file %s does not exist", STATS_FILE_NAME);
+        ESP_LOGE(TAG, "Failed to read game status file");
     }
-
     return ret;
 }
 
@@ -307,52 +277,22 @@ static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this)
 {
     esp_err_t ret = ESP_FAIL;
     assert(this);
-
-    BadgeStatsFile tmpStats;
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        tmpStats = this->badgeStats;
+        BadgeStatsFile badgeStatsFile = this->badgeStats;
         if (xSemaphoreGive(this->mutex) != pdTRUE)
         {
-            ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
+            ESP_LOGE(TAG, "Failed to give mutex in %s", __FUNCTION__);
         }
-
-        if (this->pBatterySensor != NULL && BatterySensor_GetBatteryPercent(this->pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
+        ret = WriteFileToDisk(STATS_FILE_NAME, (char *)&badgeStatsFile, sizeof(badgeStatsFile));
+        if (ret != ESP_OK)
         {
-            int status = remove(STATS_FILE_NAME);
-            if(status != 0)
-            {
-                ESP_LOGE(TAG, "Error: unable to remove the file. %s", STATS_FILE_NAME);
-            }
-            FILE * fp = fopen(STATS_FILE_NAME, "wb");
-            if (fp != 0)
-            {
-                ssize_t bytesWritten = fwrite(&tmpStats, 1, sizeof(tmpStats), fp);
-                if (bytesWritten == sizeof(tmpStats))
-                {
-                    ESP_LOGI(TAG, "Write completed for %s", STATS_FILE_NAME);
-                    ret = ESP_OK;
-                }
-                else
-                {
-                    ESP_LOGE(TAG, "Write of selected sequence index file failed. fwrite return did not match byte write size. expected=%d, actual=%d\n", sizeof(tmpStats), bytesWritten);
-                }
-                fclose(fp);
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Creation of %s failed", STATS_FILE_NAME);
-            }
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Battery level too low to write stats file");
+            ESP_LOGE(TAG, "Failed to write badge stats file");
         }
     }
     else
     {
         ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
-        return ESP_FAIL;
     }
     return ret;
 }

@@ -43,8 +43,8 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
         this->initialized = true;
         this->pNotificationDispatcher = pNotificationDispatcher;
 
-        this->procSyncMutex = xSemaphoreCreateMutex();
-        assert(this->procSyncMutex);
+        this->batteryPercentMutex = xSemaphoreCreateMutex();
+        assert(this->batteryPercentMutex);
 
         // Check if Two Point or Vref are burned into eFuse
         CheckEFuse();
@@ -70,10 +70,10 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
 // {
 //     assert(this);
 //     float ret = 0; // TODO: return negative instead of 0 when fail
-//     if (xSemaphoreTake(this->procSyncMutex, 50 / portTICK_PERIOD_MS) == pdTRUE)
+//     if (xSemaphoreTake(this->batteryPercentMutex, 50 / portTICK_PERIOD_MS) == pdTRUE)
 //     {
 //         ret = this->batteryPercent;
-//         if (xSemaphoreGive(this->procSyncMutex) != pdTRUE)
+//         if (xSemaphoreGive(this->batteryPercentMutex) != pdTRUE)
 //         {
 //             ESP_LOGE(TAG, "Failed to give bat mutex at GetBatteryPercent");
 //         }
@@ -89,10 +89,10 @@ int BatterySensor_GetBatteryPercent(BatterySensor *this)
 {
     assert(this);
     int ret = 0;
-    if (xSemaphoreTake(this->procSyncMutex, 50 / portTICK_PERIOD_MS) == pdTRUE)
+    if (xSemaphoreTake(this->batteryPercentMutex, 50 / portTICK_PERIOD_MS) == pdTRUE)
     {
         ret = (int)this->batteryPercent;
-        if (xSemaphoreGive(this->procSyncMutex) != pdTRUE)
+        if (xSemaphoreGive(this->batteryPercentMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give bat mutex at GetBatteryPercent");
         }
@@ -115,10 +115,10 @@ static void BatterySensorTask(void *pvParameters)
     while (true)
     {
         this->batteryVoltage = GetBatteryVoltage(this);
-        if (xSemaphoreTake(this->procSyncMutex, 50 / portTICK_PERIOD_MS) == pdTRUE)
+        if (xSemaphoreTake(this->batteryPercentMutex, 50 / portTICK_PERIOD_MS) == pdTRUE)
         {
             this->batteryPercent = ((MIN(BAT_MAX, this->batteryVoltage) - BAT_MIN) * 100.0) / (BAT_MAX - BAT_MIN); // keep math bounded in case batter reads above max, percentage will never be over 100%
-            if (xSemaphoreGive(this->procSyncMutex) != pdTRUE)
+            if (xSemaphoreGive(this->batteryPercentMutex) != pdTRUE)
             {
                 ESP_LOGE(TAG, "Failed to give bat mutex in bat task");
             }

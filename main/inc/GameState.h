@@ -7,6 +7,7 @@
 #include "freertos/semphr.h"
 
 #include "BadgeStats.h"
+#include "BatterySensor.h"
 #include "GameTypes.h"
 #include "NotificationDispatcher.h"
 #include "Ocarina.h"
@@ -34,10 +35,11 @@ typedef struct HeartBeatResponse_t
 
 typedef struct GameState_t
 {
-    SemaphoreHandle_t mutex;
+    SemaphoreHandle_t gameStateDataMutex;
     TickType_t nextHeartBeatTime;
     TickType_t eventEndTime;
     bool sendHeartbeatImmediately;
+    bool gameStatusDataUpdated;
     GameStateData gameStateData;
     SeenEventMap_t seenEventMap;
     PeerMap_t peerMap;
@@ -46,9 +48,10 @@ typedef struct GameState_t
     NotificationDispatcher *pNotificationDispatcher;
     BadgeStats *pBadgeStats;
     UserSettings *pUserSettings;
+    BatterySensor *pBatterySensor;
 } GameState;
 
-esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings);
+esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor);
 void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs);
 
 #endif // GAME_STATE_H_

@@ -57,4 +57,3 @@ int GetBadgeType(void)
     #endif
     return coded_badge_type;
 }
-

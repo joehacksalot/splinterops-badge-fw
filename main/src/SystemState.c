@@ -11,7 +11,7 @@
 #include "BadgeStats.h"
 #include "BleControl.h"
 #include "Console.h"
-#include "DiscUtils.h"
+#include "DiskUtilities.h"
 #include "LedModing.h"
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
@@ -163,12 +163,12 @@ esp_err_t SystemState_Init(SystemState *this)
     }
 
     // Initialize flash fat filesystem
-    ret = DiscUtils_InitNvs();
+    ret = DiskUtilities_InitNvs();
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to initialize NVS. error code = %s", esp_err_to_name(ret));
     }
-    ret = DiscUtils_InitFs();
+    ret = DiskUtilities_InitFs();
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to initialize FATFS. error code = %s", esp_err_to_name(ret));
@@ -188,7 +188,7 @@ esp_err_t SystemState_Init(SystemState *this)
     LedSequences_Init(&this->batterySensor);
     UserSettings_RegisterBatterySensor(&this->userSettings, &this->batterySensor);
     BadgeStats_RegisterBatterySensor(&this->badgeStats, &this->batterySensor);
-    ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings));
+ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings, &this->batterySensor));
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)

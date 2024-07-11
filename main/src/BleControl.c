@@ -165,7 +165,7 @@ esp_err_t SetEventAdvertisingData(BleControl *this)
     memcpy(&eventAdvPacket.eventAdvHeader, &eventAdvHeader, sizeof(AdvertisingHeader));
     memcpy(&eventAdvPacket.eventAdvPayload.badgeId, this->pUserSettings->badgeId, BADGE_ID_SIZE);
     size_t outlen;
-    mbedtls_base64_decode(eventAdvPacket.eventAdvPayload.eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->pGameState->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
+    mbedtls_base64_decode(eventAdvPacket.eventAdvPayload.eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->pGameState->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
 
     // Set advertising data
     if ((status = esp_ble_gap_config_adv_data_raw((uint8_t*)&eventAdvPacket, sizeof(EventAdvertisingPacket))) != ESP_OK) {
