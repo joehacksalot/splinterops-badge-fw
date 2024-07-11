@@ -31,14 +31,24 @@ typedef enum GameState_EventColor_e
     NUM_GAMESTATE_EVENTCOLORS
 } GameState_EventColor;
 
-typedef struct GameStatus_t
+typedef struct GameEventData_t
 {
-    uint8_t colorBits; // Red, Yellow, Blue, Cyan, Magenta, Green
     char currentEventIdB64[EVENT_ID_B64_SIZE];
     GameState_EventColor currentEventColor;
     uint8_t powerLevel;
     uint32_t mSecRemaining;
+} GameEventData;
+
+typedef struct GameStatusData_t
+{
+    uint8_t colorBits; // Red, Yellow, Blue, Cyan, Magenta, Green
     uint16_t songUnlockedBits;
+} GameStatusData;
+
+typedef struct GameStatus_t
+{
+    GameStatusData statusData;
+    GameEventData eventData;
 } GameStatus;
 
 typedef struct PeerReport_t // Sent from BleControl 

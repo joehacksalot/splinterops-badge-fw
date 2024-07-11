@@ -165,7 +165,7 @@ esp_err_t SetEventAdvertisingData(BleControl *this)
     memcpy(&eventAdvPacket.eventAdvHeader, &eventAdvHeader, sizeof(AdvertisingHeader));
     memcpy(&eventAdvPacket.eventAdvPayload.badgeId, this->pUserSettings->badgeId, BADGE_ID_SIZE);
     size_t outlen;
-    mbedtls_base64_decode(eventAdvPacket.eventAdvPayload.eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->pGameState->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
+    mbedtls_base64_decode(eventAdvPacket.eventAdvPayload.eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->pGameState->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
 
     // Set advertising data
     if ((status = esp_ble_gap_config_adv_data_raw((uint8_t*)&eventAdvPacket, sizeof(EventAdvertisingPacket))) != ESP_OK) {
@@ -1254,10 +1254,9 @@ static void BleXferGattsProfileAEventHandler(esp_gatts_cb_event_t event, esp_gat
         memcpy((void*)&rsp.attr_value.value+printed_bytes, &coded_badge_type, length);
         printed_bytes += length;
         
-        // TODO: Write SongBits (12 bits) [2 bytes]
         length = 2; // 2 bytes for 12 bits
-        uint16_t temp_song_spacer = 0;
-        memcpy((void*)&rsp.attr_value.value+printed_bytes, &temp_song_spacer, length);
+        uint16_t song_bits = this->pGameState->gameStateData.status.statusData.songUnlockedBits;
+        memcpy((void*)&rsp.attr_value.value+printed_bytes, &song_bits, length);
         printed_bytes += length;
 
         // Write Wifi_SSID

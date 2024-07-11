@@ -5,7 +5,8 @@
 #include "freertos/task.h"
 #include "mbedtls/base64.h"
 
-#include "DiscUtils.h"
+#include "DiskDefines.h"
+#include "DiskUtilities.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
 #include "SynthModeNotifications.h"
@@ -22,17 +23,20 @@
 static const char *TAG = "GME";
 static int mapIndices[MAX_PEER_MAP_DEPTH];
 
-static void GameState_Task(void *pvParameters);
-static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void _GameState_Task(void *pvParameters);
+static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void _GameState_SendHeartbeatHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport);
-bool _GameState_IsCurrentEvent(GameState *this);
-bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64);
-void _GameState_SetEventId(GameState *this, char *newEventIdB64);
-void _GameState_ResetEventId(GameState *this);
-bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64);
-bool _GameState_IsBlankEvent(char *eventIdB64);
+static bool _GameState_IsCurrentEvent(GameState *this);
+static bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64);
+static void _GameState_SetEventId(GameState *this, char *newEventIdB64);
+static void _GameState_ResetEventId(GameState *this);
+static bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64);
+static bool _GameState_IsBlankEvent(char *eventIdB64);
+static esp_err_t _GameState_ReadGameStatusDataFileFromDisk(GameState *this);
+static esp_err_t _GameState_WriteGameStatusDataFileToDisk(GameState *this);
 
-esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings)
+esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor)
 {
     assert(this);
     memset(this, 0, sizeof(*this));
@@ -46,16 +50,20 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pBadgeStats = pBadgeStats;
     this->pUserSettings = pUserSettings;
-    this->mutex = xSemaphoreCreateMutex();
+    this->pBatterySensor = pBatterySensor;
+    this->gameStateDataMutex = xSemaphoreCreateMutex();
     this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(FIRST_HEARTBEAT_POWERON_DELAY_MS);
     this->sendHeartbeatImmediately = false;
+    this->gameStatusDataUpdated = false;
     _GameState_ResetEventId(this);
-    ESP_LOGI(TAG, "Initialized event id: %s", this->gameStateData.status.currentEventIdB64);
-    assert(this->mutex);
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &GameState_NotificationHandler, this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &GameState_NotificationHandler, this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, &GameState_NotificationHandler, this));
-    xTaskCreate(GameState_Task, "GameStateTask", configMINIMAL_STACK_SIZE * 10, this, GAME_STATE_TASK_PRIORITY, NULL);
+    ESP_LOGI(TAG, "Initialized event id: %s", this->gameStateData.status.eventData.currentEventIdB64);
+    assert(this->gameStateDataMutex);
+    _GameState_ReadGameStatusDataFileFromDisk(this);
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &_GameState_NotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &_GameState_NotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SEND_HEARTBEAT, &_GameState_SendHeartbeatHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, &_GameState_NotificationHandler, this));
+    xTaskCreate(_GameState_Task, "GameStateTask", configMINIMAL_STACK_SIZE * 10, this, GAME_STATE_TASK_PRIORITY, NULL);
     return ESP_OK;
 }
 
@@ -64,7 +72,7 @@ void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs)
     ESP_LOGI(TAG, "Current heartbeat time %lu", waitTimeMs);
     this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(waitTimeMs);
     this->sendHeartbeatImmediately = false;
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
         HeartBeatRequest heartBeatRequest = { .gameStateData = this->gameStateData, .badgeStats = this->pBadgeStats->badgeStats, .waitTimeMs = 0, .numPeerReports = this->numPeerReports };
         memcpy(heartBeatRequest.badgeIdB64, this->pUserSettings->badgeIdB64, sizeof(heartBeatRequest.badgeIdB64));
@@ -73,7 +81,7 @@ void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs)
         NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, &heartBeatRequest, sizeof(heartBeatRequest), DEFAULT_NOTIFY_WAIT_DURATION);
         hashmap_clear(&this->peerMap);
         memset(this->peerReports, 0, sizeof(this->peerReports));
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
@@ -84,7 +92,7 @@ void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs)
     }
 }
 
-static void GameState_Task(void *pvParameters)
+static void _GameState_Task(void *pvParameters)
 {
     GameState *this = (GameState *)pvParameters;
     assert(this);
@@ -101,10 +109,10 @@ static void GameState_Task(void *pvParameters)
         if (_GameState_IsCurrentEvent(this))
         {
             TickType_t endTime = 0;
-            if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+            if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
             {
                 endTime = this->eventEndTime;
-                if (xSemaphoreGive(this->mutex) != pdTRUE)
+                if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
                 {
                     ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
                 }
@@ -136,16 +144,22 @@ static void GameState_Task(void *pvParameters)
             GameState_SendHeartBeat(this, waitTimeMs);
         }
 
+        if (this->gameStatusDataUpdated)
+        {
+            this->gameStatusDataUpdated = false;
+            _GameState_WriteGameStatusDataFileToDisk(this);
+        }
+
         vTaskDelay(pdMS_TO_TICKS(GAME_TASK_DELAY_MS));
     }
 }
 
-void _GameState_SetEventId(GameState *this, char *newEventIdB64)
+static void _GameState_SetEventId(GameState *this, char *newEventIdB64)
 {
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        memcpy(this->gameStateData.status.currentEventIdB64, newEventIdB64, EVENT_ID_B64_SIZE);
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        memcpy(this->gameStateData.status.eventData.currentEventIdB64, newEventIdB64, EVENT_ID_B64_SIZE);
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
@@ -156,16 +170,16 @@ void _GameState_SetEventId(GameState *this, char *newEventIdB64)
     }
 }
 
-void _GameState_ResetEventId(GameState *this)
+static void _GameState_ResetEventId(GameState *this)
 {
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
         uint8_t eventId[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         size_t outlen;
 
         // Initialize current event id to blank
-        mbedtls_base64_encode((uint8_t *)this->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE, &outlen, eventId, EVENT_ID_SIZE);
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        mbedtls_base64_encode((uint8_t *)this->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE, &outlen, eventId, EVENT_ID_SIZE);
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
@@ -176,10 +190,10 @@ void _GameState_ResetEventId(GameState *this)
     }
 }
 
-bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64)
+static bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64)
 {
     bool added = false;
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
         ESP_LOGI(TAG, "Current seen event map size %d", hashmap_size(&this->seenEventMap));
         char *pIndex = hashmap_get(&this->seenEventMap, newEventIdB64);
@@ -207,7 +221,7 @@ bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64)
             ESP_LOGI(TAG, "Found seen event id %s", newEventIdB64);
         }
 
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
@@ -220,15 +234,15 @@ bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64)
     return added;
 }
 
-bool _GameState_IsCurrentEvent(GameState *this)
+static bool _GameState_IsCurrentEvent(GameState *this)
 {
     bool isCurrentEvent = false;
     uint8_t eventId[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     size_t outlen;
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        mbedtls_base64_decode(eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        mbedtls_base64_decode(eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
@@ -250,7 +264,7 @@ bool _GameState_IsCurrentEvent(GameState *this)
     return isCurrentEvent;
 }
 
-bool _GameState_IsBlankEvent(char *eventIdB64)
+static bool _GameState_IsBlankEvent(char *eventIdB64)
 {
     bool isBlankEvent = true;
     uint8_t eventId[EVENT_ID_SIZE];
@@ -274,7 +288,7 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
 {
     esp_err_t ret = ESP_FAIL;
     assert(this);
-    if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
         int *pIndex = hashmap_get(&this->peerMap, peerReport->badgeIdB64);
         if (pIndex != NULL)
@@ -320,7 +334,7 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
             }
         }
 
-        if (xSemaphoreGive(this->mutex) != pdTRUE)
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
@@ -332,7 +346,7 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
     return ret;
 }
 
-static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatResponse response)
+static void _GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatResponse response)
 {
     assert(this);
     
@@ -340,19 +354,19 @@ static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespons
     if (memcmp(&this->gameStateData.status, &response.status, sizeof(this->gameStateData.status)) != 0)
     {
         char oldEventIdB64[EVENT_ID_B64_SIZE];
-        if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+        if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
         {
-            strncpy(oldEventIdB64, this->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
+            strncpy(oldEventIdB64, this->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
             this->gameStateData.status = response.status;
             ESP_LOGI(TAG, "Old event id: %s", oldEventIdB64);
             ESP_LOGI(TAG, "New status received from cloud. Updating local record");
-            if (strncmp(oldEventIdB64, response.status.currentEventIdB64, EVENT_ID_B64_SIZE) != 0)
+            if (strncmp(oldEventIdB64, response.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE) != 0)
             {
-                if (!_GameState_IsBlankEvent(response.status.currentEventIdB64))
+                if (!_GameState_IsBlankEvent(response.status.eventData.currentEventIdB64))
                 {
-                    this->eventEndTime = TimeUtils_GetFutureTimeTicks(this->gameStateData.status.mSecRemaining);
-                    ESP_LOGI(TAG, "New event id: %s  endtime: %lu", this->gameStateData.status.currentEventIdB64, (uint32_t)this->eventEndTime);
-                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED, (void*)this->gameStateData.status.currentEventIdB64, EVENT_ID_B64_SIZE, DEFAULT_NOTIFY_WAIT_DURATION);                    
+                    this->eventEndTime = TimeUtils_GetFutureTimeTicks(this->gameStateData.status.eventData.mSecRemaining);
+                    ESP_LOGI(TAG, "New event id: %s  endtime: %lu", this->gameStateData.status.eventData.currentEventIdB64, (uint32_t)this->eventEndTime);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED, (void*)this->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE, DEFAULT_NOTIFY_WAIT_DURATION);                    
                 }
                 else
                 {
@@ -365,7 +379,7 @@ static void GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespons
                 ESP_LOGD(TAG, "Event id did not change");
             }
 
-            if (xSemaphoreGive(this->mutex) != pdTRUE)
+            if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
             {
                 ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
             }
@@ -381,10 +395,10 @@ bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64)
 {
     assert(this);
     assert(eventIdB64);
-    ESP_LOGI(TAG, "Current event id %s, observed event id %s", this->gameStateData.status.currentEventIdB64, eventIdB64);
-    if (strncmp(this->gameStateData.status.currentEventIdB64, eventIdB64, EVENT_ID_SIZE) != 0)
+    ESP_LOGI(TAG, "Current event id %s, observed event id %s", this->gameStateData.status.eventData.currentEventIdB64, eventIdB64);
+    if (strncmp(this->gameStateData.status.eventData.currentEventIdB64, eventIdB64, EVENT_ID_SIZE) != 0)
     {
-        ESP_LOGI(TAG, "Event id changed to %s from %s, sending heartbeat immediately", eventIdB64, this->gameStateData.status.currentEventIdB64);
+        ESP_LOGI(TAG, "Event id changed to %s from %s, sending heartbeat immediately", eventIdB64, this->gameStateData.status.eventData.currentEventIdB64);
         this->sendHeartbeatImmediately = true;
         return true;
     }
@@ -392,7 +406,22 @@ bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64)
     return false;
 }
 
-static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
+static void _GameState_SendHeartbeatHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
+{
+    GameState *this = (GameState *)pObj;
+    assert(this);
+    switch (notificationEvent)
+    {
+        case NOTIFICATION_EVENTS_SEND_HEARTBEAT:
+            ESP_LOGI(TAG, "NOTIFICATION_EVENTS_SEND_HEARTBEAT event");
+            this->sendHeartbeatImmediately = true;
+            break;
+        default:
+            break;
+    }
+}
+
+static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase, int notificationEvent, void *notificationData)
 {
     GameState *this = (GameState *)pObj;
     assert(this);
@@ -434,7 +463,7 @@ static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase
             if (notificationData != NULL)
             {
                 HeartBeatResponse response = *((HeartBeatResponse *)notificationData);
-                GameState_ProcessHeartBeatResponse(this, response);
+                _GameState_ProcessHeartBeatResponse(this, response);
             }
             else
             {
@@ -447,13 +476,14 @@ static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase
             {
                 int songIndex = *((int *)notificationData);
                 ESP_LOGI(TAG, "Song index %d matched, checking unlock status", songIndex);
-                if (!(this->gameStateData.status.songUnlockedBits & (1 << songIndex)))
+                if (!(this->gameStateData.status.statusData.songUnlockedBits & (1 << songIndex)))
                 {
                     ESP_LOGI(TAG, "Unlocked song with index %d", songIndex);
-                    this->gameStateData.status.songUnlockedBits |= (1 << songIndex); 
+                    this->gameStateData.status.statusData.songUnlockedBits |= (1 << songIndex); 
                     PlaySongEventNotificationData unlockSongNotificationData;
                     unlockSongNotificationData.song = SONG_SECRET_SOUND;
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &unlockSongNotificationData, sizeof(unlockSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SEND_HEARTBEAT, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                 }
             }
             else
@@ -465,4 +495,57 @@ static void GameState_NotificationHandler(void *pObj, esp_event_base_t eventBase
             ESP_LOGE(TAG, "Unexpected notification event: %lu", notificationEvent);
             break;
     }
+}
+
+
+static esp_err_t _GameState_ReadGameStatusDataFileFromDisk(GameState *this)
+{
+    esp_err_t ret = ESP_FAIL;
+    assert(this);
+
+    GameStatusData gameStatusData;
+    if (ReadFileFromDisk(GAME_STATUS_FILE_NAME, (char *)&gameStatusData, sizeof(gameStatusData), NULL, sizeof(gameStatusData)) == ESP_OK)
+    {
+        if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+        {
+            this->gameStateData.status.statusData = gameStatusData;
+            ret = ESP_OK;
+            if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
+            {
+                ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
+            }
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
+        }
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Failed to read game status file");
+    }
+    return ret;
+}
+static esp_err_t _GameState_WriteGameStatusDataFileToDisk(GameState *this)
+{
+    esp_err_t ret = ESP_FAIL;
+    assert(this);
+    if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
+    {
+        GameStatusData gameStatusData = this->gameStateData.status.statusData;
+        if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)
+        {
+            ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
+        }
+        ret = WriteFileToDisk(this->pBatterySensor, GAME_STATUS_FILE_NAME, (char *)&gameStatusData, sizeof(gameStatusData));
+        if (ret != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to write game status file");
+        }
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Failed to take badge mutex in %s", __FUNCTION__);
+    }
+    return ret;
 }

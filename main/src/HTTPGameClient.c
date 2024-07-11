@@ -45,6 +45,7 @@ static const char * HEARTBEAT_JSON_TEMPLATE   =
     \"provisionKey\": \"0ec91eff86a15baad0759477770f0698\",\
     \"peerReport\": [%s],\
     \"enrolledEvent\": \"%s\",\
+    \"badgeRequestTime\": %d,\
     \"badgeType\": \"%d\",\
     \"songs\": [%s],\
     \"stats\":{\
@@ -285,27 +286,27 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                     char * colorStr = color->valuestring;
                     if (strcmp(colorStr, "Red") == 0)
                     {
-                        tmpHeartBeatResponse.status.colorBits |= (1 << RED_SHIFT);
+                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << RED_SHIFT);
                     }
                     else if (strcmp(colorStr, "Green") == 0)
                     {
-                        tmpHeartBeatResponse.status.colorBits |= (1 << GREEN_SHIFT);
+                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << GREEN_SHIFT);
                     }
                     else if (strcmp(colorStr, "Yellow") == 0)
                     {
-                        tmpHeartBeatResponse.status.colorBits |= (1 << YELLOW_SHIFT);
+                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << YELLOW_SHIFT);
                     }
                     else if (strcmp(colorStr, "Magenta") == 0)
                     {
-                        tmpHeartBeatResponse.status.colorBits |= (1 << MAGENTA_SHIFT);
+                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << MAGENTA_SHIFT);
                     }
                     else if (strcmp(colorStr, "Blue") == 0)
                     {
-                        tmpHeartBeatResponse.status.colorBits |= (1 << BLUE_SHIFT);
+                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << BLUE_SHIFT);
                     }
                     else if (strcmp(colorStr, "Cyan") == 0)
                     {
-                        tmpHeartBeatResponse.status.colorBits |= (1 << CYAN_SHIFT);
+                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << CYAN_SHIFT);
                     }
                     else
                     {
@@ -323,18 +324,18 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 cJSON *eventId = cJSON_GetObjectItem(event, "event");
                 if (eventId != NULL)
                 {
-                    strncpy((char *)tmpHeartBeatResponse.status.currentEventIdB64, eventId->valuestring, sizeof(tmpHeartBeatResponse.status.currentEventIdB64));
-                    ESP_LOGI(TAG, "Event id: %s", tmpHeartBeatResponse.status.currentEventIdB64);
+                    strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, eventId->valuestring, sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
+                    ESP_LOGI(TAG, "Event id: %s", tmpHeartBeatResponse.status.eventData.currentEventIdB64);
                 }
                 else
                 {
-                    strncpy((char *)tmpHeartBeatResponse.status.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.currentEventIdB64));
+                    strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
                 }
                 // else
                 // {
                     // ESP_LOGE(TAG, "No event id found");
                 //     // TEST CODE
-                //     strcpy((char *) tmpHeartBeatResponse.status.currentEventIdB64, "event112233!");
+                //     strcpy((char *) tmpHeartBeatResponse.status.eventData.currentEventIdB64, "event112233!");
                 // }
                 cJSON *stoneColor = cJSON_GetObjectItem(event, "stoneColor");
                 if (stoneColor != NULL)
@@ -342,27 +343,27 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                     char * colorStr = stoneColor->valuestring;
                     if (strcmp(colorStr, "Red") == 0)
                     {
-                        tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
+                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
                     }
                     else if (strcmp(colorStr, "Green") == 0)
                     {
-                        tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_GREEN;
+                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_GREEN;
                     }
                     else if (strcmp(colorStr, "Yellow") == 0)
                     {
-                        tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_YELLOW;
+                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_YELLOW;
                     }
                     else if (strcmp(colorStr, "Magenta") == 0)
                     {
-                        tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_MAGENTA;
+                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_MAGENTA;
                     }
                     else if (strcmp(colorStr, "Blue") == 0)
                     {
-                        tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_BLUE;
+                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_BLUE;
                     }
                     else if (strcmp(colorStr, "Cyan") == 0)
                     {
-                        tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_CYAN;
+                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_CYAN;
                     }
                     else
                     {
@@ -373,37 +374,37 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                 // {
                     // ESP_LOGE(TAG, "No stoneColor found");
                 //     // TEST CODE
-                //     tmpHeartBeatResponse.status.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
+                //     tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
                 // }
                 
                 cJSON *power = cJSON_GetObjectItem(event, "power");
                 if (power != NULL)
                 {
                     double powerDbl = power->valuedouble;
-                    tmpHeartBeatResponse.status.powerLevel = (uint8_t)powerDbl;
+                    tmpHeartBeatResponse.status.eventData.powerLevel = (uint8_t)powerDbl;
                 }
                 // else
                 // {
                     // ESP_LOGE(TAG, "No power found");
                 //     // TEST CODE
-                //     tmpHeartBeatResponse.status.powerLevel = 70;
+                //     tmpHeartBeatResponse.status.eventData.powerLevel = 70;
                 // }
                 
                 cJSON *msRemaining = cJSON_GetObjectItem(event, "msRemaining");
                 if (msRemaining != NULL)
                 {
-                    tmpHeartBeatResponse.status.mSecRemaining = (uint32_t)msRemaining->valueint;
+                    tmpHeartBeatResponse.status.eventData.mSecRemaining = (uint32_t)msRemaining->valueint;
                 }
                 // else
                 // {
                     // ESP_LOGE(TAG, "No msRemaining found");
                 //     // TEST CODE
-                //     tmpHeartBeatResponse.status.mSecRemaining = 30*1000;
+                //     tmpHeartBeatResponse.status.eventData.mSecRemaining = 30*1000;
                 // }
             }
             else
             {
-                strncpy((char *)tmpHeartBeatResponse.status.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.currentEventIdB64));
+                strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
             }
             
             cJSON *timestamp = cJSON_GetObjectItem(root, "timestamp");
@@ -428,7 +429,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
             {
                 ESP_LOGE(TAG, "No timestamp found");
             //     // TEST CODE
-            //     tmpHeartBeatResponse.status.mSecRemaining = 30*1000;
+            //     tmpHeartBeatResponse.status.eventData.mSecRemaining = 30*1000;
             }
 
             cJSON *songsArray = cJSON_GetObjectItem(root, "songs");
@@ -440,7 +441,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
                     cJSON *song = cJSON_GetArrayItem(songsArray, songsIndex);
                     int songIndex = (int)song->valuedouble;
                     if (songIndex > 0 && songIndex <= OCARINA_NUM_SONGS) {
-                        tmpHeartBeatResponse.status.songUnlockedBits |= (1 << (songIndex - 1));
+                        tmpHeartBeatResponse.status.statusData.songUnlockedBits |= (1 << (songIndex - 1));
                     }
                     else
                     {
@@ -454,7 +455,7 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
             }
             cJSON_Delete(root);
             this->responseStruct = tmpHeartBeatResponse;
-            ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.currentEventIdB64);
+            ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.eventData.currentEventIdB64);
             ret = ESP_OK;
         }
         else
@@ -737,8 +738,8 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         offset += res2;
     }
 
-    char eventIdStr[sizeof(pRequest->gameStateData.status.currentEventIdB64)+1] = {0};
-    memcpy(eventIdStr, pRequest->gameStateData.status.currentEventIdB64, sizeof(pRequest->gameStateData.status.currentEventIdB64));
+    char eventIdStr[sizeof(pRequest->gameStateData.status.eventData.currentEventIdB64)+1] = {0};
+    memcpy(eventIdStr, pRequest->gameStateData.status.eventData.currentEventIdB64, sizeof(pRequest->gameStateData.status.eventData.currentEventIdB64));
 
     // Prepare full request json
     // HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
@@ -756,7 +757,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     bool first = true;
     for (int i = 0; i < OCARINA_NUM_SONGS; i++)
     {
-        if (pRequest->gameStateData.status.songUnlockedBits & (1 << i))
+        if (pRequest->gameStateData.status.statusData.songUnlockedBits & (1 << i))
         {
             if (first)
             {
@@ -785,11 +786,16 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         }
     }
 
+    TickType_t curTimeTicks = TimeUtils_GetCurTimeTicks();
     int len = snprintf((char *)pHttpRequest->pData, sizeof(pHttpRequest->pData), HEARTBEAT_JSON_TEMPLATE, 
-                        pRequest->badgeIdB64, pRequest->keyB64, this->peerReport,
-                        eventIdStr,
-                        coded_badge_type,
-                        songsStr,
+                        pRequest->badgeIdB64,  // uuid %s
+                        pRequest->keyB64,      // key %s
+                                               // provisionKey hard coded
+                        this->peerReport,      // peerReport %s 
+                        eventIdStr,            // enrolledEvent %s
+                        curTimeTicks,          // badgeRequestTime %d
+                        coded_badge_type,      // badgeType %d
+                        songsStr,              // songs %s
                         pRequest->badgeStats.numPowerOns,
                         pRequest->badgeStats.numTouches,
                         pRequest->badgeStats.numTouchCmds,

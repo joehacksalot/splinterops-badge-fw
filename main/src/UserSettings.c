@@ -9,7 +9,8 @@
 #include "cJSON.h"
 
 #include "BatterySensor.h"
-#include "DiscUtils.h"
+#include "DiskDefines.h"
+#include "DiskUtilities.h"
 #include "TaskPriorities.h"
 #include "UserSettings.h"
 #include "Utilities.h"

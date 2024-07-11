@@ -1,16 +1,18 @@
-
-#include "esp_check.h"
-#include "esp_log.h"
-#include "LedSequences.h"
-#include "esp_heap_caps.h"
-#include "led_sequences_json.hpp"
-#include "BatterySensor.h"
-#include "LedControl.h"
-#include "DiscUtils.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+
+#include "esp_check.h"
+#include "esp_log.h"
+#include "esp_heap_caps.h"
+
+#include "led_sequences_json.hpp"
+#include "BatterySensor.h"
+#include "DiskDefines.h"
+#include "DiskUtilities.h"
+#include "LedControl.h"
+#include "LedSequences.h"
 
 #define LED_SEQ_NUM_BUILT_IN_SEQUENCES 3
 #define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
@@ -92,27 +94,10 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
     {
         ESP_LOGE(TAG, "Error: unable to remove the file. %s", filename);
     }
-    if (pBatterySensor != NULL && BatterySensor_GetBatteryPercent(pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
+    esp_err_t ret = WriteFileToDisk(pBatterySensor, filename, (void *)custom_led_sequences[index], MAX_CUSTOM_LED_SEQUENCE_SIZE);
+    if (ret != ESP_OK)
     {
-        FILE * fp = fopen(filename, "wb");
-        if (fp == 0)
-        {
-          ESP_LOGE(TAG, "Open of %s failed\n", filename);
-          return ESP_FAIL;
-        }
-
-        ssize_t bytes_written = fwrite((void *)custom_led_sequences[index], 1, MAX_CUSTOM_LED_SEQUENCE_SIZE, fp);
-        fclose(fp);
-        if (bytes_written != MAX_CUSTOM_LED_SEQUENCE_SIZE)
-        {
-          ESP_LOGE(TAG, "Write failed %d\n", bytes_written);
-          return ESP_FAIL;
-        }
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Battery too low to write to flash");
-        return ESP_FAIL;
+        ESP_LOGE(TAG, "Failed to write badge stats file");
     }
     
     return ESP_OK;
