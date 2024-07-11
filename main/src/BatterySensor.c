@@ -12,6 +12,7 @@
 #define BAT_MIN         3.0
 #define BAT_MAX         4.18
 #define NO_OF_SAMPLES   64          // Multisampling
+#define DIVIDER_VALUE   2
 
 
 // Internal Function Declarations
@@ -200,7 +201,7 @@ static float GetBatteryVoltage(BatterySensor *this)
         ESP_LOGD(TAG, "ADC%d Channel[%d] Cali Voltage: %d mV", ADC_UNIT, ADC_CHANNEL, milliVoltage);
 
         // Convert adc_reading to voltage
-        retVal = (float)(milliVoltage) / 1000;
+        retVal = (float)(milliVoltage) / 1000 * DIVIDER_VALUE;
     }
     return retVal;
 }
