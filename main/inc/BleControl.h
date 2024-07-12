@@ -26,6 +26,7 @@ typedef struct AdvertisingHeader_t {
 }__attribute__((packed)) AdvertisingHeader;
 
 typedef struct EventAdvertisingPayload_t {
+    uint8_t badgeType;
     uint8_t badgeId[BADGE_ID_SIZE];
     uint8_t eventId[EVENT_ID_SIZE];
 }__attribute__((packed)) EventAdvertisingPayload;

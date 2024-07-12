@@ -29,6 +29,7 @@ typedef struct SynthMode_t
 
 esp_err_t SynthMode_Init(SynthMode* this, NotificationDispatcher* pNotificationDispatcher, UserSettings* userSettings);
 esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled);
+bool SynthMode_GetTouchSoundEnabled(SynthMode *this);
 
 
 #endif // SYNTH_MODE_H_

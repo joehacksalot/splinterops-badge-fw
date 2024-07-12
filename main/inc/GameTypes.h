@@ -2,6 +2,7 @@
 #define GAME_TYPES_H_
 
 #include "hashmap.h"
+#include "Utilities.h"
 
 #define BADGE_ID_SIZE                 (8)
 #define BADGE_ID_B64_SIZE             (13)
@@ -56,6 +57,7 @@ typedef struct PeerReport_t // Sent from BleControl
     char badgeIdB64[BADGE_ID_B64_SIZE];
     char eventIdB64[EVENT_ID_B64_SIZE];
     int16_t peakRssi;
+    BadgeType badgeType;
 } PeerReport;
 
 typedef HASHMAP(char, int) PeerMap_t;

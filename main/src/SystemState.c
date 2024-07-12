@@ -17,19 +17,19 @@
 #include "LedModing.h"
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
+#include "Ocarina.h"
 #include "OtaUpdate.h"
+#include "SynthMode.h"
 #include "SystemState.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
 #include "TouchSensor.h"
 #include "TouchActions.h"
 #include "UserSettings.h"
+#include "Utilities.h"
 #include "WifiClient.h"
 
-#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-#include "Ocarina.h"
-#include "SynthMode.h"
-#endif
+#define PEER_RSSID_SONG_THRESHOLD            (-65)
 
 #define LED_GAME_STATUS_TOGGLE_DURATION_MSEC (5000)
 #define LED_PREVIEW_DRAW_DURATION_MSEC       (2000)
@@ -78,6 +78,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
 static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 
 static void SystemStateTask(void *pvParameters);
 
@@ -102,6 +103,11 @@ esp_err_t SystemState_Init(SystemState *this)
     esp_err_t ret= ESP_OK;
     assert(this);
     memset(this, 0, sizeof(*this));
+
+#if defined(REACTOR_BADGE) || defined (CREST_BADGE)
+    this->appConfig.synthCapable = true;
+    this->appConfig.touchActionCommandEnabled = true;
+#endif
 
     this->touchActiveTimer = xTimerCreate("TouchActiveTimer", pdMS_TO_TICKS(TOUCH_ACTIVE_TIMEOUT_DURATION_MSEC), pdFALSE, 0, SystemState_TouchActiveTimerCallback);
     if (this->touchActiveTimer == NULL)
@@ -195,10 +201,11 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings, &this->batterySensor));
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
-#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-    ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
-    ESP_ERROR_CHECK(Ocarina_Init(&this->ocarina, &this->notificationDispatcher));
-#endif
+    if (this->appConfig.synthCapable)
+    {
+        ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
+        ESP_ERROR_CHECK(Ocarina_Init(&this->ocarina, &this->notificationDispatcher));
+    }
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
     ESP_ERROR_CHECK(BleControl_Init(this->pBleControl, &this->notificationDispatcher, &this->userSettings, &this->gameState));
@@ -224,6 +231,8 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED,           &SystemState_GameEventNotificationHandler,      this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_ENDED,            &SystemState_GameEventNotificationHandler,      this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE,       &SystemState_NetworkTestNotificationHandler,    this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &SystemState_PeerHeartbeatNotificationHandler,  this));
+     
 #if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION,            &SystemState_SongNoteChangeNotificationHandler, this));
 #endif
@@ -253,6 +262,104 @@ static void SystemStateTask(void *pvParameters)
     }
 }
 
+static bool SystemState_ProcessSynthModeCmd(SystemState *this, TouchActionsCmd touchCmd)
+{
+    bool cmdProcessed = false;
+    switch(touchCmd)
+    {
+        case TOUCH_ACTIONS_CMD_DISABLE_SYNTH_MODE:
+            if (this->appConfig.synthCapable)
+            {
+                ESP_LOGI(TAG, "Disabling Synth Mode");
+                GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+                // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
+                SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+                Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+                // BadgeStats_IncrementNumSynthModeDisables(&this->badgeStats);
+                cmdProcessed = true;
+            }
+            break;
+        default:
+            break;
+    }
+    return cmdProcessed;
+}
+
+static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchCmd)
+{
+    bool cmdProcessed = false;
+    switch(touchCmd)
+    {
+        case TOUCH_ACTIONS_CMD_NEXT_LED_SEQUENCE:
+            ESP_LOGI(TAG, "Next LED Sequence");
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
+            LedModing_CycleSelectedLedSequence(&this->ledModing, true);
+            LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
+            SystemState_ResetLedSequencePreviewActiveTimer(this);
+            BadgeStats_IncrementNumLedCycles(&this->badgeStats);
+            cmdProcessed = true;
+            break;
+        case TOUCH_ACTIONS_CMD_PREV_LED_SEQUENCE:
+            ESP_LOGI(TAG, "Previous LED Sequence");
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+            LedModing_CycleSelectedLedSequence(&this->ledModing, false);
+            LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
+            SystemState_ResetLedSequencePreviewActiveTimer(this);
+            BadgeStats_IncrementNumLedCycles(&this->badgeStats);
+            cmdProcessed = true;
+            break;
+        case TOUCH_ACTIONS_CMD_DISPLAY_VOLTAGE_METER:
+            ESP_LOGI(TAG, "Displaying Voltage Meter");
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+            LedModing_SetBatteryIndicatorActive(&this->ledModing, true);
+            SystemState_ResetBatteryIndicatorActiveTimer(this);
+            BadgeStats_IncrementNumBatteryChecks(&this->badgeStats);
+            cmdProcessed = true;
+            this->batteryIndicatorActive = true;
+            break;
+        case TOUCH_ACTIONS_CMD_ENABLE_BLE_XFER:
+            ESP_LOGI(TAG, "Enabling BLE Xfer");
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+            BleControl_EnableBleXfer(this->pBleControl, true);
+            BadgeStats_IncrementNumBleEnables(&this->badgeStats);
+            cmdProcessed = true;
+            break;
+        case TOUCH_ACTIONS_CMD_DISABLE_BLE_XFER:
+            ESP_LOGI(TAG, "Disabling BLE Xfer");
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+            BleControl_DisableBleXfer(this->pBleControl);
+            BadgeStats_IncrementNumBleDisables(&this->badgeStats);
+            cmdProcessed = true;
+            break;
+        case TOUCH_ACTIONS_CMD_NETWORK_TEST:
+            ESP_LOGI(TAG, "Enabling Network Test");
+            GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+            LedModing_SetNetworkTestActive(&this->ledModing, true);
+            SystemState_ResetNetworkTestActiveTimer(this);
+            BadgeStats_IncrementNumNetworkTests(&this->badgeStats);
+            cmdProcessed = true;
+            break;
+        case TOUCH_ACTIONS_CMD_TOGGLE_SYNTH_MODE_ENABLE:
+            if (this->appConfig.synthCapable)
+            {
+                bool enabled = SynthMode_GetTouchSoundEnabled(&this->synthMode);
+                ESP_LOGI(TAG, "Enabling Synth Mode");
+                GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
+                SynthMode_SetTouchSoundEnabled(&this->synthMode, !enabled);
+                Ocarina_SetModeEnabled(&this->ocarina, !enabled);
+                // BadgeStats_IncrementNumSynthModeEnables(&this->badgeStats);
+                cmdProcessed = true;
+            }
+            break;
+        case TOUCH_ACTIONS_CMD_CLEAR:
+        case TOUCH_ACTIONS_CMD_ENABLE_TOUCH:
+        case TOUCH_ACTIONS_CMD_UNKNOWN:
+        default:
+            break;
+    }
+    return cmdProcessed;
+}
+
 static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd touchCmd)
 {
     ESP_LOGD(TAG, "Touch Action: %d", touchCmd);
@@ -268,10 +375,11 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
 
     if (this->touchActionCmdClearRequired == false)
     {
-#if defined (REACTOR_BADGE) || defined (CREST_BADGE)
-        if (!this->touchActive)
+        if (this->appConfig.touchActionCommandEnabled && 
+            !this->touchActive && 
+            touchCmd == TOUCH_ACTIONS_CMD_ENABLE_TOUCH)
         {
-            if (touchCmd == TOUCH_ACTIONS_CMD_ENABLE_TOUCH)
+            if (!this->touchActive)
             {
                 ESP_LOGI(TAG, "Touch Enabled. Clear Required");
                 this->touchActionCmdClearRequired = true;
@@ -284,7 +392,9 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
                 cmdProcessed = true;
             }
         }
-        else if (touchCmd == TOUCH_ACTIONS_CMD_DISABLE_TOUCH)
+        else if (this->appConfig.touchActionCommandEnabled &&
+                this->touchActive &&
+                touchCmd == TOUCH_ACTIONS_CMD_DISABLE_TOUCH)
         {
             ESP_LOGI(TAG, "Touch Disabled");
             this->touchActive = false;
@@ -293,98 +403,25 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
             GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
             LedModing_SetTouchActive(&this->ledModing, false);      // TODO: Make these components use the notification dispatcher instead of these functions
             TouchSensor_SetTouchEnabled(&this->touchSensor, false); // TODO: Make these components use the notification dispatcher instead of these functions
-            SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
-            Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+            if (this->appConfig.synthCapable)
+            {
+                SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+                Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
+            }
             cmdProcessed = true;
         }
         else
         {
-#endif 
-            switch(touchCmd)
+            if (this->appConfig.synthCapable && this->synthMode.touchSoundEnabled)
             {
-                case TOUCH_ACTIONS_CMD_NEXT_LED_SEQUENCE:
-                    ESP_LOGI(TAG, "Next LED Sequence");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    LedModing_CycleSelectedLedSequence(&this->ledModing, true);    // TODO: Make these components use the notification dispatcher instead of these functions
-                    LedModing_SetLedSequencePreviewActive(&this->ledModing, true); // TODO: Make these components use the notification dispatcher instead of these functions
-                    SystemState_ResetLedSequencePreviewActiveTimer(this);
-                    BadgeStats_IncrementNumLedCycles(&this->badgeStats);           // TODO: Make these components use the notification dispatcher instead of these functions
-                    cmdProcessed = true;
-                    break;
-                case TOUCH_ACTIONS_CMD_PREV_LED_SEQUENCE:
-                    ESP_LOGI(TAG, "Previous LED Sequence");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    LedModing_CycleSelectedLedSequence(&this->ledModing, false);
-                    LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
-                    SystemState_ResetLedSequencePreviewActiveTimer(this);
-                    BadgeStats_IncrementNumLedCycles(&this->badgeStats);
-                    cmdProcessed = true;
-                    break;
-                case TOUCH_ACTIONS_CMD_DISPLAY_VOLTAGE_METER:
-                    ESP_LOGI(TAG, "Displaying Voltage Meter");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    LedModing_SetBatteryIndicatorActive(&this->ledModing, true);
-                    SystemState_ResetBatteryIndicatorActiveTimer(this);
-                    BadgeStats_IncrementNumBatteryChecks(&this->badgeStats);
-                    cmdProcessed = true;
-                    this->batteryIndicatorActive = true;
-                    break;
-                case TOUCH_ACTIONS_CMD_ENABLE_BLE_XFER:
-                    ESP_LOGI(TAG, "Enabling BLE Xfer");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    BleControl_EnableBleXfer(this->pBleControl, true);
-                    BadgeStats_IncrementNumBleEnables(&this->badgeStats);
-                    cmdProcessed = true;
-                    break;
-                case TOUCH_ACTIONS_CMD_DISABLE_BLE_XFER:
-                    ESP_LOGI(TAG, "Disabling BLE Xfer");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    BleControl_DisableBleXfer(this->pBleControl);
-                    BadgeStats_IncrementNumBleDisables(&this->badgeStats);
-                    cmdProcessed = true;
-                    break;
-                case TOUCH_ACTIONS_CMD_NETWORK_TEST:
-                    ESP_LOGI(TAG, "Enabling Network Test");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    LedModing_SetNetworkTestActive(&this->ledModing, true);
-                    SystemState_ResetNetworkTestActiveTimer(this);
-                    BadgeStats_IncrementNumNetworkTests(&this->badgeStats);
-                    cmdProcessed = true;
-                    break;
-#if defined(REACTOR_BADGE) || defined (CREST_BADGE)
-                case TOUCH_ACTIONS_CMD_ENABLE_SYNTH_MODE:
-                    ESP_LOGI(TAG, "Enabling Synth Mode");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    SynthMode_SetTouchSoundEnabled(&this->synthMode, true);          // TODO: Make these components use the notification dispatcher instead of these functions
-                    Ocarina_SetModeEnabled(&this->ocarina, true);          // TODO: Make these components use the notification dispatcher instead of these functions
-                    // BadgeStats_IncrementNumSynthModeEnables(&this->badgeStats);
-                    cmdProcessed = true;
-                    break;
-                case TOUCH_ACTIONS_CMD_DISABLE_SYNTH_MODE:
-                    ESP_LOGI(TAG, "Disabling Synth Mode");
-                    GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
-                    // GpioControl_Control(&this->gpioControl, GPIO_FEATURE_PIEZO, true, 500);
-                    SynthMode_SetTouchSoundEnabled(&this->synthMode, false);          // TODO: Make these components use the notification dispatcher instead of these functions
-                    Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
-                    // BadgeStats_IncrementNumSynthModeDisables(&this->badgeStats);
-                    cmdProcessed = true;
-                    break;
-#endif
-                case TOUCH_ACTIONS_CMD_CLEAR:
-                case TOUCH_ACTIONS_CMD_ENABLE_TOUCH:
-                case TOUCH_ACTIONS_CMD_UNKNOWN:
-                default:
-                    break;
+                cmdProcessed = SystemState_ProcessSynthModeCmd(this, touchCmd);
+            }
+            else
+            {
+                cmdProcessed = SystemState_ProcessMenuCmd(this, touchCmd);
             }
         }
-#if defined(REACTOR_BADGE) || defined (CREST_BADGE)
     }
-#endif
     if (cmdProcessed)
     {
         BadgeStats_IncrementNumTouchCmds(&this->badgeStats);
@@ -723,10 +760,11 @@ static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
     ESP_LOGI(TAG, "Touch Disabled");
     LedModing_SetTouchActive(&this->ledModing, false);
     TouchSensor_SetTouchEnabled(&this->touchSensor, false);
-#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-    SynthMode_SetTouchSoundEnabled(&this->synthMode, false);
-    Ocarina_SetModeEnabled(&this->ocarina, false);
-#endif
+    if (this->appConfig.synthCapable)
+    {
+        SynthMode_SetTouchSoundEnabled(&this->synthMode, false);
+        Ocarina_SetModeEnabled(&this->ocarina, false);
+    }
     return NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
 }
 
@@ -876,8 +914,59 @@ static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_
         case SONG_NOTE_CHANGE_TYPE_SONG_STOP:
             ESP_LOGI(TAG, "Song Stop Notification Received");
             LedModing_SetSongActiveStatusActive(&this->ledModing, false);
+            if (this->peerSongPlaying)
+            {
+                this->peerSongPlaying = false;
+            }
             break;
         default:
+            break;
+    }
+}
+
+static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
+{
+    SystemState *this = (SystemState *)pObj;
+    assert(this);
+    switch (notificationEvent)
+    {
+        case NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED:
+            if (notificationData != NULL)
+            {
+                PeerReport peerReport = *((PeerReport *)notificationData);
+                ESP_LOGI(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.badgeIdB64, peerReport.peakRssi, peerReport.badgeType);
+                if (this->appConfig.synthCapable)
+                {
+                    if (this->peerSongPlaying == false && peerReport.peakRssi > PEER_RSSID_SONG_THRESHOLD)
+                    {
+                        if (peerReport.badgeType != BADGE_TYPE_UNKNOWN)
+                        {
+                            ESP_LOGI(TAG, "Playing Peer Song for badge type %d", peerReport.badgeType);
+                            PlaySongEventNotificationData successPlaySongNotificationData;
+                            switch (peerReport.badgeType)
+                            {
+                                case BADGE_TYPE_TRON:
+                                    successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                                break;
+                                case BADGE_TYPE_REACTOR:
+                                    successPlaySongNotificationData.song = SONG_BONUS;
+                                break;
+                                case BADGE_TYPE_CREST:
+                                default:
+                                    successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                                break;
+                            }
+                            NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                            this->peerSongPlaying = true;
+                        }
+                        else
+                        {
+                            ESP_LOGI(TAG, "Peer Badge type unknown");
+                        }
+                        
+                    }
+                }
+            }
             break;
     }
 }

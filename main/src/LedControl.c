@@ -1296,16 +1296,12 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
         case LED_MODE_NORMAL:
             ESP_LOGD(TAG, "Setting LED mode to normal");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
-// #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
-// #endif
             break;
         case LED_MODE_SONG:
             ESP_LOGD(TAG, "Setting LED mode to song mode");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_SONG_MODE);
-// #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
-// #endif
             break;
         case LED_MODE_TOUCH:
             ESP_LOGD(TAG, "Setting LED mode to touch");

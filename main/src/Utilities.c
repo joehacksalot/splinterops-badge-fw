@@ -2,10 +2,13 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_log.h"
+
 #include <string.h>
+#include "Utilities.h"
 
 // Define the struct to hold task information
-typedef struct {
+typedef struct
+{
     char taskName[configMAX_TASK_NAME_LEN];
     UBaseType_t coreID;
 } TaskInfo_t;
@@ -15,7 +18,8 @@ typedef struct {
 TaskInfo_t taskInfoArray[MAX_TASKS];
 int taskCount = 0;
 
-void registerCurrentTaskInfo(void) {
+void registerCurrentTaskInfo(void)
+{
     // Get the current task handle
     TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
     
@@ -26,34 +30,52 @@ void registerCurrentTaskInfo(void) {
     UBaseType_t coreID = xPortGetCoreID();
 
     // Register the task information
-    if (taskCount < MAX_TASKS) {
+    if (taskCount < MAX_TASKS)
+    {
         strncpy(taskInfoArray[taskCount].taskName, taskName, configMAX_TASK_NAME_LEN - 1);
         taskInfoArray[taskCount].taskName[configMAX_TASK_NAME_LEN - 1] = '\0';  // Ensure null-terminated string
         taskInfoArray[taskCount].coreID = coreID;
         taskCount++;
-    } else {
+    }
+    else
+    {
         ESP_LOGW("TaskInfo", "Task info array is full. Cannot register more tasks.");
     }
 }
 
-void displayTaskInfoArray(void) {
+void displayTaskInfoArray(void)
+{
     ESP_LOGI("TaskInfo", "Displaying registered task information:");
-    for (int i = 0; i < taskCount; i++) {
+    for (int i = 0; i < taskCount; i++)
+    {
         ESP_LOGI("TaskInfo", "Task name: %s, Core: %d", taskInfoArray[i].taskName, taskInfoArray[i].coreID);
     }
 }
 
-int GetBadgeType(void)
+BadgeType GetBadgeType(void)
 {
-    int coded_badge_type;
-    #if defined(TRON_BADGE)
-        coded_badge_type = 1;
-    #elif defined(REACTOR_BADGE)
-        coded_badge_type = 2;
-    #elif defined(CREST_BADGE)
-        coded_badge_type = 3;
-    #else
-        coded_badge_type = 0;
-    #endif
-    return coded_badge_type;
+#if defined(TRON_BADGE)
+    return BADGE_TYPE_TRON;
+#elif defined(REACTOR_BADGE)
+    return BADGE_TYPE_REACTOR;
+#elif defined(CREST_BADGE)
+    return BADGE_TYPE_CREST;
+#else
+    return BADGE_TYPE_UNKNOWN;
+#endif
+}
+
+BadgeType ParseBadgeType(int badgeTypeNum)
+{
+    switch (badgeTypeNum)
+    {
+        case 1:
+            return BADGE_TYPE_TRON;
+        case 2:
+            return BADGE_TYPE_REACTOR;
+        case 3:
+            return BADGE_TYPE_CREST;
+        default:
+            return BADGE_TYPE_UNKNOWN;
+    }
 }

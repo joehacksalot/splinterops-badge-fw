@@ -343,6 +343,12 @@ esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled)
     return ret;
 }
 
+bool SynthMode_GetTouchSoundEnabled(SynthMode *this)
+{
+    assert(this);
+    return this->touchSoundEnabled;
+}
+
 
 static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {

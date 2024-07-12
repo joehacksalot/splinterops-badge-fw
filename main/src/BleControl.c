@@ -44,6 +44,8 @@
 
 #define TAG "BLE"
 
+
+
 // Internal Function Declarations
 static void BleEventGapHandler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 static void ResetFrameContext(BleControl *this);
@@ -113,7 +115,7 @@ static BleControl bleControl;
 AdvertisingHeader eventAdvHeader =
 {
     .flags = {0x02, 0x01, 0x06},
-    .length = 0x13, // 1 byte for type, 2 bytes for magic number, 16 bytes for payload
+    .length = 0x14, // 1 byte for type, 2 bytes for magic number, 17 bytes for payload
     .type = 0xFF,
     .magicNum = EVENT_ADV_MAGIC_NUMBER
 };
@@ -164,6 +166,7 @@ esp_err_t SetEventAdvertisingData(BleControl *this)
     memset(&eventAdvPacket, 0, sizeof(EventAdvertisingPacket));
     memcpy(&eventAdvPacket.eventAdvHeader, &eventAdvHeader, sizeof(AdvertisingHeader));
     memcpy(&eventAdvPacket.eventAdvPayload.badgeId, this->pUserSettings->badgeId, BADGE_ID_SIZE);
+    eventAdvPacket.eventAdvPayload.badgeType = GetBadgeType();
     size_t outlen;
     mbedtls_base64_decode(eventAdvPacket.eventAdvPayload.eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)this->pGameState->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE - 1);
 
@@ -411,7 +414,9 @@ static void BleEventGapHandler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_para
                 memcpy(peerReport.badgeIdB64, badgeIdB64, BADGE_ID_B64_SIZE);
                 memcpy(peerReport.eventIdB64, eventIdB64, EVENT_ID_B64_SIZE);
                 peerReport.peakRssi = scan_result->scan_rst.rssi;
-                if ((err = NotificationDispatcher_NotifyEvent(bleControl->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, (void*)&peerReport, sizeof(peerReport), DEFAULT_NOTIFY_WAIT_DURATION)) != ESP_OK) {
+                peerReport.badgeType = ParseBadgeType(eventAdvPacket->eventAdvPayload.badgeType);
+                if ((err = NotificationDispatcher_NotifyEvent(bleControl->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, (void*)&peerReport, sizeof(peerReport), DEFAULT_NOTIFY_WAIT_DURATION)) != ESP_OK)
+                {
                     ESP_LOGE(TAG, "NotificationDispatcher_NotifyEvent NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED failed: %s", esp_err_to_name(err));
                 }
             }

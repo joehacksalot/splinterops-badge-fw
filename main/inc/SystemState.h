@@ -24,6 +24,12 @@
     #include "Ocarina.h"
 #endif
 
+typedef struct AppConfig_t
+{
+    bool touchActionCommandEnabled;
+    bool synthCapable;
+} AppConfig;
+
 typedef struct SystemState_t
 {
     bool touchActive;
@@ -34,6 +40,7 @@ typedef struct SystemState_t
     bool ledSequencePreviewActive;
     bool ledGameStatusActive;
     bool networkTestActive;
+    bool peerSongPlaying;
     TimerHandle_t touchActiveTimer;
     TimerHandle_t drawBatteryIndicatorActiveTimer;
     TimerHandle_t drawStatusIndicatorTimer;
@@ -41,6 +48,7 @@ typedef struct SystemState_t
     TimerHandle_t drawNetworkTestSuccessTimer;
     TimerHandle_t ledSequencePreviewTimer;
     TimerHandle_t ledGameStatusToggleTimer;
+    AppConfig appConfig;
     BadgeStats badgeStats;
     BatterySensor batterySensor;
     BleControl *pBleControl;
