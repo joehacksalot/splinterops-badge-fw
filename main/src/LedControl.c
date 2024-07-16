@@ -63,7 +63,6 @@ static esp_err_t LedControll_FillPixelsWithIntensity(LedControl *this, rgb_t col
 static esp_err_t LedControl_SetPixel(LedControl * this, color_t in_color, int pix_num);
 static esp_err_t LedControl_SetPixelFromJson(LedControl * this, int n, cJSON *r, cJSON *g, cJSON *b, cJSON *i, bool *pChangeDetected);
 static esp_err_t LedControl_FlushLedStrip(LedControl * this);
-static void * malloc_fn(size_t sz);
 static bool LedControl_IndexIsInnerRing(int pixelIndex);
 static bool LedControl_IndexIsOuterRing(int pixelIndex);
 
@@ -332,8 +331,8 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
 
     // Initialize cJSON
     cJSON_Hooks memoryHook;
-    memoryHook.malloc_fn = &malloc_fn;
-    memoryHook.free_fn = &heap_caps_free;
+    memoryHook.malloc_fn = &malloc;
+    memoryHook.free_fn = &free;
     cJSON_InitHooks(&memoryHook);
 
     this->ledLoadedIndex = 0xffffffff; // this is to be sure that the first time we run the service draw Json routine, the led sequence is loaded properly
@@ -348,7 +347,7 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &LedControl_SongNoteActionNotificationHandler, this));
     
 
-    xTaskCreatePinnedToCore(LedControlTask, "LedControlTask", configMINIMAL_STACK_SIZE * 5, this, LED_CONTROL_TASK_PRIORITY, NULL, APP_CPU_NUM);
+    assert(xTaskCreatePinnedToCore(LedControlTask, "LedControlTask", configMINIMAL_STACK_SIZE * 2, this, LED_CONTROL_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
 }
 
@@ -390,7 +389,6 @@ static void LedControlTask(void *pvParameters)
 {
     LedControl * this = (LedControl *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
     while (true)
     {
         LedControl_ServiceDrawJsonLedSequence          ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_LED_SEQUENCE,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_LED_SEQUENCE     );
@@ -1258,12 +1256,6 @@ static bool LedControl_IndexIsInnerRing(int pixelIndex)
 static bool LedControl_IndexIsOuterRing(int pixelIndex)
 {
     return (pixelIndex >= INNER_RING_LED_COUNT && pixelIndex < LED_STRIP_LEN);
-}
-
-static void * malloc_fn(size_t sz)
-{
-    void * buffer = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
-    return buffer;
 }
 
 static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)

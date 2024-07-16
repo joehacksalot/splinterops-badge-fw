@@ -17,9 +17,6 @@ typedef enum BadgeType_e
     BADGE_TYPE_CREST = 3
 } BadgeType;
 
-
-extern void registerCurrentTaskInfo(void);
-extern void displayTaskInfoArray(void);
 extern BadgeType GetBadgeType(void);
 extern BadgeType ParseBadgeType(int badgeTypeNum);
 

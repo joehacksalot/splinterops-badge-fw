@@ -78,7 +78,7 @@ esp_err_t _RequestQueue_Enqueue(HTTPGameClientRequestList* this, HTTPGameClient_
     if(this->size == 0)
     {
         // First insert
-        HTTPGameClient_RequestItem * pNewItem = heap_caps_calloc(1, sizeof(HTTPGameClient_RequestItem), MALLOC_CAP_SPIRAM);
+        HTTPGameClient_RequestItem * pNewItem = calloc(1, sizeof(HTTPGameClient_RequestItem));
         assert(pNewItem);
         // Copy the data into the new item
         memcpy(pNewItem->request.pData, request->pData, copySize);
@@ -118,7 +118,7 @@ esp_err_t _RequestQueue_Enqueue(HTTPGameClientRequestList* this, HTTPGameClient_
         }
         else
         {
-            HTTPGameClient_RequestItem * pNewItem = heap_caps_calloc(1, sizeof(HTTPGameClient_RequestItem), MALLOC_CAP_SPIRAM);
+            HTTPGameClient_RequestItem * pNewItem = calloc(1, sizeof(HTTPGameClient_RequestItem));
             assert(pNewItem);
 
             // Copy the data into the new item
@@ -231,7 +231,7 @@ esp_err_t HTTPGameClient_Init(HTTPGameClient *this, WifiClient *pWifiClient, Not
 
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, &HTTPGameClient_GameStateRequestNotificationHandler, this));
 
-    xTaskCreate(HTTPGameClientTask, "HTTPGameClientTask", configMINIMAL_STACK_SIZE * 15, this, HTTP_GAME_CLIENT_TASK_PRIORITY, NULL);
+    assert(xTaskCreatePinnedToCore(HTTPGameClientTask, "HTTPGameClientTask", configMINIMAL_STACK_SIZE * 3, this, HTTP_GAME_CLIENT_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ESP_OK;
 }
 
@@ -603,7 +603,6 @@ static void HTTPGameClientTask(void *pvParameters)
 {
     HTTPGameClient * this = (HTTPGameClient *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
 
     while(true)
     {
@@ -743,7 +742,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
 
     // Prepare full request json
     // HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
-    HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)heap_caps_malloc(sizeof(HTTPGameClient_Request), MALLOC_CAP_SPIRAM);
+    HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
     
     pHttpRequest->methodType = HTTPGAMECLIENT_HTTPMETHOD_POST;
     pHttpRequest->requestType = HTTPGAMECLIENT_HTTPREQUEST_HEARTBEAT;
@@ -829,7 +828,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         ESP_LOGE(TAG, "GameStateRequest failed to obtain mutex");
     }
     // free((void*)pHttpRequest);
-    heap_caps_free((void*)pHttpRequest);
+    free((void*)pHttpRequest);
 }
 
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)

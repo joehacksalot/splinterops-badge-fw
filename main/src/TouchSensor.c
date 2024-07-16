@@ -74,7 +74,7 @@ esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificat
     ret = touch_pad_filter_start(TOUCH_FILTER_PERIOD_MS);
     ESP_ERROR_CHECK(ret);
 
-    xTaskCreatePinnedToCore(TouchSensorTask, "TouchSensorTask", configMINIMAL_STACK_SIZE * 10, this, TOUCH_SENSOR_TASK_PRIORITY, NULL, APP_CPU_NUM);
+    assert(xTaskCreatePinnedToCore(TouchSensorTask, "TouchSensorTask", configMINIMAL_STACK_SIZE * 2, this, TOUCH_SENSOR_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
 }
 
@@ -82,7 +82,6 @@ static void TouchSensorTask(void *pvParameters)
 {
     TouchSensor *this = (TouchSensor *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
     while (true)
     {
         MonitorTouchSensors(this);

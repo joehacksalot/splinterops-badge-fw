@@ -167,13 +167,12 @@ esp_err_t Console_Init(void)
 #endif //CONFIG_LOG_COLORS
     }
     
-    xTaskCreatePinnedToCore(ConsoleTask, "ConsoleTask", configMINIMAL_STACK_SIZE * 4, NULL, CONSOLE_TASK_PRIORITY, NULL, APP_CPU_NUM);
+    assert(xTaskCreatePinnedToCore(ConsoleTask, "ConsoleTask", configMINIMAL_STACK_SIZE * 2, NULL, CONSOLE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
 }
 
 static void ConsoleTask(void *pvParameters)
 {
-    registerCurrentTaskInfo();
     // Main loop 
     while(true) 
     {

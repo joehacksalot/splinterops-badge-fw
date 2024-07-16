@@ -45,7 +45,7 @@ esp_err_t OtaUpdate_Init(OtaUpdate *this, WifiClient *pWifiClient, NotificationD
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pWifiClient = pWifiClient;
 
-    xTaskCreate(OtaUpdateTask, "OtaUpdateTask", configMINIMAL_STACK_SIZE * 6, this, OTA_UPDATE_TASK_PRIORITY, NULL);
+    assert(xTaskCreatePinnedToCore(OtaUpdateTask, "OtaUpdateTask", configMINIMAL_STACK_SIZE * 3, this, OTA_UPDATE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ESP_OK;
 }
 
@@ -110,7 +110,6 @@ static void OtaUpdateTask(void *pvParameters)
 {
     OtaUpdate * this = (OtaUpdate *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
 
     char * response_buffer = calloc(1, HTTP_RESPONSE_BUFFER_SIZE + 1); // +1 for null terminator
     // Subscribe to wifi client events

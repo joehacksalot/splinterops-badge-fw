@@ -111,7 +111,7 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
   memset(custom_led_sequences_sharecodes, 0, sizeof(custom_led_sequences_sharecodes));
   for (int i = 0; i < LED_SEQ_NUM_CUSTOM_SEQUENCES; i++)
   {
-    custom_led_sequences[i] = (char *)heap_caps_malloc(MAX_CUSTOM_LED_SEQUENCE_SIZE, MALLOC_CAP_SPIRAM);
+    custom_led_sequences[i] = (char *)malloc(MAX_CUSTOM_LED_SEQUENCE_SIZE);
     memset((void *)custom_led_sequences[i], 0, MAX_CUSTOM_LED_SEQUENCE_SIZE);
 
     // Append custom_led_sequences to end of all user_led_sequences

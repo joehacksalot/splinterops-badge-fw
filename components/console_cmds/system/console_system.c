@@ -43,14 +43,12 @@ int get_version(int argc, char **argv)
 
 static int get_free_mem(int argc, char **argv)
 {
-    printf("%lu\n", esp_get_free_heap_size());
-    return 0;
-}
-
-static int get_minimum_heap(int argc, char **argv)
-{
-    uint32_t heap_size = heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT);
-    printf("minimum heap size: %lu\n", heap_size);
+    printf("Total available heap: %lu\n", esp_get_free_heap_size());
+    printf("Total heap watermark: %lu\n", esp_get_minimum_free_heap_size());
+    printf("Available internal heap size: %d\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    printf("Internal heap watermark: %d\n", heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
+    printf("Available external heap size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    printf("External heap watermark: %d\n", heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
     return 0;
 }
 
@@ -58,7 +56,7 @@ static int get_minimum_heap(int argc, char **argv)
 static int get_task_info(int argc, char **argv)
 {
     char *task_list_buffer = malloc(uxTaskGetNumberOfTasks() * sizeof(TaskStatus_t));
-    if (task_list_buffer == NULL) 
+    if (task_list_buffer == NULL)
     {
         ESP_LOGE(TAG, "failed to allocate buffer for vTaskList output");
         return 1;
@@ -71,7 +69,6 @@ static int get_task_info(int argc, char **argv)
     vTaskList(task_list_buffer);
     fputs(task_list_buffer, stdout);
     free(task_list_buffer);
-    displayTaskInfoArray();
     return 0;
 }
 #endif // CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS
@@ -183,14 +180,6 @@ void register_system_dev(void)
         .func = &get_free_mem,
     };
 
-    const esp_console_cmd_t min_heap_cmd = 
-    {
-        .command = "min_heap",
-        .help = "Prints the minimum heap size",
-        .hint = NULL,
-        .func = &get_minimum_heap,
-    };
-
 #ifdef CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS
     const esp_console_cmd_t task_info_cmd = 
     {
@@ -211,6 +200,5 @@ void register_system_dev(void)
     };
 
     ESP_ERROR_CHECK(esp_console_cmd_register(&free_cmd));
-    ESP_ERROR_CHECK(esp_console_cmd_register(&min_heap_cmd));
     ESP_ERROR_CHECK(esp_console_cmd_register(&cat_file_cmd));
 }

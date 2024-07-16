@@ -123,7 +123,7 @@ esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificatio
         retVal = ESP_OK;
     }
 
-    xTaskCreate(_WifiTask, "WifiClientTask", configMINIMAL_STACK_SIZE * 4, this, WIFI_CONTROL_TASK_PRIORITY, NULL);
+    assert(xTaskCreatePinnedToCore(_WifiTask, "WifiClientTask", configMINIMAL_STACK_SIZE * 2, this, WIFI_CONTROL_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
 
     return retVal;
 }
@@ -213,7 +213,6 @@ static void _WifiTask(void *pvParameters)
     WifiClient *this = (WifiClient *)pvParameters;
     assert(this);
     assert(this->clientMutex);
-    registerCurrentTaskInfo();
 
     while (true)
     {

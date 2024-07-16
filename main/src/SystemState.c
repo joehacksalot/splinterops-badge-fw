@@ -93,7 +93,7 @@ SystemState* SystemState_GetInstance(void)
 {
     if (pSystemState == NULL)
     {
-        pSystemState = heap_caps_malloc(sizeof(SystemState), MALLOC_CAP_SPIRAM);
+        pSystemState = malloc(sizeof(SystemState));
     }
     return pSystemState;
 }
@@ -241,7 +241,7 @@ esp_err_t SystemState_Init(SystemState *this)
     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_LEFT_EYE, true, 0);
     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_RIGHT_EYE, true, 0);
 
-    xTaskCreate(SystemStateTask, "SystemStateTask", configMINIMAL_STACK_SIZE * 5, this, SYSTEM_STATE_TASK_PRIORITY, NULL);
+    assert(xTaskCreatePinnedToCore(SystemStateTask, "SystemStateTask", configMINIMAL_STACK_SIZE * 2, this, SYSTEM_STATE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
 }
 
@@ -249,7 +249,6 @@ static void SystemStateTask(void *pvParameters)
 {
     SystemState * this = (SystemState *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
     bool prevNetworkTestActive = this->networkTestActive;
     while (true)
     {

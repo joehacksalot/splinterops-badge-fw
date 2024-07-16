@@ -20,7 +20,7 @@ static const char *TAG = "CBUF";
  */
 esp_err_t CircularBuffer_Init(CircularBuffer *cb, size_t capacity, size_t size)
 {
-  cb->pBuffer = heap_caps_malloc(capacity * size, MALLOC_CAP_SPIRAM);
+  cb->pBuffer = malloc(capacity * size);
   if(cb->pBuffer == NULL)
   {
     ESP_LOGE(TAG, "Could not allocate circular pBuffer");

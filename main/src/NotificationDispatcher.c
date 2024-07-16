@@ -37,8 +37,8 @@ esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this)
             .queue_size = NOTIFICATION_QUEUE_SIZE,
             .task_name = "NotificationsEventLoop",
             .task_priority = NOTIFICATIONS_TASK_PRIORITY,
-            .task_stack_size = configMINIMAL_STACK_SIZE * 10,
-            .task_core_id = tskNO_AFFINITY
+            .task_stack_size = configMINIMAL_STACK_SIZE * 3,
+            .task_core_id = APP_CPU_NUM
         };
         ESP_ERROR_CHECK(esp_event_loop_create(&touchTaskArgs, &this->eventLoopHandle));
 

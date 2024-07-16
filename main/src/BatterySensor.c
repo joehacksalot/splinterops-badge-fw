@@ -109,7 +109,7 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
                 break;
         }
 
-        xTaskCreatePinnedToCore(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 5, this, BATT_SENSE_TASK_PRIORITY, NULL, APP_CPU_NUM);
+        assert(xTaskCreatePinnedToCore(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 2, this, BATT_SENSE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     }
 
     return retVal;
@@ -158,7 +158,6 @@ static void BatterySensorTask(void *pvParameters)
 {
     BatterySensor *this = (BatterySensor *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
     
     //Continuously sample ADC1
     while (true)

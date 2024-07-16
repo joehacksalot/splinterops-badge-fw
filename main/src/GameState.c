@@ -63,7 +63,7 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &_GameState_NotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SEND_HEARTBEAT, &_GameState_SendHeartbeatHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OCARINA_SONG_MATCHED, &_GameState_NotificationHandler, this));
-    xTaskCreatePinnedToCore(_GameState_Task, "GameStateTask", configMINIMAL_STACK_SIZE * 10, this, GAME_STATE_TASK_PRIORITY, NULL, APP_CPU_NUM);
+    assert(xTaskCreatePinnedToCore(_GameState_Task, "GameStateTask", configMINIMAL_STACK_SIZE * 3, this, GAME_STATE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ESP_OK;
 }
 
@@ -96,7 +96,6 @@ static void _GameState_Task(void *pvParameters)
 {
     GameState *this = (GameState *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
 
     // TEST CODE
     // vTaskDelay(pdMS_TO_TICKS(20000));

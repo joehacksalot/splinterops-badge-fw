@@ -228,7 +228,7 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     this->bleXferParameters.aProperty = 0;
     this->bleXferParameters.bProperty = 0;
 
-    this->frameContext.rcvBuffer = heap_caps_malloc(MAX_BLE_XFER_PAYLOAD_SIZE, MALLOC_CAP_SPIRAM);
+    this->frameContext.rcvBuffer = malloc(MAX_BLE_XFER_PAYLOAD_SIZE);
     ResetFrameContext(this);
 
     // Release and free classic, we are only using BLE
@@ -298,7 +298,7 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
 
-    xTaskCreatePinnedToCore(BleXferControlTask, "BleXferControlTask", configMINIMAL_STACK_SIZE * 5, this, BLE_DISABLE_TASK_PRIORITY, NULL, APP_CPU_NUM);
+    assert(xTaskCreatePinnedToCore(BleXferControlTask, "BleXferControlTask", configMINIMAL_STACK_SIZE * 2, this, BLE_DISABLE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     if ((ret = BleControl_EnableBle(this)) != ESP_OK)
     {
         ESP_LOGE(TAG, "BleControl_EnableBle failed: %s", esp_err_to_name(ret));
@@ -752,7 +752,6 @@ static void BleXferControlTask(void *pvParameters)
 {
     BleControl *this = (BleControl *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
     while (true)
     {
         if(this->bleXferDisableSem)
@@ -1055,7 +1054,7 @@ static esp_err_t BleXferWriteEventAction(BleControl * this, esp_gatt_if_t gattsI
                 }
             }
 
-            esp_gatt_rsp_t *gatt_rsp = (esp_gatt_rsp_t *)heap_caps_malloc(sizeof(esp_gatt_rsp_t), MALLOC_CAP_SPIRAM);
+            esp_gatt_rsp_t *gatt_rsp = (esp_gatt_rsp_t *)malloc(sizeof(esp_gatt_rsp_t));
             gatt_rsp->attr_value.len = param->write.len;
             gatt_rsp->attr_value.handle = param->write.handle;
             gatt_rsp->attr_value.offset = param->write.offset;
@@ -1064,7 +1063,7 @@ static esp_err_t BleXferWriteEventAction(BleControl * this, esp_gatt_if_t gattsI
             esp_err_t response_err = esp_ble_gatts_send_response(gattsIf, param->write.conn_id, param->write.trans_id, status, gatt_rsp);
             ESP_ERROR_CHECK(response_err);
             
-            heap_caps_free(gatt_rsp);
+            free(gatt_rsp);
             if (status == ESP_GATT_OK)
             {
                 ret = ESP_OK;

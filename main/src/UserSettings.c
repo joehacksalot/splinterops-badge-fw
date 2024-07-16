@@ -67,7 +67,7 @@ esp_err_t UserSettings_Init(UserSettings *this)
         UserSettings_WriteUserSettingsFileToDisk(this);
     }
 
-    xTaskCreatePinnedToCore(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 5, this, USER_SETTINGS_TASK_PRIORITY, NULL, APP_CPU_NUM);
+    assert(xTaskCreatePinnedToCore(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 2, this, USER_SETTINGS_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ESP_OK;
 }
 
@@ -83,7 +83,6 @@ static void UserSettings_Task(void *pvParameters)
 {
     UserSettings *this = (UserSettings *)pvParameters;
     assert(this);
-    registerCurrentTaskInfo();
     while (true)
     {
         if (this->updateNeeded)
