@@ -18,11 +18,8 @@
 #include "UserSettings.h"
 #include "WifiClient.h"
 #include "HTTPGameClient.h"
-
-#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-    #include "SynthMode.h"
-    #include "Ocarina.h"
-#endif
+#include "SynthMode.h"
+#include "Ocarina.h"
 
 typedef struct AppConfig_t
 {
@@ -63,11 +60,8 @@ typedef struct SystemState_t
     UserSettings userSettings;
     WifiClient wifiClient;
     HTTPGameClient httpGameClient;
-
-#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
     SynthMode synthMode;
     Ocarina ocarina;
-#endif
 } SystemState;
 
 SystemState *SystemState_GetInstance();

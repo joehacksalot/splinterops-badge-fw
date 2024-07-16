@@ -233,9 +233,10 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE,       &SystemState_NetworkTestNotificationHandler,    this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &SystemState_PeerHeartbeatNotificationHandler,  this));
      
-#if defined(REACTOR_BADGE) || defined(CREST_BADGE)
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION,            &SystemState_SongNoteChangeNotificationHandler, this));
-#endif
+    if (this->appConfig.synthCapable)
+    {
+        ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION,        &SystemState_SongNoteChangeNotificationHandler, this));
+    }
 
     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_LEFT_EYE, true, 0);
     GpioControl_Control(&this->gpioControl, GPIO_FEATURE_RIGHT_EYE, true, 0);
