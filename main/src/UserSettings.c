@@ -15,7 +15,7 @@
 #include "UserSettings.h"
 #include "Utilities.h"
 
-#define USER_SETTINGS_WRITE_PERIOD_MS (60 * 1000)
+#define USER_SETTINGS_WRITE_PERIOD_MS (10 * 1000)
 #define SETTINGS_FILE_NAME MOUNT_PATH "/settings"
 #define MUTEX_MAX_WAIT_MS (50)
 #define SHA_INPUT_SIZE 12

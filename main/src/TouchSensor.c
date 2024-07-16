@@ -148,7 +148,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
             {
                 if (this->touchSensorActive[i] == TOUCH_SENSOR_EVENT_RELEASED)
                 {
-                    ESP_LOGI(TOUCH_TAG, "Touch %d Pressed", i);
+                    ESP_LOGD(TOUCH_TAG, "Touch %d Pressed", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_TOUCHED;
                     this->touchSensorActiveTimeStamp[i] = curTime;
 
