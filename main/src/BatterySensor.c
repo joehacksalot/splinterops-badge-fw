@@ -109,7 +109,7 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
                 break;
         }
 
-        xTaskCreate(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 5, this, BATT_SENSE_TASK_PRIORITY, NULL);
+        xTaskCreatePinnedToCore(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 5, this, BATT_SENSE_TASK_PRIORITY, NULL, APP_CPU_NUM);
     }
 
     return retVal;

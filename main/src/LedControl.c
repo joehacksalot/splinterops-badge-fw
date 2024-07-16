@@ -348,7 +348,7 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &LedControl_SongNoteActionNotificationHandler, this));
     
 
-    xTaskCreate(LedControlTask, "LedControlTask", configMINIMAL_STACK_SIZE * 5, this, LED_CONTROL_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(LedControlTask, "LedControlTask", configMINIMAL_STACK_SIZE * 5, this, LED_CONTROL_TASK_PRIORITY, NULL, APP_CPU_NUM);
     return ret;
 }
 

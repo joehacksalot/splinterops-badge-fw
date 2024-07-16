@@ -74,7 +74,7 @@ esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificat
     ret = touch_pad_filter_start(TOUCH_FILTER_PERIOD_MS);
     ESP_ERROR_CHECK(ret);
 
-    xTaskCreate(TouchSensorTask, "TouchSensorTask", configMINIMAL_STACK_SIZE * 10, this, TOUCH_SENSOR_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(TouchSensorTask, "TouchSensorTask", configMINIMAL_STACK_SIZE * 10, this, TOUCH_SENSOR_TASK_PRIORITY, NULL, APP_CPU_NUM);
     return ret;
 }
 

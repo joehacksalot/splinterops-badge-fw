@@ -102,7 +102,7 @@ esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationD
             NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &SynthMode_TouchSensorNotificationHandler, this);
             NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &SynthMode_PlaySongNotificationHandler, this);
 
-            xTaskCreate(SynthModeTask, "SynthModeTask", configMINIMAL_STACK_SIZE * 10, this, SYNTH_MODE_TASK_PRIORITY, NULL);
+            xTaskCreatePinnedToCore(SynthModeTask, "SynthModeTask", configMINIMAL_STACK_SIZE * 10, this, SYNTH_MODE_TASK_PRIORITY, NULL, APP_CPU_NUM);
             return ESP_OK;
         }
         else

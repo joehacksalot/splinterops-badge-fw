@@ -67,7 +67,7 @@ esp_err_t UserSettings_Init(UserSettings *this)
         UserSettings_WriteUserSettingsFileToDisk(this);
     }
 
-    xTaskCreate(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 5, this, USER_SETTINGS_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 5, this, USER_SETTINGS_TASK_PRIORITY, NULL, APP_CPU_NUM);
     return ESP_OK;
 }
 

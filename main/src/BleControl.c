@@ -298,7 +298,7 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
 
-    xTaskCreate(BleXferControlTask, "BleXferControlTask", configMINIMAL_STACK_SIZE * 5, this, BLE_DISABLE_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(BleXferControlTask, "BleXferControlTask", configMINIMAL_STACK_SIZE * 5, this, BLE_DISABLE_TASK_PRIORITY, NULL, APP_CPU_NUM);
     if ((ret = BleControl_EnableBle(this)) != ESP_OK)
     {
         ESP_LOGE(TAG, "BleControl_EnableBle failed: %s", esp_err_to_name(ret));

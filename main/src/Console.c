@@ -167,7 +167,7 @@ esp_err_t Console_Init(void)
 #endif //CONFIG_LOG_COLORS
     }
     
-    xTaskCreate(ConsoleTask, "ConsoleTask", configMINIMAL_STACK_SIZE * 4, NULL, CONSOLE_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(ConsoleTask, "ConsoleTask", configMINIMAL_STACK_SIZE * 4, NULL, CONSOLE_TASK_PRIORITY, NULL, APP_CPU_NUM);
     return ret;
 }
 
