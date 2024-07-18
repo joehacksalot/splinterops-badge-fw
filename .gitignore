@@ -1,6 +1,5 @@
 build/
 sdkconfig.old
-sdkconfig
 prod_certs/
 dependencies.lock
 .vscode/
