@@ -329,12 +329,6 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     this->jsonMutex = xSemaphoreCreateMutex();
     assert(this->jsonMutex);
 
-    // Initialize cJSON
-    cJSON_Hooks memoryHook;
-    memoryHook.malloc_fn = &malloc;
-    memoryHook.free_fn = &free;
-    cJSON_InitHooks(&memoryHook);
-
     this->ledLoadedIndex = 0xffffffff; // this is to be sure that the first time we run the service draw Json routine, the led sequence is loaded properly
 
     this->selectedIndex = pUserSettings->settings.selectedIndex;

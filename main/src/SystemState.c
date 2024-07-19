@@ -185,6 +185,12 @@ esp_err_t SystemState_Init(SystemState *this)
     // Initialize ESP Timers
     esp_timer_init();
 
+    // Initialize cJSON before any library uses it
+    cJSON_Hooks memoryHook;
+    memoryHook.malloc_fn = &malloc;
+    memoryHook.free_fn = &free;
+    cJSON_InitHooks(&memoryHook);
+
     this->pBleControl = BleControl_GetInstance();
     memset(this->pBleControl, 0, sizeof(*this->pBleControl));
 
