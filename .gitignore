@@ -3,6 +3,10 @@ sdkconfig.old
 prod_certs/
 dependencies.lock
 .vscode/
+tmp/
+
+### Beyond Compare .gitignore below
+*.orig
 
 ### Expressif .gitignore below
 
