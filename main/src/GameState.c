@@ -201,7 +201,7 @@ static bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64)
     bool added = false;
     if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        ESP_LOGI(TAG, "Current seen event map size %d", hashmap_size(&this->seenEventMap));
+        ESP_LOGD(TAG, "Current seen event map size %d", hashmap_size(&this->seenEventMap));
         char *pIndex = hashmap_get(&this->seenEventMap, newEventIdB64);
         if (pIndex == NULL)
         {
@@ -224,7 +224,7 @@ static bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64)
         }
         else
         {
-            ESP_LOGI(TAG, "Found seen event id %s", newEventIdB64);
+            ESP_LOGD(TAG, "Found seen event id %s", newEventIdB64);
         }
 
         if (xSemaphoreGive(this->gameStateDataMutex) != pdTRUE)

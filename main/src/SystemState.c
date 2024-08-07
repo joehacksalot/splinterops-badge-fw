@@ -1053,14 +1053,14 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
                             {
                                 case BADGE_TYPE_TRON:
                                     successPlaySongNotificationData.song = SONG_BONUS_BONUS;
-                                break;
+                                    break;
                                 case BADGE_TYPE_REACTOR:
                                     successPlaySongNotificationData.song = SONG_BONUS;
-                                break;
+                                    break;
                                 case BADGE_TYPE_CREST:
                                 default:
                                     successPlaySongNotificationData.song = SONG_ZELDA_THEME;
-                                break;
+                                    break;
                             }
                             this->peerSongPlaying = true;
                             NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
