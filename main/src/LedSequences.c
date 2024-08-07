@@ -14,7 +14,7 @@
 #include "LedControl.h"
 #include "LedSequences.h"
 
-#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 3
+#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 2
 #define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 #define NUM_LED_SEQUENCES (LED_SEQ_NUM_BUILT_IN_SEQUENCES + LED_SEQ_NUM_CUSTOM_SEQUENCES)
 
@@ -26,9 +26,8 @@ char custom_led_sequences_sharecodes[LED_SEQ_NUM_CUSTOM_SEQUENCES][NUM_SHARECODE
 BatterySensor *pBatterySensor = NULL;
 
 static char * user_led_sequences[NUM_LED_SEQUENCES] = {
-  (char * )led_seq_proto_test_1,
-  (char * )led_seq_heat_pulse,
-  (char * )led_seq_jose,
+  (char * )led_seq_default1,
+  (char * )led_seq_default2,
   0 // custom led seq 0
 };
 
@@ -89,11 +88,6 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
     snprintf(filename, sizeof(filename), "%s/custom%d.txt", MOUNT_PATH, index);
     // Open and overwrite file
 
-    int status = remove(filename); // TODO: not protected from being written at low battery, risk corrupting flash if brownout occurs
-    if (status != 0)
-    {
-        ESP_LOGE(TAG, "Error: unable to remove the file. %s", filename);
-    }
     esp_err_t ret = WriteFileToDisk(pBatterySensor, filename, (void *)custom_led_sequences[index], MAX_CUSTOM_LED_SEQUENCE_SIZE);
     if (ret != ESP_OK)
     {

@@ -77,6 +77,8 @@ esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificatio
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pUserSettings = pUserSettings;
     this->state = WIFI_CLIENT_STATE_DISCONNECTED;
+    strncpy((char*)this->defconWifiSettings.ssid, CONFIG_WIFI_SSID, sizeof(this->defconWifiSettings.ssid));
+    strncpy((char*)this->defconWifiSettings.password, CONFIG_WIFI_PASSWORD, sizeof(this->defconWifiSettings.password));
 
     this->clientMutex = xSemaphoreCreateMutex();
 
@@ -161,10 +163,9 @@ void _WifiClient_Enable(WifiClient *this)
             ESP_LOGE(TAG, "Failed to start WiFi. error code = %s", esp_err_to_name(ret));
         }
 
-        char CUSTOM_SSID[sizeof(this->pUserSettings->settings.wifiSettings.ssid)];
-        char CUSTOM_PASS[sizeof(this->pUserSettings->settings.wifiSettings.password)];
-        strncpy(CUSTOM_SSID, this->pUserSettings->settings.wifiSettings.ssid, sizeof(CUSTOM_SSID));
-        strncpy(CUSTOM_PASS, this->pUserSettings->settings.wifiSettings.password, sizeof(CUSTOM_PASS));
+        WifiSettings customWifiSettings;
+        strncpy((char*)customWifiSettings.ssid, (char*)this->pUserSettings->settings.wifiSettings.ssid, sizeof(customWifiSettings.ssid));
+        strncpy((char*)customWifiSettings.password,(char*)this->pUserSettings->settings.wifiSettings.password, sizeof(customWifiSettings.password));
 
         ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_scan_count, ap_info));  // esp_wifi_scan_get_ap_records clears memory allocated from scan_start
@@ -172,19 +173,20 @@ void _WifiClient_Enable(WifiClient *this)
 
         for(uint32_t i = 0; i < ap_scan_count; ++i)
         {
-            if(strncmp((char*)ap_info[i].ssid, CUSTOM_SSID, sizeof(ap_info[i].ssid)) == 0)
+            if(strncmp((char*)ap_info[i].ssid, (char*)customWifiSettings.ssid, sizeof(ap_info[i].ssid)) == 0)
             {
-                ESP_LOGI(TAG, "Custom AP Found (%s)", CUSTOM_SSID);
-                strncpy((char*)this->wifiConfig.sta.ssid, CUSTOM_SSID, sizeof(this->wifiConfig.sta.ssid));
-                strncpy((char*)this->wifiConfig.sta.password, CUSTOM_PASS, sizeof(this->wifiConfig.sta.password));
+                ESP_LOGI(TAG, "Custom AP Found (%s)", customWifiSettings.ssid);
+                strncpy((char*)this->wifiConfig.sta.ssid, (char*)customWifiSettings.ssid, sizeof(this->wifiConfig.sta.ssid));
+                strncpy((char*)this->wifiConfig.sta.password, (char*)customWifiSettings.password, sizeof(this->wifiConfig.sta.password));
                 ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
                 ESP_ERROR_CHECK(esp_wifi_start());
                 break;
-            } else if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
+            }
+            else if(strncmp((char*)ap_info[i].ssid, (char*)this->defconWifiSettings.ssid, sizeof(ap_info[i].ssid)) == 0)
             {
-                ESP_LOGI(TAG, "Hardcoded AP Found (%s)", CONFIG_WIFI_SSID);
-                strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
-                strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
+                ESP_LOGI(TAG, "Defcon AP Found (%s)", this->defconWifiSettings.ssid);
+                strncpy((char*)this->wifiConfig.sta.ssid, (char*)this->defconWifiSettings.ssid, sizeof(this->wifiConfig.sta.ssid));
+                strncpy((char*)this->wifiConfig.sta.password, (char*)this->defconWifiSettings.password, sizeof(this->wifiConfig.sta.password));
                 ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
                 ESP_ERROR_CHECK(esp_wifi_start());
                 break;

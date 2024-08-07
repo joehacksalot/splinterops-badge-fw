@@ -34,7 +34,7 @@ esp_err_t BadgeStats_Init(BadgeStats *this)
     // }
     BadgeStats_IncrementNumPowerOns(this);
 
-    // assert(xTaskCreatePinnedToCore(BadgeStatsTask, "BadgeStatsTask", configMINIMAL_STACK_SIZE * 4, this, BADGE_STAT_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS); // Commented to prevent disk writes. statistics will still be captured, but not saved to disk
+    // assert(xTaskCreatePinnedToCore(_BadgeStatsTask, "BadgeStatsTask", configMINIMAL_STACK_SIZE * 4, this, BADGE_STAT_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS); // Commented to prevent disk writes. statistics will still be captured, but not saved to disk
     return ESP_OK;
 }
 

@@ -19,6 +19,7 @@ typedef enum BadgeType_e
 
 extern BadgeType GetBadgeType(void);
 extern BadgeType ParseBadgeType(int badgeTypeNum);
-
+extern uint32_t GetRandomNumber(uint32_t min, uint32_t max);
+extern void GetBadgeBleDeviceName(char * buffer, uint32_t bufferSize);
 
 #endif // UTILITIES_H_

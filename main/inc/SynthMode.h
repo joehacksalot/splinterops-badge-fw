@@ -17,6 +17,7 @@ typedef struct SynthMode_t
 {
     bool initialized;
     bool touchSoundEnabled;
+    int octaveShift;
     Song selectedSong;
     int currentNoteIdx;
     CircularBuffer songQueue;
@@ -28,7 +29,7 @@ typedef struct SynthMode_t
 } SynthMode;
 
 esp_err_t SynthMode_Init(SynthMode* this, NotificationDispatcher* pNotificationDispatcher, UserSettings* userSettings);
-esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled);
+esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled, int octaveShift);
 bool SynthMode_GetTouchSoundEnabled(SynthMode *this);
 
 

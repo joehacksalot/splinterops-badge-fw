@@ -41,6 +41,7 @@ typedef struct NoteParts_t
   NoteOctave octave;
 } NoteParts;
 
+#define NOTE_ENUMS_PER_OCTAVE (17)
 typedef enum NoteName_t
 {
   NOTE_REST,

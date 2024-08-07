@@ -21,10 +21,21 @@ static esp_err_t LedMode_SetLedMode(LedModing *this)
     esp_err_t ret = ESP_OK;
     assert(this);
 
-    if (this->curStatusIndicator != LED_STATUS_INDICATOR_NONE)
+    // if (this->curStatusIndicator != LED_STATUS_INDICATOR_NONE)
+    // {
+    //     ESP_LOGI(TAG, "Setting Led Mode to Status for status %d", this->curStatusIndicator);
+    //     ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_STATUS_INDICATOR);
+    // }
+    // else 
+    if (this->bleReconnecting)
     {
-        ESP_LOGI(TAG, "Setting Led Mode to Status for status %d", this->curStatusIndicator);
-        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_STATUS_INDICATOR);
+        ESP_LOGI(TAG, "Setting Led Mode to Ble Reconnecting Mode");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_RECONNECTING);
+    }
+    else if (this->ledGameInteractiveActive)
+    {
+        ESP_LOGI(TAG, "Setting Led Mode to Interactive Game Mode");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_INTERACTIVE_GAME);
     }
     else if (this->songActiveStatus)
     {
@@ -34,22 +45,27 @@ static esp_err_t LedMode_SetLedMode(LedModing *this)
     else if (this->ledSequencePreviewActive)
     {
         ESP_LOGI(TAG, "Setting Led Mode to Sequence Preview");
-        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_NORMAL);
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_SEQUENCE);
     }
-    else if (this->bleXferInProgress)
+    else if (this->otaDownloadInitiatedActive)
     {
-        ESP_LOGI(TAG, "Setting Led Mode to Ble Xfer");
-        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_XFER_PERCENT);
+        ESP_LOGI(TAG, "Setting Led Mode to Ota Download");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_OTA_DOWNLOAD_IP);
+    }
+    else if (this->bleFileTransferInProgress)
+    {
+        ESP_LOGI(TAG, "Setting Led Mode to Ble File Transfer In Progress");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_FILE_TRANSFER_PERCENT);
     }
     else if (this->bleConnected)
     {
-        ESP_LOGI(TAG, "Setting Led Mode to Ble Xfer Connected");
-        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_XFER_CONNECTED);
+        ESP_LOGI(TAG, "Setting Led Mode to Ble Service Connected");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_FILE_TRANSFER_CONNECTED);
     }
-    else if (this->bleEnabled)
+    else if (this->bleServiceEnabled)
     {
-        ESP_LOGI(TAG, "Setting Led Mode to Ble Xfer Enabled");
-        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_XFER_ENABLED);
+        ESP_LOGI(TAG, "Setting Led Mode to Ble Service Enabled");
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_BLE_FILE_TRANSFER_ENABLED);
     }
     else if (this->networkTestActive)
     {
@@ -79,7 +95,7 @@ static esp_err_t LedMode_SetLedMode(LedModing *this)
     else
     {
         ESP_LOGI(TAG, "Setting Led Mode to Normal");
-        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_NORMAL);
+        ret = LedControl_SetLedMode(this->pLedControl, LED_MODE_SEQUENCE);
     }
     return ret;
 }
@@ -96,15 +112,9 @@ esp_err_t LedModing_SetGameEventActive(LedModing *this, bool active)
     return LedMode_SetLedMode(this);
 }
 
-esp_err_t LedModing_SetStatusIndicator(LedModing *this, LedStatusIndicator ledStatusIndicator)
+esp_err_t LedModing_SetBleServiceEnableActive(LedModing *this, bool active)
 {
-    this->curStatusIndicator = ledStatusIndicator;
-    return LedMode_SetLedMode(this);
-}
-
-esp_err_t LedModing_SetBleXferEnableActive(LedModing *this, bool active)
-{
-    this->bleEnabled = active;
+    this->bleServiceEnabled = active;
     return LedMode_SetLedMode(this);
 }
 esp_err_t LedModing_SetBleConnectedActive(LedModing *this, bool active)
@@ -119,12 +129,29 @@ esp_err_t LedModing_SetBatteryIndicatorActive(LedModing *this, bool active)
     return LedMode_SetLedMode(this);
 }
 
-esp_err_t LedModing_SetBleXferActive(LedModing *this, bool active)
+esp_err_t LedModing_SetBleReconnectingActive(LedModing *this, bool active)
+{
+    this->bleReconnecting = active;
+    return LedMode_SetLedMode(this);
+}
+
+esp_err_t LedModing_SetOtaDownloadInitiatedActive(LedModing *this, bool active)
 {
     esp_err_t ret = ESP_OK;
-    if (this->bleXferInProgress != active )
+    if (this->otaDownloadInitiatedActive != active )
     {
-        this->bleXferInProgress = active;
+        this->otaDownloadInitiatedActive = active;
+        ret = LedMode_SetLedMode(this);
+    }
+    return ret;
+}
+
+esp_err_t LedModing_SetBleFileTransferIPActive(LedModing *this, bool active)
+{
+    esp_err_t ret = ESP_OK;
+    if (this->bleFileTransferInProgress != active )
+    {
+        this->bleFileTransferInProgress = active;
         ret = LedMode_SetLedMode(this);
     }
     return ret;
@@ -155,6 +182,12 @@ esp_err_t LedModing_SetLedSequencePreviewActive(LedModing *this, bool active)
 esp_err_t LedModing_SetGameStatusActive(LedModing *this, bool active)
 {
     this->ledGameStatusActive = active;
+    return LedMode_SetLedMode(this);
+}
+
+esp_err_t LedModing_SetInteractiveGameActive(LedModing *this, bool active)
+{
+    this->ledGameInteractiveActive = active;
     return LedMode_SetLedMode(this);
 }
 

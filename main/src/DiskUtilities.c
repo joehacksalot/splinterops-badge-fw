@@ -113,7 +113,7 @@ esp_err_t WriteFileToDisk(BatterySensor * pBatterySensor, char *filename, char *
         int status = remove(filename);
         if(status != 0)
         {
-            ESP_LOGE(TAG, "Error: unable to remove the file. %s", filename);
+            ESP_LOGE(TAG, "Error: unable to remove the file(%s): %d", filename, status);
         }
 
         FILE * fp = fopen(filename, "wb");

@@ -24,11 +24,11 @@
 typedef enum GameState_EventColor_e
 {
     GAMESTATE_EVENTCOLOR_RED,
-    GAMESTATE_EVENTCOLOR_GREEN,
     GAMESTATE_EVENTCOLOR_YELLOW,
-    GAMESTATE_EVENTCOLOR_MAGENTA,
-    GAMESTATE_EVENTCOLOR_BLUE,
+    GAMESTATE_EVENTCOLOR_GREEN,
     GAMESTATE_EVENTCOLOR_CYAN,
+    GAMESTATE_EVENTCOLOR_BLUE,
+    GAMESTATE_EVENTCOLOR_MAGENTA,
     NUM_GAMESTATE_EVENTCOLORS
 } GameState_EventColor;
 
@@ -42,7 +42,7 @@ typedef struct GameEventData_t
 
 typedef struct GameStatusData_t
 {
-    uint8_t colorBits; // Red, Yellow, Blue, Cyan, Magenta, Green
+    uint8_t stoneBits; // Red, Yellow, Blue, Cyan, Magenta, Green
     uint16_t songUnlockedBits;
 } GameStatusData;
 

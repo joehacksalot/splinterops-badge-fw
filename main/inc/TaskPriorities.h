@@ -2,6 +2,7 @@
 #define TASK_PRIORITIES_H_
 
 // FreeRTOS priority increases with larger integers
+#define BLE_CONTROL_TASK_PRIORITY           21
 #define LED_CONTROL_TASK_PRIORITY           15
 #define TOUCH_SENSOR_TASK_PRIORITY          14
 #define SYSTEM_STATE_TASK_PRIORITY          13

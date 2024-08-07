@@ -29,7 +29,6 @@ static void _GameState_SendHeartbeatHandler(void *pObj, esp_event_base_t eventBa
 static esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport);
 static bool _GameState_IsCurrentEvent(GameState *this);
 static bool _GameState_CheckEventIdChanged(GameState *this, char *eventIdB64);
-static void _GameState_SetEventId(GameState *this, char *newEventIdB64);
 static void _GameState_ResetEventId(GameState *this);
 static bool _GameState_TryAddSeenEventId(GameState *this, char *newEventIdB64);
 static bool _GameState_IsBlankEvent(char *eventIdB64);
@@ -58,7 +57,11 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
     _GameState_ResetEventId(this);
     ESP_LOGI(TAG, "Initialized event id: %s", this->gameStateData.status.eventData.currentEventIdB64);
     assert(this->gameStateDataMutex);
-    _GameState_ReadGameStatusDataFileFromDisk(this);
+    if (_GameState_ReadGameStatusDataFileFromDisk(this) != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to read game status data file from disk");
+        this->gameStatusDataUpdated = true;
+    }
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED, &_GameState_NotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &_GameState_NotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SEND_HEARTBEAT, &_GameState_SendHeartbeatHandler, this));
@@ -146,14 +149,18 @@ static void _GameState_Task(void *pvParameters)
         if (this->gameStatusDataUpdated)
         {
             this->gameStatusDataUpdated = false;
-            _GameState_WriteGameStatusDataFileToDisk(this);
+            if (_GameState_WriteGameStatusDataFileToDisk(this) != ESP_OK)
+            {
+                ESP_LOGE(TAG, "Failed to write game status data file to disk");
+            }
+            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_FIRST_TIME_POWER_ON, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
         }
 
         vTaskDelay(pdMS_TO_TICKS(GAME_TASK_DELAY_MS));
     }
 }
 
-static void _GameState_SetEventId(GameState *this, char *newEventIdB64)
+void GameState_SetEventId(GameState *this, char *newEventIdB64)
 {
     if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
@@ -268,7 +275,7 @@ static bool _GameState_IsBlankEvent(char *eventIdB64)
     bool isBlankEvent = true;
     uint8_t eventId[EVENT_ID_SIZE];
     size_t outlen;
-    ESP_LOGI(TAG, "Checking if event id %s is blank", eventIdB64);
+    ESP_LOGD(TAG, "Checking if event id %s is blank", eventIdB64);
     mbedtls_base64_decode(eventId, EVENT_ID_SIZE, &outlen, (uint8_t *)eventIdB64, EVENT_ID_B64_SIZE - 1);
     for (int i = 0; i < EVENT_ID_SIZE; ++i)
     {
@@ -303,7 +310,7 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
             // Check if peak signal strength is greater (less negative)
             if (peerReport->peakRssi > this->peerReports[index].peakRssi)
             {
-                ESP_LOGI(TAG, "Updating peak rssi for badge id [B64] %s", peerReport->badgeIdB64);
+                ESP_LOGD(TAG, "Updating peak rssi for badge id [B64] %s", peerReport->badgeIdB64);
                 this->peerReports[index].peakRssi = peerReport->peakRssi;
             }
 
@@ -430,7 +437,7 @@ static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBas
             if (notificationData != NULL)
             {
                 PeerReport peerReport = *((PeerReport *)notificationData);
-                ESP_LOGI(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s", peerReport.badgeIdB64);
+                ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s", peerReport.badgeIdB64);
                 GameState_AddPeerReport(this, &peerReport);
                 if (!_GameState_IsBlankEvent(peerReport.eventIdB64))
                 {
@@ -444,12 +451,12 @@ static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBas
                     }
                     else
                     {
-                        ESP_LOGI(TAG, "Currently in event, skipping");
+                        ESP_LOGD(TAG, "Currently in event, skipping");
                     }
                 }
                 else
                 {
-                    ESP_LOGI(TAG, "Blank event id observed, skipping");
+                    ESP_LOGD(TAG, "Blank event id observed, skipping");
                 }
             }
             else
@@ -478,7 +485,8 @@ static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBas
                 if (!(this->gameStateData.status.statusData.songUnlockedBits & (1 << songIndex)))
                 {
                     ESP_LOGI(TAG, "Unlocked song with index %d", songIndex);
-                    this->gameStateData.status.statusData.songUnlockedBits |= (1 << songIndex); 
+                    this->gameStateData.status.statusData.songUnlockedBits |= (1 << songIndex);
+                    this->gameStatusDataUpdated = true;
                     PlaySongEventNotificationData unlockSongNotificationData;
                     unlockSongNotificationData.song = SONG_SECRET_SOUND;
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &unlockSongNotificationData, sizeof(unlockSongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);

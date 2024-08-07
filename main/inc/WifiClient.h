@@ -33,6 +33,7 @@ typedef struct WifiClient_t
     esp_event_handler_instance_t instanceAnyId;
     esp_event_handler_instance_t instanceGotIp;
     wifi_config_t wifiConfig;
+    WifiSettings defconWifiSettings;
 
     TickType_t pendingStartTime;
     TickType_t desiredStartTime;

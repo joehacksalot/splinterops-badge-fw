@@ -15,7 +15,7 @@
 #include "UserSettings.h"
 #include "Utilities.h"
 
-#define USER_SETTINGS_WRITE_PERIOD_MS (10 * 1000)
+#define USER_SETTINGS_WRITE_PERIOD_MS (60 * 1000)
 #define SETTINGS_FILE_NAME MOUNT_PATH "/settings"
 #define MUTEX_MAX_WAIT_MS (50)
 #define SHA_INPUT_SIZE 12
@@ -32,11 +32,11 @@ static void UserSettings_Task(void *pvParameters);
 static esp_err_t UserSettings_ReadUserSettingsFileFromDisk(UserSettings *this);
 static esp_err_t UserSettings_WriteUserSettingsFileToDisk(UserSettings *this);
 
-esp_err_t UserSettings_Init(UserSettings *this)
+esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor)
 {
     assert(this);
     memset(this, 0, sizeof(*this));
-    this->pBatterySensor = NULL;
+    this->pBatterySensor = pBatterySensor;
     this->settings.soundEnabled = 1;
     this->settings.vibrationEnabled = 1;
     this->mutex = xSemaphoreCreateMutex();
@@ -68,14 +68,6 @@ esp_err_t UserSettings_Init(UserSettings *this)
     }
 
     assert(xTaskCreatePinnedToCore(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 2, this, USER_SETTINGS_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
-    return ESP_OK;
-}
-
-esp_err_t UserSettings_RegisterBatterySensor(UserSettings *this, BatterySensor *pBatterySensor)
-{
-    assert(this);
-    assert(pBatterySensor);
-    this->pBatterySensor = pBatterySensor;
     return ESP_OK;
 }
 
@@ -148,13 +140,13 @@ esp_err_t UserSettings_SetPairId(UserSettings *this, uint8_t * pairId)
     return ret;
 }
 
-esp_err_t UserSettings_UpdateJson(UserSettings *this, char * settingsJson)
+esp_err_t UserSettings_UpdateFromJson(UserSettings *this, uint8_t *pSettingsJson)
 {
     esp_err_t ret = ESP_FAIL;
     assert(this);
-    if (settingsJson != 0)
+    if (pSettingsJson != 0)
     {
-        cJSON * root = cJSON_Parse(settingsJson);
+        cJSON * root = cJSON_Parse((char*)pSettingsJson);
         if (root != NULL)
         {
             UserSettingsFile tmpSettings;
@@ -177,42 +169,12 @@ esp_err_t UserSettings_UpdateJson(UserSettings *this, char * settingsJson)
             if (cJSON_GetObjectItem(root,"ssid") != NULL)
             {
                 char * ssid = cJSON_GetObjectItem(root,"ssid")->valuestring;
-                strncpy(tmpSettings.wifiSettings.ssid, ssid, sizeof(tmpSettings.wifiSettings.ssid));
+                strncpy((char*)tmpSettings.wifiSettings.ssid, ssid, sizeof(tmpSettings.wifiSettings.ssid));
             }
             if (cJSON_GetObjectItem(root,"pass") != NULL)
             {
                 char * pass = cJSON_GetObjectItem(root,"pass")->valuestring;
-                strncpy(tmpSettings.wifiSettings.password, pass, sizeof(tmpSettings.wifiSettings.password));
-            }
-            if (cJSON_GetObjectItem(root,"wifiType") != NULL)
-            {
-                 char *wifiTypeStr = cJSON_GetObjectItem(root,"wifiType")->valuestring;
-                 WifiType wifiType = -1;
-                 if (strcmp(wifiTypeStr, "Open") == 0)
-                 {
-                    wifiType = WIFI_TYPE_OPEN;
-                 }
-                 else if (strcmp(wifiTypeStr, "WEP") == 0)
-                 {
-                    wifiType = WIFI_TYPE_WEP;
-                 }
-                 else if (strcmp(wifiTypeStr, "WPA") == 0)
-                 {
-                    wifiType = WIFI_TYPE_WPA;
-                 }
-                 else if (strcmp(wifiTypeStr, "WPA-2") == 0)
-                 {
-                    wifiType = WIFI_TYPE_WPA2;
-                 }
-
-                 if (wifiType >= 0)
-                 {
-                    tmpSettings.wifiSettings.wifiType = wifiType;
-                 }
-                 else
-                 {
-                    ESP_LOGE(TAG, "Invalid wifi type %s", wifiTypeStr);
-                 }
+                strncpy((char*)tmpSettings.wifiSettings.password, pass, sizeof(tmpSettings.wifiSettings.password));
             }
             cJSON_Delete(root);
             this->settings = tmpSettings;
@@ -220,7 +182,7 @@ esp_err_t UserSettings_UpdateJson(UserSettings *this, char * settingsJson)
         }
         else
         {
-            ESP_LOGE(TAG, "JSON parse failed. json = \"%s\"", settingsJson);
+            ESP_LOGE(TAG, "JSON parse failed. json = \"%s\"", pSettingsJson);
         }
     }
     else
@@ -258,7 +220,7 @@ static esp_err_t UserSettings_ReadUserSettingsFileFromDisk(UserSettings *this)
                         ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
                     }
 
-                    ESP_LOGI(TAG, "Settings: %d, %d, %s, %s, %d", this->settings.soundEnabled, this->settings.vibrationEnabled, this->settings.wifiSettings.ssid, this->settings.wifiSettings.password, this->settings.wifiSettings.wifiType);
+                    ESP_LOGI(TAG, "Settings: %d, %d, %s, %s", this->settings.soundEnabled, this->settings.vibrationEnabled, this->settings.wifiSettings.ssid, this->settings.wifiSettings.password);
                     ESP_LOGI(TAG, "Settings file found and read");
                     ret = ESP_OK;
                 }
@@ -285,6 +247,8 @@ static esp_err_t UserSettings_WriteUserSettingsFileToDisk(UserSettings *this)
 {
     esp_err_t ret = ESP_FAIL;
     assert(this);
+    assert(this->pBatterySensor);
+
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
         UserSettingsFile tmpSettings = this->settings;
@@ -292,37 +256,11 @@ static esp_err_t UserSettings_WriteUserSettingsFileToDisk(UserSettings *this)
         {
             ESP_LOGE(TAG, "Failed to give badge mutex in %s", __FUNCTION__);
         }
-        if (this->pBatterySensor != NULL && BatterySensor_GetBatteryPercent(this->pBatterySensor) > BATTERY_NO_FLASH_WRITE_THRESHOLD)
-        {
-            int status = remove(SETTINGS_FILE_NAME);
-            if(status != 0)
-            {
-                ESP_LOGE(TAG, "Error: unable to remove the file. %s", SETTINGS_FILE_NAME);
-            }
 
-            FILE * fp = fopen(SETTINGS_FILE_NAME, "wb");
-            if (fp != 0)
-            {
-                ssize_t bytesWritten = fwrite(&tmpSettings, 1, sizeof(tmpSettings), fp);
-                if (bytesWritten == sizeof(tmpSettings))
-                {
-                    ESP_LOGI(TAG, "Write completed for %s", SETTINGS_FILE_NAME);
-                    ret = ESP_OK;
-                }
-                else
-                {
-                    ESP_LOGE(TAG, "Write of selected sequence index file failed. fwrite return did not match byte write size. expected=%d, actual=%d\n", sizeof(this->settings), bytesWritten);
-                }
-                fclose(fp);
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Creation of %s failed", SETTINGS_FILE_NAME);
-            }
-        }
-        else
+        ret = WriteFileToDisk(this->pBatterySensor, SETTINGS_FILE_NAME, (char*)&tmpSettings, sizeof(tmpSettings));
+        if (ret != ESP_OK)
         {
-            ESP_LOGE(TAG, "Battery level too low to write to flash");
+            ESP_LOGE(TAG, "Failed to write user settings file");
         }
     }
     else
