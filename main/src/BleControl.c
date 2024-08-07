@@ -266,7 +266,7 @@ BleControl * BleControl_GetInstance()
 // due to fatal error.
 static void _BleControl_ResetCallbackHandler(int reason)
 {
-    ESP_LOGE(TAG, "Resetting state; reason=%d\n", reason);
+    ESP_LOGE(TAG, "Resetting state; reason=%d", reason);
 }
 
 
@@ -325,7 +325,7 @@ static void _BleControl_SyncCallbackHandler(void)
     rc = ble_hs_id_infer_auto(0, &this->ownAddrType);
     if (rc != 0)
     {
-        ESP_LOGE(TAG, "error determining address type; rc=%d\n", rc);
+        ESP_LOGE(TAG, "error determining address type; rc=%d", rc);
         return;
     }
 

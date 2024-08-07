@@ -147,7 +147,7 @@ void _BleControl_StopAdvertisement(BleControl *this)
     int rc = ble_gap_adv_stop();
     if (rc != 0)
     {
-        ESP_LOGW(TAG, "error disabling advertisement; rc=%d\n", rc);
+        ESP_LOGW(TAG, "error disabling advertisement; rc=%d", rc);
         return;
     }
 }
@@ -210,11 +210,11 @@ void _BleControl_StartAdvertisement(BleControl *this, bool advertiseService)
     {
         if (rc == BLE_HS_EMSGSIZE)
         {
-            ESP_LOGE(TAG, "error setting advertisement data; exceeded maximum advertisement size\n");
+            ESP_LOGE(TAG, "error setting advertisement data; exceeded maximum advertisement size");
         }
         else
         {
-           ESP_LOGE(TAG, "error setting advertisement data; rc=%d\n", rc); 
+           ESP_LOGE(TAG, "error setting advertisement data; rc=%d", rc); 
         }
         
         return;
@@ -259,7 +259,7 @@ void _BleControl_StartAdvertisement(BleControl *this, bool advertiseService)
     rc = ble_gap_adv_start(this->ownAddrType, NULL, BLE_HS_FOREVER,
                            &adv_params, _BleControl_GapEventHandler, NULL);
     if (rc != 0) {
-        ESP_LOGE(TAG, "error enabling advertisement; rc=%d\n", rc);
+        ESP_LOGE(TAG, "error enabling advertisement; rc=%d", rc);
         return;
     }
 }
@@ -321,14 +321,14 @@ esp_err_t BleControl_EnableBleService(BleControl *this, bool pairingMode, uint32
             if(rc != 0)
             {
                 /* not able to add service return immidietely */
-                ESP_LOGE(TAG, "Failed to add service\n");
+                ESP_LOGE(TAG, "Failed to add service");
             }
             _BleControl_StartBleServiceDisableTimer(this, timeoutBleServiceDisableUSec);
 
             ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_SERVICE_ENABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
             if(ret != ESP_OK)
             {
-                ESP_LOGE(TAG, "Failed to notify event\n");
+                ESP_LOGE(TAG, "Failed to notify event");
             }
         }
         else
@@ -381,19 +381,19 @@ esp_err_t BleControl_DisableBleService(BleControl *this, bool notify)
                 if(rc != 0)
                 {
                     /* not able to delete service return immidietely */
-                    ESP_LOGE(TAG, "Failed to delete service\n");
+                    ESP_LOGE(TAG, "Failed to delete service");
                 }
                 ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_SERVICE_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                 if(ret != ESP_OK)
                 {
-                    ESP_LOGE(TAG, "Failed to notify ble service disabled event\n");
+                    ESP_LOGE(TAG, "Failed to notify ble service disabled event");
                 }
                 
                 uint16_t data = 0;
                 ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_INTERACTIVE_GAME_ACTION, (void*)&data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
                 if(ret != ESP_OK)
                 {
-                    ESP_LOGE(TAG, "Failed to notify reset interactive game action event\n");
+                    ESP_LOGE(TAG, "Failed to notify reset interactive game action event");
                 }
             }
         }
@@ -481,14 +481,14 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
             rc = ble_gap_update_params(event->connect.conn_handle, &conn_parameters);
             if(rc != 0)
             {
-                ESP_LOGE(TAG, "Device %u failed to update connection parameters: 0x%0x\n", event->connect.conn_handle, rc);
+                ESP_LOGE(TAG, "Device %u failed to update connection parameters: 0x%0x", event->connect.conn_handle, rc);
             }
 
             // Update connection MTU
             rc = ble_gap_set_data_len(event->connect.conn_handle, BLE_ATT_PREFERRED_MTU, BLE_PREFERRED_MAX_TX_TIMEOUT_USEC);
             if(rc != 0)
             {
-                ESP_LOGE(TAG, "Device %u failed to set data length(%d,%d): 0x%0x\n", event->connect.conn_handle, CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU, BLE_PREFERRED_MAX_TX_TIMEOUT_USEC, rc);
+                ESP_LOGE(TAG, "Device %u failed to set data length(%d,%d): 0x%0x", event->connect.conn_handle, CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU, BLE_PREFERRED_MAX_TX_TIMEOUT_USEC, rc);
             }
 
             _BleControl_BleServiceNotifyConnect(this);
@@ -512,7 +512,7 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
         /* Connection terminated; Disable ble service and notify disconnect */
         if (NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_DROPPED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION) != ESP_OK)
         {
-            ESP_LOGE(TAG, "Failed to notify BLE dropped event\n");
+            ESP_LOGE(TAG, "Failed to notify BLE dropped event");
         }
         BleControl_DisableBleService(this, false);
         _BleControl_BleServiceInteractiveGameReset(this);
@@ -612,7 +612,7 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
         return 0;
 
     case BLE_GAP_EVENT_MTU:
-        ESP_LOGI(TAG, "MTU Update for Connection conn_handle=%d cid=%d mtu=%d\n",
+        ESP_LOGI(TAG, "MTU Update for Connection conn_handle=%d cid=%d mtu=%d",
                  event->mtu.conn_handle, event->mtu.channel_id, event->mtu.value);
         return 0;
     }
@@ -693,11 +693,11 @@ static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t at
     case BLE_GATT_ACCESS_OP_READ_CHR:
         if (conn_handle != BLE_HS_CONN_HANDLE_NONE)
         {
-            ESP_LOGD(TAG, "Characteristic read; conn_handle=%d attr_handle=%d\n", conn_handle, attr_handle);
+            ESP_LOGD(TAG, "Characteristic read; conn_handle=%d attr_handle=%d", conn_handle, attr_handle);
         }
         else
         {
-            ESP_LOGD(TAG, "Characteristic read by NimBLE stack; attr_handle=%d\n", attr_handle);
+            ESP_LOGD(TAG, "Characteristic read by NimBLE stack; attr_handle=%d", attr_handle);
         }
         uuid = ctxt->chr->uuid;
         if (attr_handle == file_transfer_app_gatt_svr_chr_val_handle)
@@ -814,11 +814,11 @@ static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t at
     case BLE_GATT_ACCESS_OP_READ_DSC:
         if (conn_handle != BLE_HS_CONN_HANDLE_NONE)
         {
-            ESP_LOGI(TAG, "Descriptor read; conn_handle=%d attr_handle=%d\n", conn_handle, attr_handle);
+            ESP_LOGI(TAG, "Descriptor read; conn_handle=%d attr_handle=%d", conn_handle, attr_handle);
         }
         else
         {
-            ESP_LOGI(TAG, "Descriptor read by NimBLE stack; attr_handle=%d\n", attr_handle);
+            ESP_LOGI(TAG, "Descriptor read by NimBLE stack; attr_handle=%d", attr_handle);
         }
         uuid = ctxt->dsc->uuid;
         /** @brief Compares two Bluetooth UUIDs.
@@ -885,21 +885,21 @@ void _BleControl_ServiceEventCallbackHandler(struct ble_gatt_register_ctxt *ctxt
 
     switch (ctxt->op) {
     case BLE_GATT_REGISTER_OP_SVC:
-        ESP_LOGD(TAG, "registered service %s with handle=%d\n",
+        ESP_LOGD(TAG, "registered service %s with handle=%d",
                     ble_uuid_to_str(ctxt->svc.svc_def->uuid, buf),
                     ctxt->svc.handle);
         break;
 
     case BLE_GATT_REGISTER_OP_CHR:
         ESP_LOGD(TAG, "registering characteristic %s with "
-                    "def_handle=%d val_handle=%d\n",
+                    "def_handle=%d val_handle=%d",
                     ble_uuid_to_str(ctxt->chr.chr_def->uuid, buf),
                     ctxt->chr.def_handle,
                     ctxt->chr.val_handle);
         break;
 
     case BLE_GATT_REGISTER_OP_DSC:
-        ESP_LOGD(TAG, "registering descriptor %s with handle=%d\n",
+        ESP_LOGD(TAG, "registering descriptor %s with handle=%d",
                     ble_uuid_to_str(ctxt->dsc.dsc_def->uuid, buf),
                     ctxt->dsc.handle);
         break;

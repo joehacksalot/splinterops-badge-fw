@@ -73,12 +73,12 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
 {
     if (index >= LED_SEQ_NUM_CUSTOM_SEQUENCES)
     {
-        ESP_LOGE(TAG, "Invalid index\n");
+        ESP_LOGE(TAG, "Invalid index");
         return ESP_FAIL;
     }
     if (sequence_size > MAX_CUSTOM_LED_SEQUENCE_SIZE)
     {
-        ESP_LOGE(TAG, "Sequence size too large. %d\n", sequence_size);
+        ESP_LOGE(TAG, "Sequence size too large. %d", sequence_size);
         return ESP_FAIL;
     }
 
@@ -146,7 +146,7 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
                   ssize_t bytes_written = fwrite((void *)custom_led_sequences[i], 1, MAX_CUSTOM_LED_SEQUENCE_SIZE, fp);
                   if(bytes_written != MAX_CUSTOM_LED_SEQUENCE_SIZE)
                   {
-                    ESP_LOGE(TAG, "Overwrite failed. %d\n", bytes_written);
+                    ESP_LOGE(TAG, "Overwrite failed. %d", bytes_written);
                     // ret = ESP_FAIL;
                   }
                   fclose(fp);
@@ -183,7 +183,7 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
         fclose(fp);
         if (bytes_written != MAX_CUSTOM_LED_SEQUENCE_SIZE)
         {
-          ESP_LOGE(TAG, "Write failed. %d\n", bytes_written);
+          ESP_LOGE(TAG, "Write failed. %d", bytes_written);
           // ret = ESP_FAIL;
         }
       }

@@ -398,7 +398,7 @@ CONFIG_WIFI_SSID="DefCon-Open"
 CONFIG_WIFI_PASSWORD=""
 CONFIG_WIFI_MAX_RETRY=3
 CONFIG_OTA_UPDATE_URL="https://iwc-defcon-badge-firmware.s3.us-east-2.amazonaws.com/2024-badge-app.bin"
-CONFIG_OTA_UPDATE_RECV_TIMEOUT=15000
+CONFIG_OTA_UPDATE_RECV_TIMEOUT=30000
 # end of Badge Additional Configuration
 
 #
