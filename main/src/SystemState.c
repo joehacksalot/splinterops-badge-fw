@@ -31,7 +31,7 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
-#define PEER_RSSID_SONG_THRESHOLD            (-58)
+#define PEER_RSSID_SONG_THRESHOLD            (-55)
 
 #define LED_GAME_STATUS_TOGGLE_DURATION_MSEC (5000)
 #define PEER_SONG_COOLDOWN_DURATION_MSEC     (3*60*1000) // 3 min
