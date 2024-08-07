@@ -24,7 +24,7 @@
 #define TAG "BLE"
 #define BLE_DISABLE_TIMER_TIMEOUT_USEC      60 * 1000 * 1000    // 1 minute of service inactivity
 #define BLE_PREFERRED_MAX_TX_TIMEOUT_USEC   1500                // 1.5ms
-#define BLE_ATT_PREFERRED_MTU               20 //CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU
+#define BLE_ATT_PREFERRED_MTU               CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU
 
 static esp_err_t _BleControl_BleReceiveDataAction(BleControl *this, BleServiceProfile profileId, uint8_t * data, int size, bool final);
 esp_err_t _BleControl_BleReceiveFileDataAction(BleControl *this, uint8_t * data, int size, bool final);
@@ -488,7 +488,7 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
             rc = ble_gap_set_data_len(event->connect.conn_handle, BLE_ATT_PREFERRED_MTU, BLE_PREFERRED_MAX_TX_TIMEOUT_USEC);
             if(rc != 0)
             {
-                ESP_LOGE(TAG, "Device %u failed to set data length(%d,%d): 0x%0x", event->connect.conn_handle, CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU, BLE_PREFERRED_MAX_TX_TIMEOUT_USEC, rc);
+                ESP_LOGE(TAG, "Device %u failed to set data length(%d,%d): 0x%0x", event->connect.conn_handle, BLE_ATT_PREFERRED_MTU, BLE_PREFERRED_MAX_TX_TIMEOUT_USEC, rc);
             }
 
             _BleControl_BleServiceNotifyConnect(this);
