@@ -261,6 +261,8 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE,            &SystemState_NetworkTestNotificationHandler,    this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED,      &SystemState_PeerHeartbeatNotificationHandler,  this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_INTERACTIVE_GAME_ACTION,          &SystemState_InteractiveGameNotificationHandler,this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_INITIATED,           &SystemState_BleNotificationHandler,            this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE,            &SystemState_BleNotificationHandler,            this));
     
     if (this->appConfig.buzzerPresent)
     {
