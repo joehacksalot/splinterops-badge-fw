@@ -235,6 +235,7 @@ esp_err_t SystemState_Init(SystemState *this)
         ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
         ESP_ERROR_CHECK(Ocarina_Init(&this->ocarina, &this->notificationDispatcher));
     }
+
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
     ESP_ERROR_CHECK(BleControl_Init(&this->bleControl, &this->notificationDispatcher, &this->userSettings, &this->gameState));
@@ -1056,7 +1057,7 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
                             switch (peerReport.badgeType)
                             {
                                 case BADGE_TYPE_TRON:
-                                    successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                                    successPlaySongNotificationData.song = SONG_BONUS_BONUS;
                                 break;
                                 case BADGE_TYPE_REACTOR:
                                     successPlaySongNotificationData.song = SONG_BONUS;

@@ -26,6 +26,7 @@ extern const SongNotes NocturneOfShadow;
 extern const SongNotes RequiemOfSpirit;
 extern const SongNotes PreludeOfLight;
 extern const SongNotes Bonus;
+extern const SongNotes BonusBonus;
 extern const SongNotes Fanfare;
 
 static const SongNotes *pSongs[NUM_SONGS] = 
@@ -48,6 +49,7 @@ static const SongNotes *pSongs[NUM_SONGS] =
     &RequiemOfSpirit,
     &PreludeOfLight,
     &Bonus,
+    &BonusBonus,
     &Fanfare
 };
 

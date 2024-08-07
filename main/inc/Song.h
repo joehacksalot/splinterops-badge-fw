@@ -61,6 +61,7 @@ typedef enum Song_e
     SONG_REQUIEM_OF_SPIRIT,
     SONG_PRELUDE_OF_LIGHT,
     SONG_BONUS,
+    SONG_BONUS_BONUS,
     SONG_FANFARE,
     NUM_SONGS
 } Song;
