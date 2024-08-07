@@ -102,7 +102,6 @@ esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationD
             ESP_LOGI(TAG, "Synth Mode succesfully initialized");
             NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &SynthMode_TouchSensorNotificationHandler, this);
             NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &SynthMode_PlaySongNotificationHandler, this);
-
             assert(xTaskCreatePinnedToCore(SynthModeTask, "SynthModeTask", configMINIMAL_STACK_SIZE * 2, this, SYNTH_MODE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
             return ESP_OK;
         }

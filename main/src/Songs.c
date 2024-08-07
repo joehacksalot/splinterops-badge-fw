@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "esp_log.h"
 #include "Song.h"
+#include "Utilities.h"
+
+#define SONG_FILTER_PERIOD_MS 50 
 
 static const char * TAG = "SONG";
 
@@ -23,6 +26,7 @@ extern const SongNotes NocturneOfShadow;
 extern const SongNotes RequiemOfSpirit;
 extern const SongNotes PreludeOfLight;
 extern const SongNotes Bonus;
+extern const SongNotes Fanfare;
 
 static const SongNotes *pSongs[NUM_SONGS] = 
 {
@@ -44,6 +48,7 @@ static const SongNotes *pSongs[NUM_SONGS] =
     &RequiemOfSpirit,
     &PreludeOfLight,
     &Bonus,
+    &Fanfare
 };
 
 // Function to calculate the duration of a note in milliseconds
@@ -62,7 +67,7 @@ int GetNoteTypeInMilliseconds(int tempo, float noteType)
     double beatDuration = 60000.0 / tempo;
 
     // Calculate the note duration based on the type of the note
-    double NoteType = beatDuration * 4.0 * noteType;
+    double NoteType = MAX(beatDuration * 4.0 * noteType, SONG_FILTER_PERIOD_MS);
 
     return (int)NoteType;
 }
