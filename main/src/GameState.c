@@ -371,6 +371,7 @@ static void _GameState_ProcessHeartBeatResponse(GameState *this, HeartBeatRespon
                 if (!_GameState_IsBlankEvent(response.status.eventData.currentEventIdB64))
                 {
                     this->eventEndTime = TimeUtils_GetFutureTimeTicks(this->gameStateData.status.eventData.mSecRemaining);
+                    this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(EVENT_HEARTBEAT_INTERVAL_MS);
                     ESP_LOGI(TAG, "New event id: %s  endtime: %lu", this->gameStateData.status.eventData.currentEventIdB64, (uint32_t)this->eventEndTime);
                     NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED, (void*)this->gameStateData.status.eventData.currentEventIdB64, EVENT_ID_B64_SIZE, DEFAULT_NOTIFY_WAIT_DURATION);                    
                 }
