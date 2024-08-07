@@ -42,7 +42,7 @@
 #define TOUCH_ACTIVE_TIMEOUT_DURATION_MSEC   (5000)
 #define BATTERY_SEQUENCE_DRAW_DURATION_MSEC  (3000)
 #define BLE_SERVICE_DISABLE_TIMEOUT_AFTER_GAME_INTERRUPTION (10 * 1000 * 1000)
-#define FIRSTBOOT_FILE_NAME MOUNT_PATH "/firstboot"
+#define FIRSTBOOT_FILE_NAME MOUNT_PATH "/fb"
 
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 #define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (2000)
@@ -282,32 +282,19 @@ esp_err_t SystemState_Init(SystemState *this)
         if (ret == ESP_OK)
         {
             ESP_LOGI(TAG, "First boot file found, checking to see if first boot byte is set");
-            if (firstBootByte != 0x00)
+            if (firstBootByte)
             {
                 ESP_LOGI(TAG, "First boot byte is set, not first boot");
             }
             else
             {
                 ESP_LOGI(TAG, "First boot byte is not set, first boot");
-                firstBootByte = 0xFF;
-                ret = WriteFileToDisk(&this->batterySensor, FIRSTBOOT_FILE_NAME, (char *)&firstBootByte, sizeof(firstBootByte));
-                if (ret != ESP_OK)
-                {
-                    ESP_LOGE(TAG, "Failed to write first boot byte to disk. error code = %s", esp_err_to_name(ret));
-                }
-
                 firstBoot = true;
             }
         }
         else
         {
             ESP_LOGI(TAG, "First boot byte not found, setting up default settings");
-            ret = WriteFileToDisk(&this->batterySensor, FIRSTBOOT_FILE_NAME, (char *)&firstBootByte, sizeof(firstBootByte));
-            if (ret != ESP_OK)
-            {
-                ESP_LOGE(TAG, "Failed to write first boot byte to disk. error code = %s", esp_err_to_name(ret));
-            }
-
             firstBoot = true;
         }
     }
@@ -316,7 +303,15 @@ esp_err_t SystemState_Init(SystemState *this)
         ESP_LOGE(TAG, "Failed to initialize filesystem, skipping first boot byte check");
     }
 
-    if (firstBoot){
+    if (firstBoot)
+    {
+        uint8_t firstBootByte = 0xFF;
+        ret = WriteFileToDisk(&this->batterySensor, FIRSTBOOT_FILE_NAME, (char *)&firstBootByte, sizeof(firstBootByte));
+        if (ret != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to write first boot byte to disk. error code = %s", esp_err_to_name(ret));
+        }
+
         PlaySongEventNotificationData firstBootPlaySongNotificationData;
         firstBootPlaySongNotificationData.song = SONG_ZELDA_OPENING;
         NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &firstBootPlaySongNotificationData, sizeof(firstBootPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
