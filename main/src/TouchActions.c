@@ -72,7 +72,7 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_10_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED))
     {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_ENABLE_BLE_XFER);
+        CommandDetected(this, TOUCH_ACTIONS_CMD_ENABLE_BLE_PAIRING);
     }
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
@@ -84,7 +84,7 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_10_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] >= TOUCH_SENSOR_EVENT_TOUCHED))
     {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_BLE_XFER);
+        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_BLE_PAIRING);
     }
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
@@ -169,7 +169,7 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_10_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED))
     {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_ENABLE_BLE_XFER);
+        CommandDetected(this, TOUCH_ACTIONS_CMD_ENABLE_BLE_PAIRING);
     }
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
@@ -181,7 +181,7 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_10_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED))
     {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_BLE_XFER);
+        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_BLE_PAIRING);
     }
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
@@ -194,18 +194,6 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED))
     {
         CommandDetected(this, TOUCH_ACTIONS_CMD_TOGGLE_SYNTH_MODE_ENABLE);
-    }
-    if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_2_OCLOCK]  == TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_4_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_5_OCLOCK]  == TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_7_OCLOCK]  == TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_8_OCLOCK]  >= TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_10_OCLOCK] == TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_11_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED))
-    {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_SYNTH_MODE);
     }
     if ((this->touchSensorValue[TOUCH_SENSOR_12_OCLOCK] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_1_OCLOCK]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
@@ -247,12 +235,12 @@ static void ReportTouchActionCommands(TouchActions *this)
     if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
-        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  == TOUCH_SENSOR_EVENT_RELEASED)       &&
+        (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         == TOUCH_SENSOR_EVENT_RELEASED)       &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] == TOUCH_SENSOR_EVENT_RELEASED)       &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] >= TOUCH_SENSOR_EVENT_SHORT_PRESSED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] >= TOUCH_SENSOR_EVENT_SHORT_PRESSED)  &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] >= TOUCH_SENSOR_EVENT_SHORT_PRESSED))
     {
         CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_TOUCH);
     }
@@ -302,7 +290,7 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
     {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_ENABLE_BLE_XFER);
+        CommandDetected(this, TOUCH_ACTIONS_CMD_ENABLE_BLE_PAIRING);
     }
     if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)       && 
         (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
@@ -314,17 +302,17 @@ static void ReportTouchActionCommands(TouchActions *this)
         (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)       &&
         (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED))
     {
-        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_BLE_XFER);
+        CommandDetected(this, TOUCH_ACTIONS_CMD_DISABLE_BLE_PAIRING);
     }
-    if (//(this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)     && 
-        //(this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)     &&
-        //(this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)     &&
-        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         >= TOUCH_SENSOR_EVENT_TOUCHED)        &&
-        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] >= TOUCH_SENSOR_EVENT_TOUCHED)//      &&
-        //(this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_TOUCHED)      &&
-        //(this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)     &&
-        //(this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED)
+    if ((this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_1]  == TOUCH_SENSOR_EVENT_RELEASED)      && 
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_2]  == TOUCH_SENSOR_EVENT_RELEASED)      &&
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_3]  == TOUCH_SENSOR_EVENT_RELEASED)      &&
+        (this->touchSensorValue[TOUCH_SENSOR_LEFT_WING_FEATHER_4]  >= TOUCH_SENSOR_EVENT_TOUCHED)       &&
+        (this->touchSensorValue[TOUCH_SENSOR_TAIL_FEATHER]         >= TOUCH_SENSOR_EVENT_RELEASED)      &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_4] >= TOUCH_SENSOR_EVENT_TOUCHED)       &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_3] == TOUCH_SENSOR_EVENT_RELEASED)      &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_2] == TOUCH_SENSOR_EVENT_RELEASED)      &&
+        (this->touchSensorValue[TOUCH_SENSOR_RIGHT_WING_FEATHER_1] == TOUCH_SENSOR_EVENT_RELEASED)
         )
     {
         CommandDetected(this, TOUCH_ACTIONS_CMD_TOGGLE_SYNTH_MODE_ENABLE);

@@ -14,4 +14,6 @@ TickType_t TimeUtils_GetFutureTimeTicks(uint32_t mSec);
 
 TickType_t TimeUtils_GetCurTimeTicks(void);
 
+uint32_t TimeUtils_GetMSecFromTicks(uint32_t ticks);
+
 #endif // TIMEUTILS_H_

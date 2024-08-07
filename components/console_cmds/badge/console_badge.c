@@ -77,7 +77,7 @@
 //         }
 //         else if (strcmp(argv[1],"ble_xfer") == 0)
 //         {
-//             SetSystemState(SYSTEM_STATE_BLE_XFER_INDICATOR);
+//             SetSystemState(SYSTEM_STATE_BLE_FILE_TRANSFER_INDICATOR);
 //         }
 //         else if (strcmp(argv[1],"error") == 0)
 //         {

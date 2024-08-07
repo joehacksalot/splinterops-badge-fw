@@ -87,6 +87,7 @@ esp_err_t SynthMode_Init(SynthMode *this, NotificationDispatcher *pNotificationD
         this->selectedSong = SONG_NONE;
         this->currentNoteIdx = 0;
         this->nextNotePlayTime = 0;
+        this->octaveShift = 0;
         this->pNotificationDispatcher = pNotificationDispatcher;
         this->pUserSettings = pUserSettings;
         this->queueMutex = xSemaphoreCreateMutex();
@@ -327,15 +328,16 @@ static esp_err_t SynthMode_StopTone(SynthMode* this)
 }
 
 
-esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled)
+esp_err_t SynthMode_SetTouchSoundEnabled(SynthMode *this, bool enabled, int octaveShift)
 {
     assert(this);
     esp_err_t ret = ESP_FAIL;
 
     if (this->initialized)
     {
-        ESP_LOGI(TAG, "Setting touch sound enabled to %s", enabled ? "true" : "false");
+        ESP_LOGD(TAG, "Setting touch sound enabled to %s", enabled ? "true" : "false");
         this->touchSoundEnabled = enabled;
+        this->octaveShift = octaveShift;
         ret = ESP_OK;
     }
 
@@ -367,7 +369,7 @@ static void SynthMode_TouchSensorNotificationHandler(void *pObj, esp_event_base_
         {
             if (this->touchSoundEnabled)
             {
-                SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx]);
+                SynthMode_PlayTone(this, touchFrequencyMapping[touchNotificationData.touchSensorIdx] + (this->octaveShift * NOTE_ENUMS_PER_OCTAVE));
             }
         }
     }

@@ -214,7 +214,7 @@ static void OtaUpdateTask(void *pvParameters)
         }
         else
         {
-            ESP_LOGE(TAG, "Failed to connect to WiFi");
+            ESP_LOGW(TAG, "Failed to connect to WiFi");
         }
 
         WifiClient_Disconnect(this->pWifiClient);

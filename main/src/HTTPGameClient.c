@@ -25,6 +25,8 @@
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt);
 static void HTTPGameClientTask(void *pvParameters);
 static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHeartBeatResponse);
+static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse);
 
 
 // Internal Constants
@@ -229,9 +231,14 @@ esp_err_t HTTPGameClient_Init(HTTPGameClient *this, WifiClient *pWifiClient, Not
     this->requestMutex = xSemaphoreCreateMutex();
     assert(this->requestMutex);
 
+    // char * responseTest = "{\"stones\":[1],\"songs\":[5,2],\"event\":{\"event\":\"QlgVrlHvkZs=\",\"stoneColor\":\"Yellow\",\"power\":64.12,\"msRemaining\":304.05200004577637},\"badgeRequestTime\":7429,\"serverResponseTime\":{\"tv_sec\":1722212789,\"tv_nsec\":948000000}}";
+    // HeartBeatResponse response;
+    // _ParseJsonResponseString(responseTest, &response);
+    // _PrintHeartBeatResponse(&response);
+
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, &HTTPGameClient_GameStateRequestNotificationHandler, this));
 
-    assert(xTaskCreatePinnedToCore(HTTPGameClientTask, "HTTPGameClientTask", configMINIMAL_STACK_SIZE * 3, this, HTTP_GAME_CLIENT_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+    assert(xTaskCreatePinnedToCore(HTTPGameClientTask, "HTTPGameClientTask", configMINIMAL_STACK_SIZE * 4, this, HTTP_GAME_CLIENT_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ESP_OK;
 }
 
@@ -264,153 +271,153 @@ void _HTTPGameClient_RemoveExpiredFromList(HTTPGameClient * this)
     }
 }
 
-esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
+
+static const char * _GetGameStatus(GameState_EventColor eventColor)
+{
+    switch(eventColor)
+    {
+        case GAMESTATE_EVENTCOLOR_RED:
+            return "Red";
+            break;
+        case GAMESTATE_EVENTCOLOR_GREEN:
+            return "Green";
+            break;
+        case GAMESTATE_EVENTCOLOR_YELLOW:
+            return "Yellow";
+            break;
+        case GAMESTATE_EVENTCOLOR_MAGENTA:
+            return "Magenta";
+            break;
+        case GAMESTATE_EVENTCOLOR_BLUE:
+            return "Blue";
+            break;
+        case GAMESTATE_EVENTCOLOR_CYAN:
+            return "Cyan";
+            break;
+        default:
+            return "Unknown";
+            break;
+    }
+}
+
+static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse)
+{
+    ESP_LOGI(TAG, "HeartBeatResponse: ");
+    ESP_LOGI(TAG, "    stoneBits:         0x%02x", pHeartBeatResponse->status.statusData.stoneBits);
+    ESP_LOGI(TAG, "    songUnlockedBits:  0x%04x", pHeartBeatResponse->status.statusData.songUnlockedBits);
+    ESP_LOGI(TAG, "    currentEventIdB64: %s", pHeartBeatResponse->status.eventData.currentEventIdB64);
+    ESP_LOGI(TAG, "    currentEventColor: %s", _GetGameStatus(pHeartBeatResponse->status.eventData.currentEventColor));
+    ESP_LOGI(TAG, "    powerLevel:        %u", pHeartBeatResponse->status.eventData.powerLevel);
+    ESP_LOGI(TAG, "    mSecRemaining:     %lu", pHeartBeatResponse->status.eventData.mSecRemaining);
+}
+
+static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHeartBeatResponse)
 {
     esp_err_t ret = ESP_FAIL;
-    assert(this);
-    // Verify first byte is not NULL
-    if (this->response.pData[0] != 0)
+    ESP_LOGI(TAG, "Parsing JSON Response: %s", pData);
+    cJSON * root = cJSON_Parse(pData);
+    if (root != NULL)
     {
-        ESP_LOGI(TAG, "Parsing JSON Response: %s", this->response.pData);
-        cJSON * root = cJSON_Parse((char *)this->response.pData);
-        if (root != NULL)
+        ret = ESP_OK;
+        HeartBeatResponse tmpHeartBeatResponse = {0};
+        cJSON *stonesArray = cJSON_GetObjectItem(root, "stones");
+        if (stonesArray != NULL)
         {
-            HeartBeatResponse tmpHeartBeatResponse = {0};
-            cJSON *stonesArray = cJSON_GetObjectItem(root, "stones");
-            if (stonesArray != NULL)
+            int stonesArraySize = cJSON_GetArraySize(stonesArray);
+            for (int stonesIndex = 0; stonesIndex < stonesArraySize; stonesIndex++)
             {
-                int stonesArraySize = cJSON_GetArraySize(stonesArray);
-                for (int stonesIndex = 0; stonesIndex < stonesArraySize; stonesIndex++)
+                cJSON *stone = cJSON_GetArrayItem(stonesArray, stonesIndex);
+                int stoneIndex = (int)stone->valueint;
+                if (stoneIndex > 0 && stoneIndex <= NUM_GAMESTATE_EVENTCOLORS)
                 {
-                    cJSON *color = cJSON_GetArrayItem(stonesArray, stonesIndex);
-                    char * colorStr = color->valuestring;
-                    if (strcmp(colorStr, "Red") == 0)
-                    {
-                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << RED_SHIFT);
-                    }
-                    else if (strcmp(colorStr, "Green") == 0)
-                    {
-                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << GREEN_SHIFT);
-                    }
-                    else if (strcmp(colorStr, "Yellow") == 0)
-                    {
-                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << YELLOW_SHIFT);
-                    }
-                    else if (strcmp(colorStr, "Magenta") == 0)
-                    {
-                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << MAGENTA_SHIFT);
-                    }
-                    else if (strcmp(colorStr, "Blue") == 0)
-                    {
-                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << BLUE_SHIFT);
-                    }
-                    else if (strcmp(colorStr, "Cyan") == 0)
-                    {
-                        tmpHeartBeatResponse.status.statusData.colorBits |= (1 << CYAN_SHIFT);
-                    }
-                    else
-                    {
-                        ESP_LOGE(TAG, "Unknown color: %s", colorStr);
-                    }
-                }
-            }
-            // else
-            // {
-                // ESP_LOGE(TAG, "No stones array found");
-            // }
-            cJSON *event = cJSON_GetObjectItem(root, "event");
-            if (event != NULL)
-            {
-                cJSON *eventId = cJSON_GetObjectItem(event, "event");
-                if (eventId != NULL)
-                {
-                    strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, eventId->valuestring, sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
-                    ESP_LOGI(TAG, "Event id: %s", tmpHeartBeatResponse.status.eventData.currentEventIdB64);
+                    tmpHeartBeatResponse.status.statusData.stoneBits |= (1 << (stoneIndex - 1));
                 }
                 else
                 {
-                    strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
+                    ESP_LOGE(TAG, "Stone index %d out of range", stoneIndex);
                 }
-                // else
-                // {
-                    // ESP_LOGE(TAG, "No event id found");
-                //     // TEST CODE
-                //     strcpy((char *) tmpHeartBeatResponse.status.eventData.currentEventIdB64, "event112233!");
-                // }
-                cJSON *stoneColor = cJSON_GetObjectItem(event, "stoneColor");
-                if (stoneColor != NULL)
+            }
+        }
+
+        cJSON *songsArray = cJSON_GetObjectItem(root, "songs");
+        if (songsArray != NULL)
+        {
+            int songsArraySize = cJSON_GetArraySize(songsArray);
+            for (int songsIndex = 0; songsIndex < songsArraySize; songsIndex++)
+            {
+                cJSON *song = cJSON_GetArrayItem(songsArray, songsIndex);
+                int songIndex = (int)song->valueint;
+                if (songIndex > 0 && songIndex <= OCARINA_NUM_SONGS)
                 {
-                    char * colorStr = stoneColor->valuestring;
-                    if (strcmp(colorStr, "Red") == 0)
-                    {
-                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
-                    }
-                    else if (strcmp(colorStr, "Green") == 0)
-                    {
-                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_GREEN;
-                    }
-                    else if (strcmp(colorStr, "Yellow") == 0)
-                    {
-                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_YELLOW;
-                    }
-                    else if (strcmp(colorStr, "Magenta") == 0)
-                    {
-                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_MAGENTA;
-                    }
-                    else if (strcmp(colorStr, "Blue") == 0)
-                    {
-                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_BLUE;
-                    }
-                    else if (strcmp(colorStr, "Cyan") == 0)
-                    {
-                        tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_CYAN;
-                    }
-                    else
-                    {
-                        ESP_LOGI(TAG, "Unknown color: %s", colorStr);
-                    }
+                    tmpHeartBeatResponse.status.statusData.songUnlockedBits |= (1 << (songIndex - 1));
                 }
-                // else
-                // {
-                    // ESP_LOGE(TAG, "No stoneColor found");
-                //     // TEST CODE
-                //     tmpHeartBeatResponse.status.eventData.currentEventColor = GAMESTATE_EVENTCOLOR_RED;
-                // }
-                
-                cJSON *power = cJSON_GetObjectItem(event, "power");
-                if (power != NULL)
+                else
                 {
-                    double powerDbl = power->valuedouble;
-                    tmpHeartBeatResponse.status.eventData.powerLevel = (uint8_t)powerDbl;
+                    ESP_LOGE(TAG, "Song index %d out of range", songIndex);
                 }
-                // else
-                // {
-                    // ESP_LOGE(TAG, "No power found");
-                //     // TEST CODE
-                //     tmpHeartBeatResponse.status.eventData.powerLevel = 70;
-                // }
-                
-                cJSON *msRemaining = cJSON_GetObjectItem(event, "msRemaining");
-                if (msRemaining != NULL)
-                {
-                    tmpHeartBeatResponse.status.eventData.mSecRemaining = (uint32_t)msRemaining->valueint;
-                }
-                // else
-                // {
-                    // ESP_LOGE(TAG, "No msRemaining found");
-                //     // TEST CODE
-                //     tmpHeartBeatResponse.status.eventData.mSecRemaining = 30*1000;
-                // }
+            }
+        }
+        else
+        {
+            ESP_LOGE(TAG, "No timestamp found");
+        }
+
+        cJSON *event = cJSON_GetObjectItem(root, "event");
+        if (event != NULL)
+        {
+            cJSON *eventId = cJSON_GetObjectItem(event, "event");
+            if (eventId != NULL)
+            {
+                strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, eventId->valuestring, sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
+                ESP_LOGI(TAG, "Event id: %s", tmpHeartBeatResponse.status.eventData.currentEventIdB64);
             }
             else
             {
                 strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
             }
-            
-            cJSON *timestamp = cJSON_GetObjectItem(root, "timestamp");
-            if (timestamp != NULL)
+            cJSON *stoneColor = cJSON_GetObjectItem(event, "stoneColor");
+            if (stoneColor != NULL)
             {
-                struct timeval newTime = { .tv_sec = (time_t)timestamp->valueint, .tv_usec = 0 };
+                tmpHeartBeatResponse.status.eventData.currentEventColor = (GameState_EventColor)stoneColor->valueint-1;
+            }
+            
+            cJSON *power = cJSON_GetObjectItem(event, "power");
+            if (power != NULL)
+            {
+                double powerDbl = power->valuedouble;
+                tmpHeartBeatResponse.status.eventData.powerLevel = (uint8_t)powerDbl;
+            }
+            
+            cJSON *msRemaining = cJSON_GetObjectItem(event, "msRemaining");
+            if (msRemaining != NULL)
+            {
+                tmpHeartBeatResponse.status.eventData.mSecRemaining = (uint32_t)msRemaining->valueint;
+            }
+        }
+        else
+        {
+            strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
+        }
+        
+        cJSON *badgeRequestTime = cJSON_GetObjectItem(root, "badgeRequestTime");
+        uint32_t rttMsec = 0;
+        if (badgeRequestTime != NULL)
+        {
+            uint32_t badgeRequestTimeTicks = badgeRequestTime->valueint;
+            uint32_t currTimeTicks = TimeUtils_GetCurTimeTicks();
+            uint32_t rttTicks = (currTimeTicks - badgeRequestTimeTicks);
+            uint32_t halfRttTicks = rttTicks / 2;
+            rttMsec = TimeUtils_GetMSecFromTicks(halfRttTicks);
+        }
+
+        cJSON *serverResponseTime = cJSON_GetObjectItem(root, "serverResponseTime");
+        if (serverResponseTime != NULL)
+        {
+            cJSON *tv_sec = cJSON_GetObjectItem(serverResponseTime, "tv_sec");
+            cJSON *tv_nsec = cJSON_GetObjectItem(serverResponseTime, "tv_nsec");
+            if (tv_sec != NULL && tv_nsec != NULL)
+            {
+                struct timeval newTime = { .tv_sec = (time_t)tv_sec->valueint, .tv_usec = (suseconds_t)(tv_nsec->valueint/1000) + rttMsec };
                 
                 // Set the system time
                 if (settimeofday(&newTime, NULL) == 0)
@@ -427,49 +434,24 @@ esp_err_t _HTTPGameClient_ParseJsonResponse(HTTPGameClient *this)
             }
             else
             {
-                ESP_LOGE(TAG, "No timestamp found");
-            //     // TEST CODE
-            //     tmpHeartBeatResponse.status.eventData.mSecRemaining = 30*1000;
+                ESP_LOGE(TAG, "No tv_sec or tv_nsec found");
             }
-
-            cJSON *songsArray = cJSON_GetObjectItem(root, "songs");
-            if (songsArray != NULL)
-            {
-                int songsArraySize = cJSON_GetArraySize(songsArray);
-                for (int songsIndex = 0; songsIndex < songsArraySize; songsIndex++)
-                {
-                    cJSON *song = cJSON_GetArrayItem(songsArray, songsIndex);
-                    int songIndex = (int)song->valuedouble;
-                    if (songIndex > 0 && songIndex <= OCARINA_NUM_SONGS) {
-                        tmpHeartBeatResponse.status.statusData.songUnlockedBits |= (1 << (songIndex - 1));
-                    }
-                    else
-                    {
-                        ESP_LOGE(TAG, "Song index %d out of range", songIndex);
-                    }
-                }
-            }
-            else
-            {
-                ESP_LOGE(TAG, "No timestamp found");
-            }
-            cJSON_Delete(root);
-            this->responseStruct = tmpHeartBeatResponse;
-            ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.eventData.currentEventIdB64);
-            ret = ESP_OK;
         }
         else
         {
-            ESP_LOGE(TAG, "JSON parse failed. json = \"%s\"", (char *)this->response.pData);
+            ESP_LOGE(TAG, "No timestamp found");
         }
+
+        cJSON_Delete(root);
+        memcpy(pHeartBeatResponse, &tmpHeartBeatResponse, sizeof(*pHeartBeatResponse));
+        ret = ESP_OK;
     }
     else
     {
-        ESP_LOGE(TAG, "JSON null");
+        ESP_LOGE(TAG, "JSON parse failed. json = \"%s\"", (char *)pData);
     }
     return ret;
 }
-
 
 
 // Assumes WIFI is enabled already from task
@@ -557,13 +539,24 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient * this)
                     //     break;
                     case HTTPGAMECLIENT_HTTPREQUEST_HEARTBEAT:
                         ESP_LOGI(TAG, "Heartbeat Response Sent");
-                        if (_HTTPGameClient_ParseJsonResponse(this) == ESP_OK)
+                        // Verify first byte is not NULL
+                        if (this->response.pData[0] != 0)
                         {
-                            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &this->responseStruct, sizeof(this->responseStruct), DEFAULT_NOTIFY_WAIT_DURATION);
+                            if (_ParseJsonResponseString((char *)this->response.pData, &this->responseStruct) == ESP_OK)
+                            {
+                                // ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.eventData.currentEventIdB64);
+                                _PrintHeartBeatResponse(&this->responseStruct);
+                                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &this->responseStruct, sizeof(this->responseStruct), DEFAULT_NOTIFY_WAIT_DURATION);
+                            }
+                            else
+                            {
+                                ESP_LOGE(TAG, "Failed to parse JSON response");
+                            }
+
                         }
                         else
                         {
-                            ESP_LOGE(TAG, "Failed to parse JSON response");
+                            ESP_LOGE(TAG, "JSON null");
                         }
                         break;
                     // case HTTPGAMECLIENT_HTTPREQUEST_VERIFY:
@@ -683,7 +676,7 @@ static void HTTPGameClientTask(void *pvParameters)
                 }
                 else
                 {
-                    ESP_LOGE(TAG, "Failed to connect to WiFi");
+                    ESP_LOGW(TAG, "Failed to connect to WiFi");
                 }
 
                 // Disconnect even if we aren't successful to decrement number of users

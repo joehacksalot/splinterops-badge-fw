@@ -22,15 +22,6 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
-// Application settings
-#if defined(REACTOR_BADGE)
-#define BRIGHTNESS_NORMAL   (40)
-#elif defined(TRON_BADGE)
-#define BRIGHTNESS_NORMAL   (10)
-#elif defined(CREST_BADGE)
-#define BRIGHTNESS_NORMAL   (25)
-#endif
-
 #define MUTEX_MAX_WAIT_MS   (500)
 #define MAX_EVENT_TIME_MSEC (15*60*1000)
 
@@ -40,10 +31,11 @@
 
 // Internal Function Declarations
 static void LedControlTask(void *pvParameters);
-static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+// static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
+static void LedControl_InteractiveGameActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
 static esp_err_t LedControl_InitServiceDrawBatteryIndicatorSequence(LedControl *this);
 static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawBatteryIndicatorSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
@@ -51,10 +43,14 @@ static esp_err_t LedControl_ServiceDrawPercentCompleteSequence(LedControl *this,
 static esp_err_t LedControl_ServiceDrawGameStatusSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_InitDrawGameEventSequence(LedControl * this);
 static esp_err_t LedControl_ServiceDrawGameEventSequence(LedControl * this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+static esp_err_t LedControl_ServiceDrawGameInteractiveSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+static esp_err_t LedControl_ServiceDrawNoneSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawTouchLightingSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawBleEnabledSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawBleConnectedSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
-static esp_err_t LedControl_ServiceDrawStatusIndicatorSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+static esp_err_t LedControl_ServiceDrawBleReconnectingSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+static esp_err_t LedControl_ServiceDrawOtaDownloadInProgSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
+// static esp_err_t LedControl_ServiceDrawStatusIndicatorSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing);
 static esp_err_t LedControl_LoadJsonLedSequence(LedControl * this);
@@ -69,23 +65,17 @@ static bool LedControl_IndexIsOuterRing(int pixelIndex);
 // Internal Constants
 static const char *TAG = "LED";
 
-#if defined(TRON_BADGE)
 static const int correctedPixelOffset[] = 
 {
+#if defined(TRON_BADGE)
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 
     72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 76, 75, 74, 73
-};
 #elif defined(REACTOR_BADGE)
-static const int correctedPixelOffset[] = 
-{
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25
-};
 #elif defined(CREST_BADGE)
-static const int correctedPixelOffset[] = 
-{
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58
-};
 #endif
+};
 
 #define MAX_TOUCH_MAP_INDEX_COUNT 7
 typedef struct TouchMap_t
@@ -147,8 +137,19 @@ static const color_t songColorMap[NUM_OCTAVES] =
 
 static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] = 
 {
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-// TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
+#if defined(TRON_BADGE)
+// TODO: This is all crap. We need actual touch values to put here
+    {.numIndexes=6, .indexes={24,25,47,35,36,37}},  // 0  12
+    {.numIndexes=3, .indexes={26,27,24}},  // 1  1
+    {.numIndexes=3, .indexes={28,29,30}},  // 2  2
+    {.numIndexes=3, .indexes={30,31,32}},  // 3  4
+    {.numIndexes=3, .indexes={33,34,24}},  // 4  5
+    // {.numIndexes=0, .indexes={0,  0,  0   }},  // 5  6
+    {.numIndexes=3, .indexes={38,39,24}},  // 6  7
+    {.numIndexes=3, .indexes={40,41,42}},  // 7  8
+    {.numIndexes=3, .indexes={42,43,44}},  // 8  10
+    {.numIndexes=3, .indexes={45,46,47}}   // 9  11
+#elif defined(REACTOR_BADGE)
     {.numIndexes=6, .indexes={24,25,47,35,36,37}},  // 0  12
     {.numIndexes=3, .indexes={26,27,24}},  // 1  1
     {.numIndexes=3, .indexes={28,29,30}},  // 2  2
@@ -160,15 +161,24 @@ static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] =
     {.numIndexes=3, .indexes={42,43,44}},  // 8  10
     {.numIndexes=3, .indexes={45,46,47}}   // 9  11
 #elif defined(CREST_BADGE)
-    {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0  0
-    {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1  1
-    {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2  2
-    {.numIndexes=3, .indexes={28,29,30}},            // 3  4
-    {.numIndexes=3, .indexes={31,32,33}},            // 4  4
-    {.numIndexes=3, .indexes={34,35,36}},            // 5  5
-    {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6  6
-    {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7  7
-    {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8  8
+    // {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0  0
+    // {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1  1
+    // {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2  2
+    // {.numIndexes=3, .indexes={28,29,30}},            // 3  4
+    // {.numIndexes=3, .indexes={31,32,33}},            // 4  4
+    // {.numIndexes=3, .indexes={34,35,36}},            // 5  5
+    // {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6  6
+    // {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7  7
+    // {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8  8
+    {.numIndexes=5, .indexes={8,9,10,11,12}},        // 0  0
+    {.numIndexes=3, .indexes={16,17,18}},            // 1  1
+    {.numIndexes=2, .indexes={23,24}},               // 2  2
+    {.numIndexes=1, .indexes={28}},                  // 3  4
+    {.numIndexes=1, .indexes={31}},                  // 4  4
+    {.numIndexes=1, .indexes={35}},                  // 5  5
+    {.numIndexes=2, .indexes={40,41}},               // 6  6
+    {.numIndexes=3, .indexes={46,47,48}},            // 7  7
+    {.numIndexes=5, .indexes={52,53,54,55,56}}       // 8  8
 #endif
 };
 
@@ -176,31 +186,43 @@ static const LedMap gameStatusMap[NUM_GAMESTATE_EVENTCOLORS] =
 {
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 // TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
-    {.numIndexes=2, .indexes={1,  2 }},  // RED
-    {.numIndexes=2, .indexes={5,  6 }},  // GREEN
-    {.numIndexes=2, .indexes={9,  10}},  // YELLOW
-    {.numIndexes=2, .indexes={13, 14}},  // MAGENTA
-    {.numIndexes=2, .indexes={17, 18}},  // BLUE
-    {.numIndexes=2, .indexes={21, 22}}   // CYAN
+    {.numIndexes=2, .indexes={1,  2 }},
+    {.numIndexes=2, .indexes={5,  6 }},
+    {.numIndexes=2, .indexes={9,  10}},
+    {.numIndexes=2, .indexes={13, 14}},
+    {.numIndexes=2, .indexes={17, 18}},
+    {.numIndexes=2, .indexes={21, 22}} 
 #elif defined(CREST_BADGE)
-    {.numIndexes=1, .indexes={1}},  // RED
-    {.numIndexes=1, .indexes={2}},  // GREEN
-    {.numIndexes=1, .indexes={3}},  // YELLOW
-    {.numIndexes=1, .indexes={4}},  // MAGENTA
-    {.numIndexes=1, .indexes={5}},  // BLUE
-    {.numIndexes=1, .indexes={6}}   // CYAN
+    {.numIndexes=1, .indexes={1}},
+    {.numIndexes=1, .indexes={2}},
+    {.numIndexes=1, .indexes={3}},
+    {.numIndexes=1, .indexes={4}},
+    {.numIndexes=1, .indexes={5}},
+    {.numIndexes=1, .indexes={6}} 
 #endif
 };
 
 static const rgb_t stoneColorMap[NUM_GAMESTATE_EVENTCOLORS] = 
 {
-    {.r = 255, .g =   0, .b = 0  },
-    {.r =   0, .g = 255, .b = 0  },
-    {.r = 255, .g = 255, .b = 0  },
-    {.r = 255, .g =   0, .b = 255},
-    {.r =   0, .g =   0, .b = 255},
-    {.r =   0, .g = 255, .b = 255}
+    {.r = 255, .g =   0, .b = 0  }, // red
+    {.r = 255, .g = 255, .b = 0  }, // yellow 
+    {.r =   0, .g = 255, .b = 0  }, // green
+    {.r =   0, .g = 255, .b = 255}, // cyan
+    {.r =   0, .g =   0, .b = 255}, // blue
+    {.r = 255, .g =   0, .b = 255}  // magenta
 };
+
+// static const rgb_t gameTouchColorMap[TOUCH_SENSOR_NUM_BUTTONS] = 
+// {
+//     {.r = 255, .g =   0, .b = 0  },
+//     {.r =   0, .g = 255, .b = 0  },
+//     {.r =   0, .g =   0, .b = 255},
+//     {.r = 255, .g = 255, .b = 0  },
+//     {.r = 255, .g =   0, .b = 255},
+//     {.r =   0, .g = 255, .b = 255},
+//     {.r = 128, .g = 128, .b = 255},
+//     {.r = 128, .g = 255, .b = 128}
+// };
 
 esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings, BatterySensor *pBatterySensor, GameState *pGameState, uint32_t batteryIndicatorHoldTime)
 {
@@ -215,7 +237,20 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     this->ledControlModeSettings.innerLedState = INNER_LED_STATE_LED_SEQUENCE;
     this->ledControlModeSettings.outerLedState = OUTER_LED_STATE_LED_SEQUENCE;
     this->batteryIndicatorRuntimeInfo.holdTime = batteryIndicatorHoldTime;
-    this->batteryIndicatorRuntimeInfo.initColor.r = 0;
+
+    // How To Make Colors with LED Lights (src: https://www.springtree.net/audio-visual-blog/rgb-led-color-mixing/)
+    //     White: All colors at full brightness
+    //     Orange: Red at full brightness, green just a little under half way, and no blue
+    //     Light Blue: Red at around 30 percent of brightness, green up high at 80 percent, and blue at full brightness
+    //     Magenta: Red and Blue at full brightness.
+    //     Hot Pink: Red at 90 percent brightness, no green, and blue at 40 percent of brightness
+    //     Yellow: Red and Green at full brightness.
+    //     Light Pink: Red at 90 percent of its intensity, green and blue at 50 percent
+    //     Cyan: Green and Blue at full brightness.
+    //     Purple: Red and blue are all the way up, with green at 60 percent
+    //     Pink Purple: Red at full brightness, green at 30, and blue at 90
+    //     Brown: Too hard, don’t even try, plus why would you want to make a brown? 
+    this->batteryIndicatorRuntimeInfo.initColor.r = 0; // off
     this->batteryIndicatorRuntimeInfo.initColor.g = 0;
     this->batteryIndicatorRuntimeInfo.initColor.b = 0;
     this->batteryIndicatorRuntimeInfo.greatColor.r = 0;
@@ -230,8 +265,6 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     this->batteryIndicatorRuntimeInfo.badColor.r = 200;
     this->batteryIndicatorRuntimeInfo.badColor.g = 0;
     this->batteryIndicatorRuntimeInfo.badColor.b = 0;
-
-    this->touchModeRuntimeInfo.initColor = this->batteryIndicatorRuntimeInfo.initColor;
     this->touchModeRuntimeInfo.touchColor.r = 0;
     this->touchModeRuntimeInfo.touchColor.g = 0;
     this->touchModeRuntimeInfo.touchColor.b = 128;
@@ -246,32 +279,29 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     this->touchModeRuntimeInfo.veryLongPressColor.b = 255;
     this->touchModeRuntimeInfo.updatePeriod = 100; // 100 ms
 
-    this->ledStatusIndicatorRuntimeInfo.statusIndicator = LED_STATUS_INDICATOR_NONE;
+    // this->ledStatusIndicatorRuntimeInfo.statusIndicator = LED_STATUS_INDICATOR_NONE;
     this->ledStatusIndicatorRuntimeInfo.initColor = this->batteryIndicatorRuntimeInfo.initColor;
     this->ledStatusIndicatorRuntimeInfo.errorColor.r = 255;
     this->ledStatusIndicatorRuntimeInfo.errorColor.g = 0;
     this->ledStatusIndicatorRuntimeInfo.errorColor.b = 0;
-    this->ledStatusIndicatorRuntimeInfo.bleEnabledColor.r = 255;
-    this->ledStatusIndicatorRuntimeInfo.bleEnabledColor.g = 0;
-    this->ledStatusIndicatorRuntimeInfo.bleEnabledColor.b = 255;
+    this->ledStatusIndicatorRuntimeInfo.bleServiceEnabledColor.r = 255;
+    this->ledStatusIndicatorRuntimeInfo.bleServiceEnabledColor.g = 0;
+    this->ledStatusIndicatorRuntimeInfo.bleServiceEnabledColor.b = 255;
+    this->ledStatusIndicatorRuntimeInfo.bleReconnectingColor.r = 255;
+    this->ledStatusIndicatorRuntimeInfo.bleReconnectingColor.g = 118; // orange?
+    this->ledStatusIndicatorRuntimeInfo.bleReconnectingColor.b = 0;
     this->ledStatusIndicatorRuntimeInfo.bleConnectedColor.r = 0;
     this->ledStatusIndicatorRuntimeInfo.bleConnectedColor.g = 0;
     this->ledStatusIndicatorRuntimeInfo.bleConnectedColor.b = 255;
     this->ledStatusIndicatorRuntimeInfo.otaUpdateSuccessColor.r = 0;
     this->ledStatusIndicatorRuntimeInfo.otaUpdateSuccessColor.g = 255;
     this->ledStatusIndicatorRuntimeInfo.otaUpdateSuccessColor.b = 0;
-    this->ledStatusIndicatorRuntimeInfo.bleXferSuccessColor.r = 0;
-    this->ledStatusIndicatorRuntimeInfo.bleXferSuccessColor.g = 255;
-    this->ledStatusIndicatorRuntimeInfo.bleXferSuccessColor.b = 0;
+    this->ledStatusIndicatorRuntimeInfo.otaUpdateInProgressColor.r = 255;
+    this->ledStatusIndicatorRuntimeInfo.otaUpdateInProgressColor.g = 255;
+    this->ledStatusIndicatorRuntimeInfo.otaUpdateInProgressColor.b = 0;
     this->ledStatusIndicatorRuntimeInfo.networkTestSuccessColor.r = 0;
     this->ledStatusIndicatorRuntimeInfo.networkTestSuccessColor.g = 255;
     this->ledStatusIndicatorRuntimeInfo.networkTestSuccessColor.b = 0;
-
-    this->bleXferPercentRuntimeInfo.color.r = 255;
-    this->bleXferPercentRuntimeInfo.color.g = 255;
-    this->bleXferPercentRuntimeInfo.color.b = 0;
-    this->bleXferPercentRuntimeInfo.percentComplete = 0;
-    this->bleXferPercentRuntimeInfo.prevPercentComplete = 100;
 
     this->ledStatusIndicatorRuntimeInfo.innerLedWidth = 3;
     this->ledStatusIndicatorRuntimeInfo.outerLedWidth = 3;
@@ -280,6 +310,12 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     this->ledStatusIndicatorRuntimeInfo.revolutionsPerSecond = 1;
     this->ledStatusIndicatorRuntimeInfo.nextInnerDrawTime = 0;
     this->ledStatusIndicatorRuntimeInfo.nextOuterDrawTime = 0;
+
+    this->bleFileTransferPercentRuntimeInfo.color.r = 255;
+    this->bleFileTransferPercentRuntimeInfo.color.g = 255;
+    this->bleFileTransferPercentRuntimeInfo.color.b = 0;
+    this->bleFileTransferPercentRuntimeInfo.percentComplete = 0;
+    this->bleFileTransferPercentRuntimeInfo.prevPercentComplete = 100;
 
     this->gameEventRuntimeInfo.initColor = this->batteryIndicatorRuntimeInfo.initColor;
     this->gameEventRuntimeInfo.updatePeriod = 50;
@@ -336,10 +372,10 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
     LedControl_SetCurrentLedSequenceIndex(this, this->selectedIndex);
 
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_GAME_EVENT_JOINED, &LedControl_GameStatusNotificationHandler, this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &LedControl_TouchSensorNotificationHandler, this));
-    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_XFER_PERCENT_CHANGED, &LedControl_BleControlPercentChangedNotificationHandler, this));
+    // ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &LedControl_TouchSensorNotificationHandler, this));
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_BLE_FILE_SERVICE_PERCENT_CHANGED, &LedControl_BleControlPercentChangedNotificationHandler, this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &LedControl_SongNoteActionNotificationHandler, this));
-    
+    ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_INTERACTIVE_GAME_ACTION, &LedControl_InteractiveGameActionNotificationHandler, this));
 
     assert(xTaskCreatePinnedToCore(LedControlTask, "LedControlTask", configMINIMAL_STACK_SIZE * 2, this, LED_CONTROL_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
@@ -352,6 +388,14 @@ esp_err_t LedControl_SetInnerLedState(LedControl *this, InnerLedState state)
     if (state >= INNER_LED_STATE_OFF && state < NUM_INNER_LED_STATES)
     {
         this->ledControlModeSettings.innerLedState = state;
+        switch (state)
+        {
+        case INNER_LED_STATE_OFF:
+            this->drawLedNoneUpdateRequired = true;
+            break;
+        default:
+            break;
+        }
         ret = ESP_OK;
         ESP_LOGD(TAG, "Setting inner led state to %d", state);
     }
@@ -369,6 +413,14 @@ esp_err_t LedControl_SetOuterLedState(LedControl *this, OuterLedState state)
     if (state >= OUTER_LED_STATE_OFF && state < NUM_OUTER_LED_STATES)
     {
         this->ledControlModeSettings.outerLedState = state;
+        switch (state)
+        {
+        case OUTER_LED_STATE_OFF:
+            this->drawLedNoneUpdateRequired = true;
+            break;
+        default:
+            break;
+        }
         ret = ESP_OK;
         ESP_LOGD(TAG, "Setting outer led state to %d", state);
     }
@@ -385,17 +437,20 @@ static void LedControlTask(void *pvParameters)
     assert(this);
     while (true)
     {
-        LedControl_ServiceDrawJsonLedSequence          ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_LED_SEQUENCE,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_LED_SEQUENCE     );
-        LedControl_ServiceDrawBatteryIndicatorSequence ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BATTERY_STATUS,     this->ledControlModeSettings.innerLedState == INNER_LED_STATE_BATTERY_STATUS   );
-        LedControl_ServiceDrawPercentCompleteSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_MODE_BLE_XFER_PERCENT,    this->ledControlModeSettings.innerLedState == INNER_LED_MODE_BLE_XFER_PERCENT  );
-        LedControl_ServiceDrawGameStatusSequence       ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_GAME_STATUS,        this->ledControlModeSettings.innerLedState == INNER_LED_STATE_GAME_STATUS      );
-        LedControl_ServiceDrawGameEventSequence        ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_GAME_EVENT,         this->ledControlModeSettings.innerLedState == INNER_LED_STATE_GAME_EVENT       );
-        LedControl_ServiceDrawTouchLightingSequence    ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_TOUCH_LIGHTING,     this->ledControlModeSettings.innerLedState == INNER_LED_STATE_TOUCH_LIGHTING   );
-        LedControl_ServiceDrawBleEnabledSequence       ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_XFER_ENABLED,   false                                                                          );
-        LedControl_ServiceDrawBleConnectedSequence     ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_XFER_CONNECTED, false                                                                          );
-        LedControl_ServiceDrawStatusIndicatorSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_STATUS_INDICATOR,   this->ledControlModeSettings.innerLedState == INNER_LED_STATE_STATUS_INDICATOR );
-        LedControl_ServiceDrawNetworkTestSequence      ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_NETWORK_TEST,       this->ledControlModeSettings.innerLedState == INNER_LED_STATE_NETWORK_TEST     );
-        LedControl_ServiceDrawSongModeSequence         ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_SONG_MODE,          false);
+        LedControl_ServiceDrawNoneSequence             ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_OFF,                   this->ledControlModeSettings.innerLedState == INNER_LED_STATE_OFF              );
+        LedControl_ServiceDrawJsonLedSequence          ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_LED_SEQUENCE,          this->ledControlModeSettings.innerLedState == INNER_LED_STATE_LED_SEQUENCE     );
+        LedControl_ServiceDrawBatteryIndicatorSequence ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BATTERY_STATUS,        this->ledControlModeSettings.innerLedState == INNER_LED_STATE_BATTERY_STATUS   );
+        LedControl_ServiceDrawPercentCompleteSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_FILE_XFER_PCNT,     this->ledControlModeSettings.innerLedState == INNER_LED_MODE_BLE_FILE_XFER_PCNT);
+        LedControl_ServiceDrawGameStatusSequence       ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_GAME_STATUS,           this->ledControlModeSettings.innerLedState == INNER_LED_STATE_GAME_STATUS      );
+        LedControl_ServiceDrawGameEventSequence        ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_GAME_EVENT,            this->ledControlModeSettings.innerLedState == INNER_LED_STATE_GAME_EVENT       );
+        LedControl_ServiceDrawGameInteractiveSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_GAME_INTERACTIVE,      false                                                                          );
+        LedControl_ServiceDrawTouchLightingSequence    ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_TOUCH_LIGHTING,        this->ledControlModeSettings.innerLedState == INNER_LED_STATE_TOUCH_LIGHTING   );
+        LedControl_ServiceDrawBleEnabledSequence       ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_SERVICE_ENABLE,    false                                                                          );
+        LedControl_ServiceDrawBleConnectedSequence     ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_SERVICE_CONNECTED, false                                                                          );
+        LedControl_ServiceDrawBleReconnectingSequence  ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_BLE_RECONNECTING,      false                                                                          );
+        LedControl_ServiceDrawOtaDownloadInProgSequence( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_OTA_DOWNLOAD_IP,       false                                                                          );
+        LedControl_ServiceDrawNetworkTestSequence      ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_NETWORK_TEST,          this->ledControlModeSettings.innerLedState == INNER_LED_STATE_NETWORK_TEST     );
+        LedControl_ServiceDrawSongModeSequence         ( this, this->ledControlModeSettings.outerLedState == OUTER_LED_STATE_SONG_MODE,             false                                                                          );
         LedControl_FlushLedStrip(this);
         vTaskDelay(pdMS_TO_TICKS(LED_CONTROL_TASK_PERIOD));
     }
@@ -602,7 +657,7 @@ static esp_err_t LedControl_InitServiceDrawBatteryIndicatorSequence(LedControl *
 
     memset(this->pixelColorState, 0, sizeof(this->pixelColorState));
     ESP_ERROR_CHECK(LedControll_FillPixels(this, this->batteryIndicatorRuntimeInfo.initColor, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT));
-    ESP_ERROR_CHECK(LedControll_FillPixels(this, this->batteryIndicatorRuntimeInfo.initColor, 0, INNER_RING_LED_COUNT));
+    ESP_ERROR_CHECK(LedControll_FillPixels(this, this->batteryIndicatorRuntimeInfo.initColor, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT));
     return ESP_OK;
 }
 
@@ -668,24 +723,24 @@ static esp_err_t LedControl_ServiceDrawPercentCompleteSequence(LedControl *this,
 {
     assert(this);
     rgb_t initColor = { .r=0, .g=0, .b=0 };
-    if ((allowDrawOuterRing || allowDrawInnerRing) && this->bleXferPercentRuntimeInfo.prevPercentComplete != this->bleXferPercentRuntimeInfo.percentComplete)
+    if ((allowDrawOuterRing || allowDrawInnerRing) && this->bleFileTransferPercentRuntimeInfo.prevPercentComplete != this->bleFileTransferPercentRuntimeInfo.percentComplete)
     {
-        int numOuterLeds = MAX(1, (int)(OUTER_RING_LED_COUNT * this->bleXferPercentRuntimeInfo.percentComplete / 100.0));
-        int numInnerLeds = MAX(1, (int)(INNER_RING_LED_COUNT * this->bleXferPercentRuntimeInfo.percentComplete / 100.0));
-        ESP_LOGD(TAG, "perc=%lu numOuterLeds=%d numInnerLeds=%d", this->bleXferPercentRuntimeInfo.percentComplete, numOuterLeds, numInnerLeds);
-        this->bleXferPercentRuntimeInfo.prevPercentComplete = this->bleXferPercentRuntimeInfo.percentComplete;
+        int numOuterLeds = MAX(1, (int)(OUTER_RING_LED_COUNT * this->bleFileTransferPercentRuntimeInfo.percentComplete / 100.0));
+        int numInnerLeds = MAX(1, (int)(INNER_RING_LED_COUNT * this->bleFileTransferPercentRuntimeInfo.percentComplete / 100.0));
+        ESP_LOGD(TAG, "perc=%lu numOuterLeds=%d numInnerLeds=%d", this->bleFileTransferPercentRuntimeInfo.percentComplete, numOuterLeds, numInnerLeds);
+        this->bleFileTransferPercentRuntimeInfo.prevPercentComplete = this->bleFileTransferPercentRuntimeInfo.percentComplete;
 
         if (allowDrawOuterRing)
         {
             this->flushNeeded = true;
             LedControll_FillPixelsWithIntensity(this, initColor, 0, OUTER_RING_LED_OFFSET+numOuterLeds, OUTER_RING_LED_COUNT-numOuterLeds);
-            LedControll_FillPixelsWithIntensity(this, this->bleXferPercentRuntimeInfo.color, 100, OUTER_RING_LED_OFFSET, numOuterLeds);
+            LedControll_FillPixelsWithIntensity(this, this->bleFileTransferPercentRuntimeInfo.color, 100, OUTER_RING_LED_OFFSET, numOuterLeds);
         }
         if (allowDrawInnerRing)
         {
             this->flushNeeded = true;
             LedControll_FillPixelsWithIntensity(this, initColor, 0, INNER_RING_LED_OFFSET+numInnerLeds, INNER_RING_LED_COUNT-numInnerLeds);
-            LedControll_FillPixelsWithIntensity(this, this->bleXferPercentRuntimeInfo.color, 100, INNER_RING_LED_OFFSET, numInnerLeds);
+            LedControll_FillPixelsWithIntensity(this, this->bleFileTransferPercentRuntimeInfo.color, 100, INNER_RING_LED_OFFSET, numInnerLeds);
         }
     }
 
@@ -731,7 +786,14 @@ static esp_err_t LedControl_DrawStatusIndicator(LedControl *this, color_t color,
 static esp_err_t LedControl_ServiceDrawBleEnabledSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
 {
     assert(this);
-    color_t color = {.r=this->ledStatusIndicatorRuntimeInfo.bleEnabledColor.r, .g=this->ledStatusIndicatorRuntimeInfo.bleEnabledColor.g, .b=this->ledStatusIndicatorRuntimeInfo.bleEnabledColor.b, .i=100};
+    color_t color = {.r=this->ledStatusIndicatorRuntimeInfo.bleServiceEnabledColor.r, .g=this->ledStatusIndicatorRuntimeInfo.bleServiceEnabledColor.g, .b=this->ledStatusIndicatorRuntimeInfo.bleServiceEnabledColor.b, .i=100};
+    return LedControl_DrawStatusIndicator(this, color, allowDrawOuterRing, allowDrawInnerRing);
+}
+
+static esp_err_t LedControl_ServiceDrawBleReconnectingSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
+{
+    assert(this);
+    color_t color = {.r=this->ledStatusIndicatorRuntimeInfo.bleReconnectingColor.r, .g=this->ledStatusIndicatorRuntimeInfo.bleReconnectingColor.g, .b=this->ledStatusIndicatorRuntimeInfo.bleReconnectingColor.b, .i=100};
     return LedControl_DrawStatusIndicator(this, color, allowDrawOuterRing, allowDrawInnerRing);
 }
 
@@ -742,25 +804,10 @@ static esp_err_t LedControl_ServiceDrawBleConnectedSequence(LedControl *this, bo
     return LedControl_DrawStatusIndicator(this, color, allowDrawOuterRing, allowDrawInnerRing);
 }
 
-static esp_err_t LedControl_ServiceDrawStatusIndicatorSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
+static esp_err_t LedControl_ServiceDrawOtaDownloadInProgSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
 {
     assert(this);
-    rgb_t rgb;
-    switch (this->ledStatusIndicatorRuntimeInfo.statusIndicator)
-    {
-        case LED_STATUS_INDICATOR_ERROR:
-            rgb = this->ledStatusIndicatorRuntimeInfo.errorColor;
-            break;
-        case LED_STATUS_INDICATOR_BLE_XFER_SUCCESS:
-            rgb = this->ledStatusIndicatorRuntimeInfo.bleXferSuccessColor;
-            break;
-        case LED_STATUS_INDICATOR_OTA_UPDATE_SUCCESS:
-            rgb = this->ledStatusIndicatorRuntimeInfo.otaUpdateSuccessColor;
-            break;
-        default:
-            return ESP_FAIL;
-    }
-    color_t color = {.r=rgb.r, .g=rgb.g, .b=rgb.b, .i=100};
+    color_t color = {.r=this->ledStatusIndicatorRuntimeInfo.otaUpdateInProgressColor.r, .g=this->ledStatusIndicatorRuntimeInfo.otaUpdateInProgressColor.g, .b=this->ledStatusIndicatorRuntimeInfo.otaUpdateInProgressColor.b, .i=100};
     return LedControl_DrawStatusIndicator(this, color, allowDrawOuterRing, allowDrawInnerRing);
 }
 
@@ -892,6 +939,52 @@ static esp_err_t LedControl_ServiceDrawNetworkTestSequence(LedControl* this, boo
 }
 
 
+static esp_err_t LedControl_ServiceDrawGameInteractiveSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
+{
+    esp_err_t ret = ESP_OK;
+    assert(this);
+    if (allowDrawOuterRing)
+    {
+        if (this->interactiveGameModeRuntimeSettings.updateNeeded)
+        {
+            this->interactiveGameModeRuntimeSettings.updateNeeded = false;
+            this->flushNeeded = true;
+            LedControll_FillPixelsWithIntensity(this, this->touchModeRuntimeInfo.initColor, 100, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+
+            for (int i = 0; i < TOUCH_SENSOR_NUM_BUTTONS; i++)
+            {
+                if (this->interactiveGameModeRuntimeSettings.touchSensorsToLightBits.u & (1 << i))
+                {
+                    while (true)
+                    {
+                        color_t random_color = {.r = GetRandomNumber(0, 256), .g = GetRandomNumber(0, 256), .b = GetRandomNumber(0, 256), .i = 100};
+                        
+                        // ensure random color has enough light to be visible
+                        if (random_color.r >= 128 || random_color.g >= 128 || random_color.b >= 128)
+                        {
+                            color_t fail = { .r = 255, .g = 0, .b = 0, .i = 100 };
+                            color_t color = this->interactiveGameModeRuntimeSettings.touchSensorsToLightBits.s.lastFailed? fail : random_color;
+                            ESP_LOGD(TAG, "LedControl_ServiceDrawGameInteractiveSequence: using color r=%d g=%d b=%d", color.r, color.g, color.b);
+
+                            for (int ledIndexIter = 0; ledIndexIter < touchMap[i].numIndexes; ledIndexIter++)
+                            {
+                                ret = LedControl_SetPixel(this, color, correctedPixelOffset[touchMap[i].indexes[ledIndexIter]]);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (allowDrawInnerRing)
+    {
+        ESP_LOGI(TAG, "LedControl_ServiceDrawGameInteractiveSequence does not support drawing inner ring");
+    }
+    return ret;
+}
+
+
 static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
 {
     esp_err_t ret = ESP_OK;
@@ -923,6 +1016,26 @@ static esp_err_t LedControl_ServiceDrawSongModeSequence(LedControl *this, bool a
                              parts.base, parts.octave);
                 }
             }
+        }
+    }
+    return ret;
+}
+
+static esp_err_t LedControl_ServiceDrawNoneSequence(LedControl *this, bool allowDrawOuterRing, bool allowDrawInnerRing)
+{
+    esp_err_t ret = ESP_OK;
+    assert(this);
+    if ((allowDrawOuterRing || allowDrawInnerRing) && this->drawLedNoneUpdateRequired)
+    {
+        this->drawLedNoneUpdateRequired = false;
+        rgb_t offColor = { .r = 0, .g = 0, .b = 0 };
+        if (allowDrawOuterRing)
+        {
+            ret = LedControll_FillPixels(this, offColor, OUTER_RING_LED_OFFSET, OUTER_RING_LED_COUNT);
+        }
+        if (allowDrawInnerRing)
+        {
+            ret = LedControll_FillPixels(this, offColor, INNER_RING_LED_OFFSET, INNER_RING_LED_COUNT);
         }
     }
     return ret;
@@ -1252,24 +1365,10 @@ static bool LedControl_IndexIsOuterRing(int pixelIndex)
     return (pixelIndex >= INNER_RING_LED_COUNT && pixelIndex < LED_STRIP_LEN);
 }
 
-static void LedControl_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
+void LedControl_SetTouchSensorUpdate(LedControl *this, TouchSensorEvent touchSensorEvent, int touchSensorIdx)
 {
-    ESP_LOGD(TAG, "Handling Touch Sensor Notification");
-    LedControl *this = (LedControl *)pObj;
-    assert(this);
-    assert(notificationData);
-    TouchSensorEventNotificationData touchNotificationData = *(TouchSensorEventNotificationData *)notificationData;
-    
-    this->touchModeRuntimeInfo.touchSensorValue[touchNotificationData.touchSensorIdx] = touchNotificationData.touchSensorEvent;
-    ESP_LOGD(TAG, "Touch Sensor Notification. %d: %d", touchNotificationData.touchSensorIdx, touchNotificationData.touchSensorEvent);
-}
-
-esp_err_t LedControl_InitiateStatusIndicatorSequence(LedControl *this, LedStatusIndicator ledIndicatorStatus, uint32_t holdTime)
-{
-    esp_err_t ret = ESP_FAIL;
-    assert(this);
-    assert(holdTime > 0);
-    return ret;
+    this->touchModeRuntimeInfo.touchSensorValue[touchSensorIdx] = touchSensorEvent;
+    ESP_LOGD(TAG, "Touch Sensor Update. %d: %d", touchSensorIdx, touchSensorEvent);
 }
 
 esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
@@ -1277,10 +1376,11 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
     esp_err_t ret = ESP_OK;
     esp_err_t innerRet = ESP_OK, outerRet = ESP_OK, initRet = ESP_OK;
     assert(this);
+    BadgeType badgeType = GetBadgeType();
     switch(mode)
     {
-        case LED_MODE_NORMAL:
-            ESP_LOGD(TAG, "Setting LED mode to normal");
+        case LED_MODE_SEQUENCE:
+            ESP_LOGD(TAG, "Setting LED mode to sequence");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
             break;
@@ -1293,61 +1393,85 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             ESP_LOGD(TAG, "Setting LED mode to touch");
             this->touchModeRuntimeInfo.nextOuterDrawTime = TimeUtils_GetCurTimeTicks();
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_TOUCH_LIGHTING);
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            this->touchModeRuntimeInfo.nextInnerDrawTime = TimeUtils_GetCurTimeTicks();
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_TOUCH_LIGHTING);
-#endif
+            innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            // if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            // {
+            //     this->touchModeRuntimeInfo.nextInnerDrawTime = TimeUtils_GetCurTimeTicks();
+            //     innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_TOUCH_LIGHTING);
+            // }
+            // else
+            // {
+            //     innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            // }
             break;
         case LED_MODE_BATTERY:
             ESP_LOGD(TAG, "Setting LED mode to battery");
             initRet = LedControl_InitServiceDrawBatteryIndicatorSequence(this);
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BATTERY_STATUS);
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_BATTERY_STATUS);
-#endif
+            if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_BATTERY_STATUS);
+            }
+            else
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
-        case LED_MODE_BLE_XFER_PERCENT:
-            ESP_LOGD(TAG, "Setting LED mode to ble xfer percent");
-            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_MODE_BLE_XFER_PERCENT);
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_MODE_BLE_XFER_PERCENT);
-#endif
-            break;
-        case LED_MODE_STATUS_INDICATOR:
-            ESP_LOGD(TAG, "Setting LED mode to status indicator");
-            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_STATUS_INDICATOR);
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_STATUS_INDICATOR);
-#endif
+        case LED_MODE_BLE_FILE_TRANSFER_PERCENT:
+            ESP_LOGD(TAG, "Setting LED mode to ble file transfer percent complete");
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_FILE_XFER_PCNT);
+            if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_MODE_BLE_FILE_XFER_PCNT);
+            }
+            else
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         case LED_MODE_NETWORK_TEST:
             ESP_LOGD(TAG, "Setting LED mode to network test");
             this->networkTestRuntimeInfo.success = false;
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_NETWORK_TEST);
-#if defined(TRON_BADGE) || defined(REACTOR_BADGE)
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_NETWORK_TEST);
-#endif
+            if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_NETWORK_TEST);
+            }
+            else
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         case LED_MODE_EVENT:
             ESP_LOGD(TAG, "Setting LED mode to event");
             initRet = LedControl_InitDrawGameEventSequence(this);
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_GAME_EVENT);
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_EVENT);
-            // TODO: Need some way for the game to end. still tbd
             break;
         case LED_MODE_GAME_STATUS:
             ESP_LOGD(TAG, "Setting LED mode to game status");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_STATUS);
-            // TODO: Need some way for the game to end. still tbd
             break;
-        case LED_MODE_BLE_XFER_ENABLED:
-            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_XFER_ENABLED);
-            // TODO: Not sure if we should be setting inner led ring when we dont have to
+        case LED_MODE_BLE_FILE_TRANSFER_ENABLED:
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_SERVICE_ENABLE);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
             break;
-        case LED_MODE_BLE_XFER_CONNECTED:
-            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_XFER_CONNECTED);
-            // TODO: Not sure if we should be setting inner led ring when we dont have to
+        case LED_MODE_BLE_FILE_TRANSFER_CONNECTED:
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_SERVICE_CONNECTED);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            break;
+        case LED_MODE_OTA_DOWNLOAD_IP:
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_OTA_DOWNLOAD_IP);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            break;
+        case LED_MODE_INTERACTIVE_GAME:
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_GAME_INTERACTIVE);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_EVENT);
+            break;
+        case LED_MODE_BLE_RECONNECTING:
+            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_RECONNECTING);
+            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
             break;
         default:
             ESP_LOGE(TAG, "Invalid mode: %d", mode);
@@ -1367,7 +1491,7 @@ static void LedControl_BleControlPercentChangedNotificationHandler(void *pObj, e
 
     LedControl *this = (LedControl *)pObj;
     assert(this);
-    this->bleXferPercentRuntimeInfo.percentComplete = *((uint32_t *) notificationData);
+    this->bleFileTransferPercentRuntimeInfo.percentComplete = *((uint32_t *) notificationData);
 }
 
 static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
@@ -1390,7 +1514,7 @@ static void LedControl_GameStatusNotificationHandler(void *pObj, esp_event_base_
 
 static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
-    ESP_LOGD(TAG, "Handling Touch Sensor Notification");
+    ESP_LOGD(TAG, "Handling Song Note Action Notification");
     LedControl *this = (LedControl *)pObj;
     assert(this);
     assert(notificationData);
@@ -1403,4 +1527,18 @@ static void LedControl_SongNoteActionNotificationHandler(void *pObj, esp_event_b
         this->songModeRuntimeInfo.updateNeeded = true;
     }
 }
+
+
+static void LedControl_InteractiveGameActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
+{
+    LedControl *this = (LedControl *)pObj;
+    assert(this);
+    assert(notificationData);
+    InteractiveGameData touchSensorsBits = *(InteractiveGameData *)notificationData;
+    ESP_LOGI(TAG, "Handling Interactive Game Action Notification. 0x%02x", touchSensorsBits.u);
+
+    this->interactiveGameModeRuntimeSettings.touchSensorsToLightBits.u = touchSensorsBits.u;
+    this->interactiveGameModeRuntimeSettings.updateNeeded = true;
+}
+
 

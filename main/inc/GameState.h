@@ -52,6 +52,7 @@ typedef struct GameState_t
 } GameState;
 
 esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor);
+void GameState_SetEventId(GameState *this, char *newEventIdB64);
 void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs);
 
 #endif // GAME_STATE_H_

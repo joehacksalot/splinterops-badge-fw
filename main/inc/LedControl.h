@@ -8,6 +8,7 @@
 #include "BatterySensor.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
+#include "InteractiveGame.h"
 #include "SynthModeNotifications.h"
 #include "TouchSensor.h"
 #include "UserSettings.h"
@@ -33,25 +34,29 @@ typedef struct
     };
 } rgb_t;
 
-// LED Ring configurations
+
+// LED configurations
 #if defined(TRON_BADGE)
-  #define LED_STRIP_LEN 77
-  #define OUTER_RING_LED_OFFSET 27
-  #define OUTER_RING_LED_COUNT 50
-  #define INNER_RING_LED_OFFSET 0
-  #define INNER_RING_LED_COUNT 27
+  #define BRIGHTNESS_NORMAL     (10)
+  #define LED_STRIP_LEN         (77)
+  #define OUTER_RING_LED_OFFSET (27)
+  #define OUTER_RING_LED_COUNT  (50)
+  #define INNER_RING_LED_OFFSET (0)
+  #define INNER_RING_LED_COUNT  (27)
 #elif defined(REACTOR_BADGE)
-  #define LED_STRIP_LEN 48
-  #define OUTER_RING_LED_OFFSET 24
-  #define OUTER_RING_LED_COUNT  24 /* outer ring led are led index 24->47 */
-  #define INNER_RING_LED_OFFSET 0
-  #define INNER_RING_LED_COUNT  24 /* inner ring led are led index 0->23 */
+  #define BRIGHTNESS_NORMAL     (40)
+  #define LED_STRIP_LEN         (48)
+  #define OUTER_RING_LED_OFFSET (24)
+  #define OUTER_RING_LED_COUNT  (24) /* outer ring led are led index 24->47 */
+  #define INNER_RING_LED_OFFSET (0)
+  #define INNER_RING_LED_COUNT  (24) /* inner ring led are led index 0->23 */
 #elif defined(CREST_BADGE)
-  #define LED_STRIP_LEN 59
-  #define OUTER_RING_LED_OFFSET 6
-  #define OUTER_RING_LED_COUNT  53 /* outer ring led are led index 6->53 */
-  #define INNER_RING_LED_OFFSET 0
-  #define INNER_RING_LED_COUNT  6  /* inner ring led are led index 0->6 */
+  #define BRIGHTNESS_NORMAL     (25)
+  #define LED_STRIP_LEN         (59)
+  #define OUTER_RING_LED_OFFSET (6)
+  #define OUTER_RING_LED_COUNT  (53) /* outer ring led are led index 6->53 */
+  #define INNER_RING_LED_OFFSET (0)
+  #define INNER_RING_LED_COUNT  (6)  /* inner ring led are led index 0->6 */
 #endif
 
 typedef enum InnerLedState_e
@@ -63,7 +68,7 @@ typedef enum InnerLedState_e
     INNER_LED_STATE_GAME_EVENT,
     INNER_LED_STATE_BATTERY_STATUS,
     INNER_LED_STATE_STATUS_INDICATOR,
-    INNER_LED_MODE_BLE_XFER_PERCENT,
+    INNER_LED_MODE_BLE_FILE_XFER_PCNT,
     INNER_LED_STATE_NETWORK_TEST,
     NUM_INNER_LED_STATES
 } InnerLedState;
@@ -75,38 +80,35 @@ typedef enum OuterLedState_t
     OUTER_LED_STATE_TOUCH_LIGHTING,
     OUTER_LED_STATE_GAME_EVENT,
     OUTER_LED_STATE_BATTERY_STATUS,
-    OUTER_LED_STATE_BLE_XFER_STATUS,
-    OUTER_LED_STATE_BLE_XFER_ENABLED,
-    OUTER_LED_STATE_BLE_XFER_CONNECTED,
+    OUTER_LED_STATE_BLE_FILE_TRANSFER_STATUS,
+    OUTER_LED_STATE_BLE_SERVICE_ENABLE,
+    OUTER_LED_STATE_BLE_SERVICE_CONNECTED,
+    OUTER_LED_STATE_OTA_DOWNLOAD_IP,
     OUTER_LED_STATE_STATUS_INDICATOR,
     OUTER_LED_STATE_GAME_STATUS,
-    OUTER_LED_MODE_BLE_XFER_PERCENT,
+    OUTER_LED_STATE_GAME_INTERACTIVE,
+    OUTER_LED_STATE_BLE_RECONNECTING,
+    OUTER_LED_STATE_BLE_FILE_XFER_PCNT,
     OUTER_LED_STATE_NETWORK_TEST,
     OUTER_LED_STATE_SONG_MODE,
     NUM_OUTER_LED_STATES
 } OuterLedState;
 
-typedef enum LedStatusIndicator_e
-{
-    LED_STATUS_INDICATOR_NONE = 0,
-    LED_STATUS_INDICATOR_ERROR,
-    LED_STATUS_INDICATOR_BLE_XFER_SUCCESS,
-    LED_STATUS_INDICATOR_OTA_UPDATE_SUCCESS,
-} LedStatusIndicator;
-
 typedef enum LedMode_e
 {
-    LED_MODE_NORMAL,            // 0
-    LED_MODE_TOUCH,             // 1
-    LED_MODE_BATTERY,           // 2
-    LED_MODE_EVENT,             // 3
-    LED_MODE_GAME_STATUS,       // 4
-    LED_MODE_BLE_XFER_ENABLED,  // 5
-    LED_MODE_BLE_XFER_CONNECTED,// 6
-    LED_MODE_STATUS_INDICATOR,  // 7
-    LED_MODE_BLE_XFER_PERCENT,  // 8
-    LED_MODE_NETWORK_TEST,      // 9
-    LED_MODE_SONG               // 10
+    LED_MODE_SEQUENCE,                   // 0
+    LED_MODE_TOUCH,                      // 1
+    LED_MODE_BATTERY,                    // 2
+    LED_MODE_EVENT,                      // 3
+    LED_MODE_GAME_STATUS,                // 4
+    LED_MODE_BLE_FILE_TRANSFER_ENABLED,  // 5
+    LED_MODE_BLE_FILE_TRANSFER_CONNECTED,// 6
+    LED_MODE_BLE_FILE_TRANSFER_PERCENT,  // 7
+    LED_MODE_BLE_RECONNECTING,           // 8
+    LED_MODE_NETWORK_TEST,               // 9
+    LED_MODE_SONG,                       // 10
+    LED_MODE_INTERACTIVE_GAME,           // 11
+    LED_MODE_OTA_DOWNLOAD_IP             // 12
 } LedMode;
 
 typedef struct 
@@ -149,12 +151,12 @@ typedef struct BatteryIndicatorRuntimeSettings_t
     TickType_t nextOuterFrameDrawTime;
 } BatteryIndicatorRuntimeSettings;
 
-typedef struct BleXferPercentRuntimeSettings_t
+typedef struct BleFileTransferPercentRuntimeSettings_t
 {
     rgb_t color;
     uint32_t percentComplete;
     uint32_t prevPercentComplete;
-} BleXferPercentRuntimeSettings;
+} BleFileTransferPercentRuntimeSettings;
 
 typedef struct NetworkTestRuntimeSettings_t
 {
@@ -164,13 +166,13 @@ typedef struct NetworkTestRuntimeSettings_t
 
 typedef struct LedStatusIndicatorRuntimeSettings_t
 {
-    LedStatusIndicator statusIndicator;
     rgb_t initColor;
     rgb_t errorColor;
-    rgb_t bleEnabledColor;
+    rgb_t bleServiceEnabledColor;
     rgb_t bleConnectedColor;
-    rgb_t bleXferSuccessColor;
+    rgb_t bleReconnectingColor;
     rgb_t otaUpdateSuccessColor;
+    rgb_t otaUpdateInProgressColor;
     rgb_t networkTestSuccessColor;
     TickType_t nextInnerDrawTime;
     TickType_t nextOuterDrawTime;
@@ -199,6 +201,13 @@ typedef struct SongModeRuntimeSettings_t
     SongNoteChangeEventNotificationData lastSongNoteChangeEventNotificationData;
     bool updateNeeded;
 } SongModeRuntimeSettings;
+
+
+typedef struct InteractiveGameModeRuntimeSettings_t
+{
+    InteractiveGameData touchSensorsToLightBits;
+    bool updateNeeded;
+} InteractiveGameModeRuntimeSettings;
 
 typedef struct LedControlModeSettings_t
 {
@@ -241,18 +250,18 @@ typedef struct LedControl_t
     SemaphoreHandle_t jsonMutex;
     uint32_t selectedIndex;
     uint32_t loadRequired;
-
+    bool drawLedNoneUpdateRequired;
     LedControlModeSettings ledControlModeSettings;
     JsonLedSequenceRuntimeSettings jsonSequenceRuntimeInfo;
     BatteryIndicatorRuntimeSettings batteryIndicatorRuntimeInfo;
-    BleXferPercentRuntimeSettings bleXferPercentRuntimeInfo;
+    BleFileTransferPercentRuntimeSettings bleFileTransferPercentRuntimeInfo;
     TouchModeRuntimeSettings touchModeRuntimeInfo;
     SongModeRuntimeSettings songModeRuntimeInfo;
+    InteractiveGameModeRuntimeSettings interactiveGameModeRuntimeSettings;
     LedStatusIndicatorRuntimeSettings ledStatusIndicatorRuntimeInfo;
     GameStatusRuntimeSettings gameStatusRuntimeInfo;
     GameEventRuntimeSettings gameEventRuntimeInfo;
     NetworkTestRuntimeSettings networkTestRuntimeInfo;
-
     NotificationDispatcher *pNotificationDispatcher;
     UserSettings *pUserSettings;
     BatterySensor *pBatterySensor;
@@ -263,11 +272,11 @@ esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificatio
 esp_err_t LedControl_SetInnerLedState(LedControl *this, InnerLedState state);
 esp_err_t LedControl_SetOuterLedState(LedControl *this, OuterLedState state);
 esp_err_t LedControl_SetLedCustomSequence(LedControl *this, int customIndex);
-esp_err_t LedControl_InitiateStatusIndicatorSequence(LedControl *this, LedStatusIndicator ledIndicatorStatus, uint32_t holdTime);
+// esp_err_t LedControl_InitiateStatusIndicatorSequence(LedControl *this, LedStatusIndicator ledIndicatorStatus, uint32_t holdTime);
 esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode);
 esp_err_t LedControl_SetCurrentLedSequenceIndex(LedControl *this, int sequenceIndex);
 esp_err_t LedControl_CycleSelectedLedSequence(LedControl *this, bool direction);
-
 int LedControl_GetCurrentLedSequenceIndex(LedControl *this);
+void LedControl_SetTouchSensorUpdate(LedControl *this, TouchSensorEvent touchSensorEvent, int touchSensorIdx);
 
 #endif // LED_TASK_H_

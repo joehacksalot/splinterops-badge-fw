@@ -98,7 +98,7 @@ esp_err_t GpioControl_Control(GpioControl *this, GpioFeatures feature, bool stat
     }
 
     ESP_ERROR_CHECK(gpio_set_level(gpioPinNumber, state? 1 : 0));
-    ESP_LOGI(TAG, "Gpio feature %d set to %d for %lu ms", feature, state, durationMs);
+    ESP_LOGD(TAG, "Gpio feature %d set to %d for %lu ms", feature, state, durationMs);
 
     return ESP_OK;
 }

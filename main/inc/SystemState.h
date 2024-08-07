@@ -10,6 +10,7 @@
 #include "BleControl.h"
 #include "GameState.h"
 #include "GpioControl.h"
+#include "InteractiveGame.h"
 #include "LedModing.h"
 #include "NotificationDispatcher.h"
 #include "OtaUpdate.h"
@@ -24,7 +25,8 @@
 typedef struct AppConfig_t
 {
     bool touchActionCommandEnabled;
-    bool synthCapable;
+    bool buzzerPresent;
+    bool eyeGpioLedsPresent;
 } AppConfig;
 
 typedef struct SystemState_t
@@ -33,22 +35,23 @@ typedef struct SystemState_t
     bool batteryIndicatorActive;
     bool gameEventActive;
     bool touchActionCmdClearRequired;
-    bool ledStatusIndicatorActive;
-    bool ledSequencePreviewActive;
     bool ledGameStatusActive;
     bool networkTestActive;
     bool peerSongPlaying;
+    bool peerSongWaitingCooldown;
+    bool bleReconnecting;
+    InteractiveGameData interactiveGameTouchSensorsToLightBits;
     TimerHandle_t touchActiveTimer;
     TimerHandle_t drawBatteryIndicatorActiveTimer;
-    TimerHandle_t drawStatusIndicatorTimer;
     TimerHandle_t drawNetworkTestTimer;
     TimerHandle_t drawNetworkTestSuccessTimer;
     TimerHandle_t ledSequencePreviewTimer;
     TimerHandle_t ledGameStatusToggleTimer;
+    TimerHandle_t peerSongCooldownTimer;
     AppConfig appConfig;
     BadgeStats badgeStats;
     BatterySensor batterySensor;
-    BleControl *pBleControl;
+    BleControl bleControl;
     GameState gameState;
     GpioControl gpioControl;
     LedControl ledControl;

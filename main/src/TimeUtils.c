@@ -29,3 +29,8 @@ TickType_t TimeUtils_GetCurTimeTicks()
 {
     return xTaskGetTickCount();
 }
+
+uint32_t TimeUtils_GetMSecFromTicks(uint32_t ticks)
+{
+    return pdTICKS_TO_MS(ticks);
+}
