@@ -173,6 +173,7 @@ void _WifiClient_Enable(WifiClient *this)
 
         for(uint32_t i = 0; i < ap_scan_count; ++i)
         {
+            ESP_LOGD(TAG, "AP: %s", (char*)ap_info[i].ssid);
             if(strncmp((char*)ap_info[i].ssid, (char*)customWifiSettings.ssid, sizeof(ap_info[i].ssid)) == 0)
             {
                 ESP_LOGI(TAG, "Custom AP Found (%s)", customWifiSettings.ssid);
