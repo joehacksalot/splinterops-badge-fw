@@ -994,7 +994,7 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
             if (notificationData != NULL)
             {
                 PeerReport peerReport = *((PeerReport *)notificationData);
-                ESP_LOGI(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.badgeIdB64, peerReport.peakRssi, peerReport.badgeType);
+                ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.badgeIdB64, peerReport.peakRssi, peerReport.badgeType);
                 if (this->appConfig.buzzerPresent)
                 {
                     if (this->peerSongPlaying == false && peerReport.peakRssi > PEER_RSSID_SONG_THRESHOLD && this->peerSongWaitingCooldown == false)
