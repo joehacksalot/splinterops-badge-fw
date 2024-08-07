@@ -17,6 +17,7 @@
 #include "BatterySensor.h"
 #include "GameState.h"
 #include "HTTPGameClient.h"
+#include "SynthModeNotifications.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
 #include "Utilities.h"
@@ -25,7 +26,7 @@
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt);
 static void HTTPGameClientTask(void *pvParameters);
 static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
-static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHeartBeatResponse);
+static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationDispatcher, char *pData, HeartBeatResponse *pHeartBeatResponse);
 static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse);
 
 
@@ -311,7 +312,7 @@ static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse)
     ESP_LOGI(TAG, "    mSecRemaining:     %lu", pHeartBeatResponse->status.eventData.mSecRemaining);
 }
 
-static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHeartBeatResponse)
+static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationDispatcher, char *pData, HeartBeatResponse *pHeartBeatResponse)
 {
     esp_err_t ret = ESP_FAIL;
     ESP_LOGI(TAG, "Parsing JSON Response: %s", pData);
@@ -365,6 +366,14 @@ static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHear
         cJSON *event = cJSON_GetObjectItem(root, "event");
         if (event != NULL)
         {
+            cJSON *eventComplete = cJSON_GetObjectItem(event, "eventComplete");
+            if (cJSON_IsTrue(eventComplete))
+            {
+                PlaySongEventNotificationData successPlaySongNotificationData;
+                successPlaySongNotificationData.song = SONG_FANFARE;
+                NotificationDispatcher_NotifyEvent(pNotificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+            }
+
             cJSON *eventId = cJSON_GetObjectItem(event, "event");
             if (eventId != NULL)
             {
@@ -375,6 +384,7 @@ static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHear
             {
                 strncpy((char *)tmpHeartBeatResponse.status.eventData.currentEventIdB64, "AAAAAAAAAAA=", sizeof(tmpHeartBeatResponse.status.eventData.currentEventIdB64));
             }
+
             cJSON *stoneColor = cJSON_GetObjectItem(event, "stoneColor");
             if (stoneColor != NULL)
             {
@@ -455,7 +465,7 @@ static esp_err_t _ParseJsonResponseString(char * pData, HeartBeatResponse *pHear
 
 
 // Assumes WIFI is enabled already from task
-void _HTTPGameClient_ProcessRequestList(HTTPGameClient * this)
+void _HTTPGameClient_ProcessRequestList(HTTPGameClient *this)
 {
     assert(this);
     assert(this->pNotificationDispatcher);
@@ -542,7 +552,7 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient * this)
                         // Verify first byte is not NULL
                         if (this->response.pData[0] != 0)
                         {
-                            if (_ParseJsonResponseString((char *)this->response.pData, &this->responseStruct) == ESP_OK)
+                            if (_ParseJsonResponseString(this->pNotificationDispatcher, (char *)this->response.pData, &this->responseStruct) == ESP_OK)
                             {
                                 // ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.eventData.currentEventIdB64);
                                 _PrintHeartBeatResponse(&this->responseStruct);
@@ -552,7 +562,6 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient * this)
                             {
                                 ESP_LOGE(TAG, "Failed to parse JSON response");
                             }
-
                         }
                         else
                         {
