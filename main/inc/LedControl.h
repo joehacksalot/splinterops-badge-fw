@@ -37,7 +37,7 @@ typedef struct
 
 // LED configurations
 #if defined(TRON_BADGE)
-  #define BRIGHTNESS_NORMAL     (10)
+  #define BRIGHTNESS_NORMAL     (40)
   #define LED_STRIP_LEN         (77)
   #define OUTER_RING_LED_OFFSET (27)
   #define OUTER_RING_LED_COUNT  (50)
