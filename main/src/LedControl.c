@@ -496,6 +496,11 @@ static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl *this, bool al
             if (TimeUtils_IsTimeExpired(this->jsonSequenceRuntimeInfo.nextFrameDrawTime))
             {
                 cJSON *frame = cJSON_GetArrayItem(this->jsonSequenceRuntimeInfo.frames,this->jsonSequenceRuntimeInfo.curFrameIndex);
+                if(!frame)
+                {
+                    ESP_LOGE(TAG, "cJSON failed to get frame");
+                    return ESP_FAIL;
+                }
                 if (cJSON_GetObjectItem(frame,"h") == NULL)
                 {
                     ESP_LOGE(TAG, "frame index=%d is corrupt. hold time \"h\" not found", this->jsonSequenceRuntimeInfo.curFrameIndex);
@@ -523,6 +528,11 @@ static esp_err_t LedControl_ServiceDrawJsonLedSequence(LedControl *this, bool al
                 for (int pixelIndex=0; pixelIndex < pixelsArraySize; pixelIndex++)
                 {
                     cJSON *pixel = cJSON_GetArrayItem(pixelArray, pixelIndex);
+                    if(!pixel)
+                    {
+                        ESP_LOGE(TAG, "cJSON failed to get pixel");
+                        continue;
+                    }
                     cJSON *n1JSON = cJSON_GetObjectItem(pixel,"n1");
                     cJSON *n2JSON = cJSON_GetObjectItem(pixel,"n2");
 
@@ -1535,7 +1545,7 @@ static void LedControl_InteractiveGameActionNotificationHandler(void *pObj, esp_
     assert(this);
     assert(notificationData);
     InteractiveGameData touchSensorsBits = *(InteractiveGameData *)notificationData;
-    ESP_LOGI(TAG, "Handling Interactive Game Action Notification. 0x%02x", touchSensorsBits.u);
+    ESP_LOGD(TAG, "Handling Interactive Game Action Notification. 0x%02x", touchSensorsBits.u);
 
     this->interactiveGameModeRuntimeSettings.touchSensorsToLightBits.u = touchSensorsBits.u;
     this->interactiveGameModeRuntimeSettings.updateNeeded = true;

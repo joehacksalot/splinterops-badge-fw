@@ -329,6 +329,17 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
             for (int stonesIndex = 0; stonesIndex < stonesArraySize; stonesIndex++)
             {
                 cJSON *stone = cJSON_GetArrayItem(stonesArray, stonesIndex);
+                if(!stone)
+                {
+                    ESP_LOGE(TAG, "cJSON failed to get stone(%d)", stonesIndex);
+                    continue;
+                }
+                // Check type before processing
+                if(stone->type != cJSON_Number)
+                {
+                    ESP_LOGE(TAG, "Stone(%d) invalid type %d", stonesIndex, stone->type);
+                    continue;
+                }
                 int stoneIndex = (int)stone->valueint;
                 if (stoneIndex > 0 && stoneIndex <= NUM_GAMESTATE_EVENTCOLORS)
                 {
@@ -348,6 +359,17 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
             for (int songsIndex = 0; songsIndex < songsArraySize; songsIndex++)
             {
                 cJSON *song = cJSON_GetArrayItem(songsArray, songsIndex);
+                if(!song)
+                {
+                    ESP_LOGE(TAG, "cJSON failed to get song(%d)", songsIndex);
+                    continue;
+                }
+                // Check type before processing
+                if(song->type != cJSON_Number)
+                {
+                    ESP_LOGE(TAG, "Song(%d) invalid type %d", songsIndex, song->type);
+                    continue;
+                }
                 int songIndex = (int)song->valueint;
                 if (songIndex > 0 && songIndex <= OCARINA_NUM_SONGS)
                 {
@@ -460,13 +482,18 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
             for (int siblingIndex = 0; siblingIndex < siblingsArraySize; siblingIndex++)
             {
                 cJSON *sibling = cJSON_GetArrayItem(siblingsArray, siblingIndex);
-                char *siblingValue = sibling->valuestring;
-                if(siblingValue == NULL)
+                if(!sibling)
                 {
-                    ESP_LOGE(TAG, "NULL sibling value found");
+                    ESP_LOGE(TAG, "cJSON failed to get sibling(%d)", siblingIndex);
                     continue;
                 }
-
+                // Check type before processing
+                if(sibling->type != cJSON_String)
+                {
+                    ESP_LOGE(TAG, "Sibling(%d) invalid type %d", siblingIndex, sibling->type);
+                    continue;
+                }
+                char *siblingValue = sibling->valuestring;
                 bool *pSeen = hashmap_get(pSiblings, siblingValue);
                 if (pSeen == NULL)
                 {
