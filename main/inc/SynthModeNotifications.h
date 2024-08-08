@@ -20,6 +20,7 @@ typedef enum SongNoteChangeType_t
 
 typedef struct SongNoteChangeEventNotificationData_t
 {
+    Song song;
     SongNoteChangeType action;
     NoteName note;
 } SongNoteChangeEventNotificationData;

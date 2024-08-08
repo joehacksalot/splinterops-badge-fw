@@ -582,6 +582,7 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient *this)
                         // Verify first byte is not NULL
                         if (this->response.pData[0] != 0)
                         {
+                            ESP_LOG_BUFFER_HEX_LEVEL(TAG, this->response.pData, this->response.dataLength, ESP_LOG_DEBUG);
                             if (_ParseJsonResponseString(this->pNotificationDispatcher, (char *)this->response.pData, &this->responseStruct, &this->siblingMap) == ESP_OK)
                             {
                                 // ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.eventData.currentEventIdB64);

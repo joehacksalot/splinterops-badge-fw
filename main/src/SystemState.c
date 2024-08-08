@@ -309,13 +309,6 @@ esp_err_t SystemState_Init(SystemState *this)
 
     if (firstBoot)
     {
-        uint8_t firstBootByte = 0xFF;
-        ret = WriteFileToDisk(&this->batterySensor, FIRSTBOOT_FILE_NAME, (char *)&firstBootByte, sizeof(firstBootByte));
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE(TAG, "Failed to write first boot byte to disk. error code = %s", esp_err_to_name(ret));
-        }
-
         PlaySongEventNotificationData firstBootPlaySongNotificationData;
         firstBootPlaySongNotificationData.song = SONG_ZELDA_OPENING;
         NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &firstBootPlaySongNotificationData, sizeof(firstBootPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
@@ -1010,6 +1003,16 @@ static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_
                     ESP_LOGE(TAG, "Failed to reset peer song cooldown timer");
                 }
             }
+            if (data.song == SONG_ZELDA_OPENING)
+            {
+                ESP_LOGI(TAG, "First boot song complete, setting first boot byte");
+                uint8_t firstBootByte = 0xFF;
+                esp_err_t ret = WriteFileToDisk(&this->batterySensor, FIRSTBOOT_FILE_NAME, (char *)&firstBootByte, sizeof(firstBootByte));
+                if (ret != ESP_OK)
+                {
+                    ESP_LOGE(TAG, "Failed to write first boot byte to disk. error code = %s", esp_err_to_name(ret));
+                }
+            }
             break;
         default:
             break;
@@ -1055,7 +1058,7 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
                 {
                     if (*pSeen)
                     {
-                        ESP_LOGI(TAG, "Subling already seen, skipping song play");
+                        ESP_LOGD(TAG, "Subling already seen, skipping song play");
                         break;
                     }
 

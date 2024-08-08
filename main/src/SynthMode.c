@@ -159,13 +159,15 @@ static void SynthModeTask(void *pvParameters)
             }
             if (this->currentNoteIdx >= pSong->numNotes)
             {
+                SongNoteChangeEventNotificationData data;
+                data.song = this->selectedSong;
+                data.action = SONG_NOTE_CHANGE_TYPE_SONG_STOP;
+                data.note = SONG_NONE;
+
                 this->selectedSong = SONG_NONE;
                 this->currentNoteIdx = 0;
                 SynthMode_StopTone(this);
                 ESP_LOGI(TAG, "Finished playing song");
-                SongNoteChangeEventNotificationData data;
-                data.action = SONG_NOTE_CHANGE_TYPE_SONG_STOP;
-                data.note = SONG_NONE;
                 NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
             }
         }
@@ -242,6 +244,7 @@ static esp_err_t SynthMode_PlaySong(SynthMode* this, Song song)
             ESP_LOGI(TAG, "Interrupting Song %d", this->selectedSong);
         }
         SongNoteChangeEventNotificationData data;
+        data.song = song;
         data.action = SONG_NOTE_CHANGE_TYPE_SONG_START;
         data.note = SONG_NONE;
         NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
@@ -267,6 +270,7 @@ static esp_err_t SynthMode_PlayTone(SynthMode* this, NoteName note)
         {
             float frequency = GetNoteFrequency(note);
             SongNoteChangeEventNotificationData data;
+            data.song = this->selectedSong;
             data.action = SONG_NOTE_CHANGE_TYPE_TONE_START;
             data.note = note;
             NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
@@ -308,6 +312,7 @@ static esp_err_t SynthMode_StopTone(SynthMode* this)
         {
             ESP_LOGD(TAG, "Stopping tone");
             SongNoteChangeEventNotificationData data;
+            data.song = this->selectedSong;
             data.note = SONG_NONE;
             data.action = SONG_NOTE_CHANGE_TYPE_TONE_STOP;
             NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
