@@ -31,7 +31,9 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
-#define PEER_RSSID_SONG_THRESHOLD            (-55)
+#define PEER_RSSID_SONG_THRESHOLD_CREST             (-58)
+#define PEER_RSSID_SONG_THRESHOLD_TRON              (-50)
+#define PEER_RSSID_SONG_THRESHOLD_REACTOR           (-50)
 
 #define LED_GAME_STATUS_TOGGLE_DURATION_MSEC (5000)
 #define PEER_SONG_COOLDOWN_DURATION_MSEC     (3*60*1000) // 3 min
@@ -1042,28 +1044,34 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
             if (notificationData != NULL)
             {
                 PeerReport peerReport = *((PeerReport *)notificationData);
+                PlaySongEventNotificationData successPlaySongNotificationData;
                 ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.badgeIdB64, peerReport.peakRssi, peerReport.badgeType);
                 if (this->appConfig.buzzerPresent)
                 {
-                    if (this->peerSongPlaying == false && peerReport.peakRssi > PEER_RSSID_SONG_THRESHOLD && this->peerSongWaitingCooldown == false)
+                    int rssiThreshold = -60;
+                    switch(peerReport.badgeType)
+                    {
+                        case BADGE_TYPE_TRON:
+                            rssiThreshold = PEER_RSSID_SONG_THRESHOLD_TRON;
+                            successPlaySongNotificationData.song = SONG_BONUS_BONUS;
+                            break;
+                        case BADGE_TYPE_REACTOR:
+                            rssiThreshold = PEER_RSSID_SONG_THRESHOLD_REACTOR;
+                            successPlaySongNotificationData.song = SONG_BONUS;
+                            break;
+                        case BADGE_TYPE_CREST:
+                            rssiThreshold = PEER_RSSID_SONG_THRESHOLD_CREST;
+                            successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                            break;
+                        default:
+                            rssiThreshold = -60;    // catchall
+                            break;
+                    }
+                    if (this->peerSongPlaying == false && peerReport.peakRssi > rssiThreshold && this->peerSongWaitingCooldown == false)
                     {
                         if (peerReport.badgeType != BADGE_TYPE_UNKNOWN)
                         {
                             ESP_LOGI(TAG, "Playing Peer Song for badge type %d", peerReport.badgeType);
-                            PlaySongEventNotificationData successPlaySongNotificationData;
-                            switch (peerReport.badgeType)
-                            {
-                                case BADGE_TYPE_TRON:
-                                    successPlaySongNotificationData.song = SONG_BONUS_BONUS;
-                                    break;
-                                case BADGE_TYPE_REACTOR:
-                                    successPlaySongNotificationData.song = SONG_BONUS;
-                                    break;
-                                case BADGE_TYPE_CREST:
-                                default:
-                                    successPlaySongNotificationData.song = SONG_ZELDA_THEME;
-                                    break;
-                            }
                             this->peerSongPlaying = true;
                             NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                         }
