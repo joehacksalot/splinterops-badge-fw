@@ -461,6 +461,12 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
             {
                 cJSON *sibling = cJSON_GetArrayItem(siblingsArray, siblingIndex);
                 char *siblingValue = sibling->valuestring;
+                if(siblingValue == NULL)
+                {
+                    ESP_LOGE(TAG, "NULL sibling value found");
+                    continue;
+                }
+
                 bool *pSeen = hashmap_get(pSiblings, siblingValue);
                 if (pSeen == NULL)
                 {
