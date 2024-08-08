@@ -1043,36 +1043,50 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
             {
                 PeerReport peerReport = *((PeerReport *)notificationData);
                 ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.badgeIdB64, peerReport.peakRssi, peerReport.badgeType);
-                if (this->appConfig.buzzerPresent)
+                if (!this->appConfig.buzzerPresent)
                 {
-                    if (this->peerSongPlaying == false && peerReport.peakRssi > PEER_RSSID_SONG_THRESHOLD && this->peerSongWaitingCooldown == false)
+                    break;
+                }
+
+                bool *pSeen = hashmap_get(&this->httpGameClient.siblingMap, peerReport.badgeIdB64);
+                if (pSeen != NULL)
+                {
+                    if (*pSeen)
                     {
-                        if (peerReport.badgeType != BADGE_TYPE_UNKNOWN)
-                        {
-                            ESP_LOGI(TAG, "Playing Peer Song for badge type %d", peerReport.badgeType);
-                            PlaySongEventNotificationData successPlaySongNotificationData;
-                            switch (peerReport.badgeType)
-                            {
-                                case BADGE_TYPE_TRON:
-                                    successPlaySongNotificationData.song = SONG_BONUS_BONUS;
-                                    break;
-                                case BADGE_TYPE_REACTOR:
-                                    successPlaySongNotificationData.song = SONG_BONUS;
-                                    break;
-                                case BADGE_TYPE_CREST:
-                                default:
-                                    successPlaySongNotificationData.song = SONG_ZELDA_THEME;
-                                    break;
-                            }
-                            this->peerSongPlaying = true;
-                            NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
-                        }
-                        else
-                        {
-                            ESP_LOGI(TAG, "Peer Badge type unknown");
-                        }
-                        
+                        ESP_LOGI(TAG, "Subling already seen, skipping song play");
+                        break;
                     }
+
+                    *pSeen = true;
+                }
+
+                if (this->peerSongPlaying == false && peerReport.peakRssi > PEER_RSSID_SONG_THRESHOLD && this->peerSongWaitingCooldown == false)
+                {
+                    if (peerReport.badgeType != BADGE_TYPE_UNKNOWN)
+                    {
+                        ESP_LOGI(TAG, "Playing Peer Song for badge type %d", peerReport.badgeType);
+                        PlaySongEventNotificationData successPlaySongNotificationData;
+                        switch (peerReport.badgeType)
+                        {
+                            case BADGE_TYPE_TRON:
+                                successPlaySongNotificationData.song = SONG_BONUS_BONUS;
+                                break;
+                            case BADGE_TYPE_REACTOR:
+                                successPlaySongNotificationData.song = SONG_BONUS;
+                                break;
+                            case BADGE_TYPE_CREST:
+                            default:
+                                successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                                break;
+                        }
+                        this->peerSongPlaying = true;
+                        NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &successPlaySongNotificationData, sizeof(successPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    }
+                    else
+                    {
+                        ESP_LOGI(TAG, "Peer Badge type unknown");
+                    }
+                    
                 }
             }
             break;

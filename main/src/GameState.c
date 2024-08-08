@@ -106,6 +106,7 @@ static void _GameState_Task(void *pvParameters)
     // NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &request, sizeof(request), DEFAULT_NOTIFY_WAIT_DURATION);
     // END TEST CODE
 
+    ESP_LOGI(TAG, "Starting game state task");
     while(true)
     {
         if (_GameState_IsCurrentEvent(this))
@@ -133,6 +134,7 @@ static void _GameState_Task(void *pvParameters)
 
         if (TimeUtils_IsTimeExpired(this->nextHeartBeatTime) || this->sendHeartbeatImmediately)
         {
+            ESP_LOGI(TAG, "Sending heartbeat");
             uint32_t waitTimeMs;
             if (_GameState_IsCurrentEvent(this))
             {
@@ -332,6 +334,7 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
                 {
                     ret = ESP_OK;
                 }
+
                 this->numPeerReports = hashmap_size(&this->peerMap);
             }
             else

@@ -13,6 +13,8 @@
 #define HTTPGAMECLIENT_MAX_RESPONSE_DATA_SIZE   (8192)
 #define PEER_REPORT_MAX_SIZE                    (1024*7)
 
+typedef HASHMAP(char, bool) SiblingMap_t;
+
 typedef enum HTTPGameClient_HTTPRequestTypes_e
 {
     HTTPGAMECLIENT_HTTPREQUEST_NONE = 0,
@@ -71,6 +73,7 @@ typedef struct HTTPGameClient_t
     char peerReport[PEER_REPORT_MAX_SIZE];
     NotificationDispatcher *pNotificationDispatcher;
     BatterySensor *pBatterySensor;
+    SiblingMap_t siblingMap;
 } HTTPGameClient;
 
 

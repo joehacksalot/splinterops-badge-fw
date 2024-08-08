@@ -26,7 +26,7 @@
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt);
 static void HTTPGameClientTask(void *pvParameters);
 static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData);
-static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationDispatcher, char *pData, HeartBeatResponse *pHeartBeatResponse);
+static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationDispatcher, char *pData, HeartBeatResponse *pHeartBeatResponse, SiblingMap_t *pSiblings);
 static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse);
 
 
@@ -226,6 +226,7 @@ esp_err_t HTTPGameClient_Init(HTTPGameClient *this, WifiClient *pWifiClient, Not
     this->requestQueue.capacity = MAX_PENDING_REQUESTS;
 
     // Intialize rest of structure variables
+    hashmap_init(&this->siblingMap, hashmap_hash_string, strcmp);
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pWifiClient = pWifiClient;
     this->pBatterySensor = pBatterySensor;
@@ -244,7 +245,7 @@ esp_err_t HTTPGameClient_Init(HTTPGameClient *this, WifiClient *pWifiClient, Not
 }
 
 // NOTE: ASSUMES THE CALLER HAS THE MUTEX
-void _HTTPGameClient_RemoveExpiredFromList(HTTPGameClient * this)
+void _HTTPGameClient_RemoveExpiredFromList(HTTPGameClient *this)
 {
     assert(this);
 
@@ -312,7 +313,7 @@ static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse)
     ESP_LOGI(TAG, "    mSecRemaining:     %lu", pHeartBeatResponse->status.eventData.mSecRemaining);
 }
 
-static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationDispatcher, char *pData, HeartBeatResponse *pHeartBeatResponse)
+static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationDispatcher, char *pData, HeartBeatResponse *pHeartBeatResponse, SiblingMap_t *pSiblings)
 {
     esp_err_t ret = ESP_FAIL;
     ESP_LOGI(TAG, "Parsing JSON Response: %s", pData);
@@ -452,6 +453,35 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
             ESP_LOGE(TAG, "No timestamp found");
         }
 
+        cJSON *siblingsArray = cJSON_GetObjectItem(root, "siblings");
+        if (siblingsArray != NULL)
+        {
+            int siblingsArraySize = cJSON_GetArraySize(siblingsArray);
+            for (int siblingIndex = 0; siblingIndex < siblingsArraySize; siblingIndex++)
+            {
+                cJSON *sibling = cJSON_GetArrayItem(siblingsArray, siblingIndex);
+                char *siblingValue = sibling->valuestring;
+                bool *pSeen = hashmap_get(pSiblings, siblingValue);
+                if (pSeen == NULL)
+                {
+                    ESP_LOGI(TAG, "Sibling %s not in map, adding", siblingValue);
+                    bool *siblingSeen = calloc(sizeof(bool), 1);
+                    char *badgeIdB64 = calloc(sizeof(char), BADGE_ID_B64_SIZE);
+                    strncpy(badgeIdB64, siblingValue, BADGE_ID_B64_SIZE - 1);
+
+                    // TODO : EMP doesn't yet account for removing a sibling from the map, must power cycle to reset
+                    if (hashmap_put(pSiblings, badgeIdB64, siblingSeen))
+                    {
+                        ESP_LOGE(TAG, "Failed to add sibling %s to map", siblingValue);
+                    }
+                }
+                else
+                {
+                    ESP_LOGD(TAG, "Sibling index %d already in map", siblingIndex);
+                }
+            }
+        }
+
         cJSON_Delete(root);
         memcpy(pHeartBeatResponse, &tmpHeartBeatResponse, sizeof(*pHeartBeatResponse));
         ret = ESP_OK;
@@ -552,7 +582,7 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient *this)
                         // Verify first byte is not NULL
                         if (this->response.pData[0] != 0)
                         {
-                            if (_ParseJsonResponseString(this->pNotificationDispatcher, (char *)this->response.pData, &this->responseStruct) == ESP_OK)
+                            if (_ParseJsonResponseString(this->pNotificationDispatcher, (char *)this->response.pData, &this->responseStruct, &this->siblingMap) == ESP_OK)
                             {
                                 // ESP_LOGI(TAG, "Event id: %s", this->responseStruct.status.eventData.currentEventIdB64);
                                 _PrintHeartBeatResponse(&this->responseStruct);
@@ -707,6 +737,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     HeartBeatRequest *pRequest = (HeartBeatRequest *)notificationData;
 
     // Prepare peer report json
+    ESP_LOGI(TAG, "Handling HeartBeatRequest notification");
     memset(this->peerReport, 0, sizeof(this->peerReport));
     int offset = 0;
     if (pRequest->numPeerReports > 0)
