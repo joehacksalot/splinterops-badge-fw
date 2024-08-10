@@ -16,7 +16,7 @@
 #define WIFI_MUTEX_TIMEOUT_MS   5000
 
 // Define wifi scan settings
-#define WIFI_SCAN_LIST_SIZE     16      // Number of APs to scan for
+#define WIFI_SCAN_LIST_SIZE     CONFIG_WIFI_PROV_SCAN_MAX_ENTRIES      // Number of APs to scan for
 #define WIFI_SCAN_RSSI_MINIMUM  -127
 
 // Internal Function Declarations
@@ -149,9 +149,9 @@ void _WifiClient_Enable(WifiClient *this)
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
 
         // Scan for strongest AP, compare AP names to list stored
-        wifi_ap_record_t ap_info[WIFI_SCAN_LIST_SIZE];
+        wifi_ap_record_t * ap_info = calloc(WIFI_SCAN_LIST_SIZE, sizeof(wifi_ap_record_t));
+        assert(ap_info != NULL);
         uint16_t ap_scan_count = WIFI_SCAN_LIST_SIZE;   // this will get updated by api later
-        memset(ap_info, 0, sizeof(ap_info));
 
         esp_err_t ret = esp_wifi_start();
         if (ret == ESP_OK)
@@ -193,20 +193,7 @@ void _WifiClient_Enable(WifiClient *this)
                 break;
             }
         }
-
-        // for(uint32_t i = 0; i < ap_scan_count; ++i)
-        // {
-        //     if(strncmp((char*)ap_info[i].ssid, CONFIG_WIFI_SSID, sizeof(ap_info[i].ssid)) == 0)
-        //     {
-        //         ESP_LOGI(TAG, "Hardcoded AP Found (%s)", CONFIG_WIFI_SSID);
-        //         strncpy((char*)this->wifiConfig.sta.ssid, CONFIG_WIFI_SSID, sizeof(this->wifiConfig.sta.ssid));
-        //         strncpy((char*)this->wifiConfig.sta.password, CONFIG_WIFI_PASSWORD, sizeof(this->wifiConfig.sta.password));
-        //         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &this->wifiConfig));
-        //         ESP_ERROR_CHECK(esp_wifi_start());
-        //         break;
-        //     }
-        // }
-
+        free(ap_info);
         this->state = WIFI_CLIENT_STATE_ATTEMPTING;
     }
 }
