@@ -188,11 +188,13 @@ static void OtaUpdateTask(void *pvParameters)
                                     ESP_LOGE(TAG, "firmware validation failed, image corrupted");
                                 }
                                 ESP_LOGE(TAG, "firmware upgrade failed 0x%x", ota_finish_err);
+                                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                             }
                         }
                         else
                         {
                             ESP_LOGE(TAG, "Failed to retrieve complete firmware image");
+                            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                         }
                     }
                     else
