@@ -74,6 +74,8 @@ static const int correctedPixelOffset[] =
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25
 #elif defined(CREST_BADGE)
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58
+#elif defined(FMAN25_BADGE)
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44
 #endif
 };
 
@@ -88,21 +90,21 @@ static const LedMap songMap[NUM_LED_NOTES] =
 {
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 // TODO: Needs tested on reactor and tron badges, almost positive this doesnt work for tron
-    {.numIndexes=3, .indexes={24,25,47}}, // 12  D
+    {.numIndexes=3, .indexes={24,25,47}}, // 12   D
     {.numIndexes=3, .indexes={25,26,27}}, // 12.5 D#
-    {.numIndexes=3, .indexes={26,27,24}}, // 1   E
-    {.numIndexes=3, .indexes={28,29,30}}, // 2   F
-    {.numIndexes=3, .indexes={29,30,31}}, // 2.5 F#
-    {.numIndexes=3, .indexes={30,31,32}}, // 4   G
-    {.numIndexes=3, .indexes={31,32,33}}, // 4.5 G#
-    {.numIndexes=3, .indexes={33,34,24}}, // 5   A
-    {.numIndexes=3, .indexes={35,36,37}}, // 6   A#
-    {.numIndexes=3, .indexes={38,39,24}}, // 7   B
-    {.numIndexes=3, .indexes={40,41,42}}, // 8   C
-    {.numIndexes=3, .indexes={41,42,43}}, // 8.5 C#
-    {.numIndexes=3, .indexes={42,43,44}}, // 10  D
+    {.numIndexes=3, .indexes={26,27,24}}, // 1    E
+    {.numIndexes=3, .indexes={28,29,30}}, // 2    F
+    {.numIndexes=3, .indexes={29,30,31}}, // 2.5  F#
+    {.numIndexes=3, .indexes={30,31,32}}, // 4    G
+    {.numIndexes=3, .indexes={31,32,33}}, // 4.5  G#
+    {.numIndexes=3, .indexes={33,34,24}}, // 5    A
+    {.numIndexes=3, .indexes={35,36,37}}, // 6    A#
+    {.numIndexes=3, .indexes={38,39,24}}, // 7    B
+    {.numIndexes=3, .indexes={40,41,42}}, // 8    C
+    {.numIndexes=3, .indexes={41,42,43}}, // 8.5  C#
+    {.numIndexes=3, .indexes={42,43,44}}, // 10   D
     {.numIndexes=3, .indexes={44,45,46}}, // 10.5 D#
-    {.numIndexes=3, .indexes={45,46,47}}  // 11  E
+    {.numIndexes=3, .indexes={45,46,47}}  // 11   E
 #elif defined(CREST_BADGE)
     {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0    NOTE_BASE_D
     {.numIndexes=5, .indexes={11,12,13,15,16}},      // 0.5  NOTE_BASE_DS
@@ -119,6 +121,22 @@ static const LedMap songMap[NUM_LED_NOTES] =
     {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7    NOTE_BASE_D
     {.numIndexes=5, .indexes={47,48,51,52,53}},      // 7.5  NOTE_BASE_DS
     {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8    NOTE_BASE_E
+#elif defined(FMAN25_BADGE)
+    {.numIndexes=3, .indexes={21,22,23}},        // 0    NOTE_BASE_D
+    {.numIndexes=2, .indexes={20,21}},           // 0.5  NOTE_BASE_DS
+    {.numIndexes=3, .indexes={18,19,20}},        // 1    NOTE_BASE_E
+    {.numIndexes=3, .indexes={15,16,17}},        // 2    NOTE_BASE_F
+    {.numIndexes=1, .indexes={15}},              // 2.5  NOTE_BASE_FS
+    {.numIndexes=3, .indexes={13,14,15}},        // 3    NOTE_BASE_G
+    {.numIndexes=2, .indexes={12,13}},           // 3.5  NOTE_BASE_GS
+    {.numIndexes=3, .indexes={10,11,12}},        // 4    NOTE_BASE_A    Center
+    {.numIndexes=2, .indexes={9,10}},            // 4.5  NOTE_BASE_AS
+    {.numIndexes=3, .indexes={7,8,9}},           // 5    NOTE_BASE_B
+    {.numIndexes=3, .indexes={5,6,7}},           // 6    NOTE_BASE_C
+    {.numIndexes=2, .indexes={4,5}} ,            // 6.5  NOTE_BASE_CS
+    {.numIndexes=3, .indexes={2,3,4}},           // 7    NOTE_BASE_D
+    {.numIndexes=2, .indexes={1,2}},             // 7.5  NOTE_BASE_DS
+    {.numIndexes=3, .indexes={0,1,31}}           // 8    NOTE_BASE_E
 #endif
 };
 
@@ -161,15 +179,6 @@ static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] =
     {.numIndexes=3, .indexes={42,43,44}},  // 8  10
     {.numIndexes=3, .indexes={45,46,47}}   // 9  11
 #elif defined(CREST_BADGE)
-    // {.numIndexes=7, .indexes={7,8,9,10,11,12,13}},   // 0  0
-    // {.numIndexes=5, .indexes={15,16,17,18,19}},      // 1  1
-    // {.numIndexes=5, .indexes={22,23,24,25,26}},      // 2  2
-    // {.numIndexes=3, .indexes={28,29,30}},            // 3  4
-    // {.numIndexes=3, .indexes={31,32,33}},            // 4  4
-    // {.numIndexes=3, .indexes={34,35,36}},            // 5  5
-    // {.numIndexes=5, .indexes={38,39,40,41,42}},      // 6  6
-    // {.numIndexes=5, .indexes={44,45,46,47,48}},      // 7  7
-    // {.numIndexes=7, .indexes={51,52,53,54,55,56,57}} // 8  8
     {.numIndexes=5, .indexes={8,9,10,11,12}},        // 0  0
     {.numIndexes=3, .indexes={16,17,18}},            // 1  1
     {.numIndexes=2, .indexes={23,24}},               // 2  2
@@ -179,6 +188,16 @@ static const LedMap touchMap[TOUCH_SENSOR_NUM_BUTTONS] =
     {.numIndexes=2, .indexes={40,41}},               // 6  6
     {.numIndexes=3, .indexes={46,47,48}},            // 7  7
     {.numIndexes=5, .indexes={52,53,54,55,56}}       // 8  8
+#elif defined(FMAN25_BADGE)
+    {.numIndexes=3, .indexes={21,22,23}},      // 0
+    {.numIndexes=3, .indexes={18,19,20}},      // 1
+    {.numIndexes=3, .indexes={15,16,17}},      // 2
+    {.numIndexes=3, .indexes={13,14,15}},      // 3
+    {.numIndexes=3, .indexes={10,11,12}},      // 4
+    {.numIndexes=3, .indexes={7,8,9}},         // 5
+    {.numIndexes=3, .indexes={5,6,7}},         // 6
+    {.numIndexes=3, .indexes={2,3,4}},         // 7
+    {.numIndexes=3, .indexes={0,1,31}}         // 8
 #endif
 };
 
@@ -199,6 +218,13 @@ static const LedMap gameStatusMap[NUM_GAMESTATE_EVENTCOLORS] =
     {.numIndexes=1, .indexes={4}},
     {.numIndexes=1, .indexes={5}},
     {.numIndexes=1, .indexes={6}} 
+#elif defined(FMAN25_BADGE)
+    {.numIndexes=1, .indexes={32}},
+    {.numIndexes=1, .indexes={34}},
+    {.numIndexes=1, .indexes={36}},
+    {.numIndexes=1, .indexes={38}},
+    {.numIndexes=1, .indexes={40}},
+    {.numIndexes=1, .indexes={42}} 
 #endif
 };
 
@@ -1367,12 +1393,12 @@ static esp_err_t LedControl_LoadJsonLedSequence(LedControl * this)
 
 static bool LedControl_IndexIsInnerRing(int pixelIndex)
 {
-    return (pixelIndex >= 0 && pixelIndex < INNER_RING_LED_COUNT);
+    return (pixelIndex >= INNER_RING_LED_OFFSET && pixelIndex < INNER_RING_LED_OFFSET+INNER_RING_LED_COUNT);
 }
 
 static bool LedControl_IndexIsOuterRing(int pixelIndex)
 {
-    return (pixelIndex >= INNER_RING_LED_COUNT && pixelIndex < LED_STRIP_LEN);
+    return (pixelIndex >= OUTER_RING_LED_OFFSET && pixelIndex < OUTER_RING_LED_OFFSET+OUTER_RING_LED_COUNT);
 }
 
 void LedControl_SetTouchSensorUpdate(LedControl *this, TouchSensorEvent touchSensorEvent, int touchSensorIdx)

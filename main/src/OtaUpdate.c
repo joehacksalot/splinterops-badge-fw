@@ -27,6 +27,8 @@ static const char * TAG = "ota_task";
 #define OTA_URL CONFIG_OTA_UPDATE_URL"_REACTOR"
 #elif defined(CREST_BADGE)
 #define OTA_URL CONFIG_OTA_UPDATE_URL"_CREST"
+#elif defined(FMAN25_BADGE)
+#define OTA_URL CONFIG_OTA_UPDATE_URL"_FMAN25"
 #endif
 
 #define HTTP_RESPONSE_BUFFER_SIZE 2048

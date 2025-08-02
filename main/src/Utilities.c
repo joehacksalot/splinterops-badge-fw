@@ -12,6 +12,7 @@
 static const char BLE_DEVICE_NAME_TRON[]    = "IWCv1";
 static const char BLE_DEVICE_NAME_REACTOR[] = "IWCv2";
 static const char BLE_DEVICE_NAME_CREST[]   = "IWCv3";
+static const char BLE_DEVICE_NAME_FMAN25[]  = "FMan25";
 
 uint32_t GetRandomNumber(uint32_t min, uint32_t max)
 {
@@ -26,6 +27,8 @@ BadgeType GetBadgeType(void)
     return BADGE_TYPE_REACTOR;
 #elif defined(CREST_BADGE)
     return BADGE_TYPE_CREST;
+#elif defined(FMAN25_BADGE)
+    return BADGE_TYPE_FMAN25;
 #else
     return BADGE_TYPE_UNKNOWN;
 #endif
@@ -41,6 +44,8 @@ BadgeType ParseBadgeType(int badgeTypeNum)
             return BADGE_TYPE_REACTOR;
         case 3:
             return BADGE_TYPE_CREST;
+        case 4:
+            return BADGE_TYPE_FMAN25;
         default:
             return BADGE_TYPE_UNKNOWN;
     }
@@ -59,6 +64,9 @@ void GetBadgeBleDeviceName(char * buffer, uint32_t bufferSize)
             break;
         case BADGE_TYPE_CREST:
             deviceName = BLE_DEVICE_NAME_CREST;
+            break;
+        case BADGE_TYPE_FMAN25:
+            deviceName = BLE_DEVICE_NAME_FMAN25;
             break;
         default:
             break;

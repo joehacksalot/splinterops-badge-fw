@@ -76,6 +76,22 @@ typedef enum TouchSensorCrestNames_t
 // touch pin 7 -> 6 idx
 // touch pin 8 -> 7 idx
 // touch pin 9 -> 8 idx
+
+#elif defined(FMAN25_BADGE)
+typedef enum TouchSensorFman25Names_t
+{
+    TOUCH_SENSOR_RIGHT_TOUCH_1 = 0, // 0
+    TOUCH_SENSOR_RIGHT_TOUCH_2,     // 1
+    TOUCH_SENSOR_RIGHT_TOUCH_3,     // 2
+    TOUCH_SENSOR_RIGHT_TOUCH_4,     // 3
+    TOUCH_SENSOR_CENTER_TOUCH,      // 4
+    TOUCH_SENSOR_LEFT_TOUCH_4,      // 5
+    TOUCH_SENSOR_LEFT_TOUCH_3,      // 6
+    TOUCH_SENSOR_LEFT_TOUCH_2,      // 7
+    TOUCH_SENSOR_LEFT_TOUCH_1,      // 8
+    
+    TOUCH_SENSOR_NUM_BUTTONS // 9
+} TouchSensorNames;
 #endif 
 
 typedef struct TouchSensor_t

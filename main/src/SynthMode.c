@@ -45,7 +45,7 @@ const int touchFrequencyMapping[TOUCH_SENSOR_NUM_BUTTONS] =
     NOTE_D4, // TOUCH_SENSOR_10_OCLOCK
     NOTE_E4  // TOUCH_SENSOR_11_OCLOCK
 };
-#elif defined (CREST_BADGE)
+#elif defined (CREST_BADGE) || defined (FMAN25_BADGE)
 {
     NOTE_D3, // TOUCH_SENSOR_RIGHT_WING_FEATHER_1 = 0, // 0
     NOTE_E3, // TOUCH_SENSOR_RIGHT_WING_FEATHER_2,     // 1

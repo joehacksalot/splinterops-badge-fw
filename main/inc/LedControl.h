@@ -57,6 +57,13 @@ typedef struct
   #define OUTER_RING_LED_COUNT  (53) /* outer ring led are led index 6->53 */
   #define INNER_RING_LED_OFFSET (0)
   #define INNER_RING_LED_COUNT  (6)  /* inner ring led are led index 0->6 */
+#elif defined(FMAN25_BADGE)
+  #define BRIGHTNESS_NORMAL     (25)
+  #define LED_STRIP_LEN         (45)
+  #define OUTER_RING_LED_OFFSET (0)
+  #define OUTER_RING_LED_COUNT  (32)  /* outer ring led are led index 0-31 */
+  #define INNER_RING_LED_OFFSET (32)
+  #define INNER_RING_LED_COUNT  (13)  /* inner ring led are led index 32->44 */
 #endif
 
 typedef enum InnerLedState_e

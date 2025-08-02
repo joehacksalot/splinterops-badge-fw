@@ -31,9 +31,10 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
-#define PEER_RSSID_SONG_THRESHOLD_CREST             (-58)
 #define PEER_RSSID_SONG_THRESHOLD_TRON              (-50)
 #define PEER_RSSID_SONG_THRESHOLD_REACTOR           (-50)
+#define PEER_RSSID_SONG_THRESHOLD_CREST             (-58)
+#define PEER_RSSID_SONG_THRESHOLD_FMAN25            (-58)
 
 #define LED_GAME_STATUS_TOGGLE_DURATION_MSEC (5000)
 #define PEER_SONG_COOLDOWN_DURATION_MSEC     (3*60*1000) // 3 min
@@ -48,7 +49,7 @@
 
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 #define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (2000)
-#elif defined(CREST_BADGE)
+#elif defined(CREST_BADGE) || defined(FMAN25_BADGE)
 #define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (1000)
 #endif
 
@@ -134,6 +135,7 @@ esp_err_t SystemState_Init(SystemState *this)
             this->appConfig.eyeGpioLedsPresent = true;
             break;
         case BADGE_TYPE_CREST:
+        case BADGE_TYPE_FMAN25:
             this->appConfig.buzzerPresent = true;
             this->appConfig.touchActionCommandEnabled = true;
         default:
@@ -307,10 +309,10 @@ esp_err_t SystemState_Init(SystemState *this)
         ESP_LOGE(TAG, "Failed to initialize filesystem, skipping first boot byte check");
     }
 
-    if (firstBoot)
+    // if (firstBoot)
     {
         PlaySongEventNotificationData firstBootPlaySongNotificationData;
-        firstBootPlaySongNotificationData.song = SONG_ZELDA_OPENING;
+        firstBootPlaySongNotificationData.song = SONG_BONUS_BONUS;
         NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &firstBootPlaySongNotificationData, sizeof(firstBootPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
     }
 
@@ -1080,6 +1082,10 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
                     case BADGE_TYPE_CREST:
                         rssiThreshold = PEER_RSSID_SONG_THRESHOLD_CREST;
                         successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                        break;
+                    case BADGE_TYPE_FMAN25:
+                        rssiThreshold = PEER_RSSID_SONG_THRESHOLD_FMAN25;
+                        successPlaySongNotificationData.song = SONG_BONUS;  // TODO2025
                         break;
                     default:
                         successPlaySongNotificationData.song = SONG_BONUS_BONUS;

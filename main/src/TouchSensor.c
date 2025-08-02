@@ -39,6 +39,8 @@ static const char * TOUCH_TAG = "TCH";
   static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {7,6,4,3,2,5,0,9,8};
 #elif defined(CREST_BADGE)
   static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {0,2,3,4,5,6,7,8,9};
+#elif defined(FMAN25_BADGE)
+  static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {0,2,3,4,5,6,7,8,9};
 #endif
 
 esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher)
