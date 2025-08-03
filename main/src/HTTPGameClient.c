@@ -499,7 +499,7 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
                 {
                     ESP_LOGI(TAG, "Sibling %s not in map, adding", siblingValue);
                     bool *siblingSeen = calloc(sizeof(bool), 1);
-                    char *badgeIdB64 = calloc(sizeof(char), BADGE_ID_B64_SIZE);
+                    char *badgeIdB64 = calloc(BADGE_ID_B64_SIZE, sizeof(char));
                     strncpy(badgeIdB64, siblingValue, BADGE_ID_B64_SIZE - 1);
 
                     // TODO : EMP doesn't yet account for removing a sibling from the map, must power cycle to reset

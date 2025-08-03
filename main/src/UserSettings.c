@@ -123,7 +123,7 @@ esp_err_t UserSettings_SetPairId(UserSettings *this, uint8_t * pairId)
         else
         {
             ESP_LOGI(TAG, "Updating pair id");
-            esp_log_buffer_hex(TAG, pairId, sizeof(this->settings.pairId));
+            ESP_LOG_BUFFER_HEX(TAG, pairId, sizeof(this->settings.pairId));
             memcpy(this->settings.pairId, pairId, sizeof(this->settings.pairId));
         }
         this->updateNeeded = true;
