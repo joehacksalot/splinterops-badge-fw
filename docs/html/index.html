@@ -97,20 +97,22 @@ $(function(){initNavTree('index.html','',''); });
 <h1 class="doxsection"><a class="anchor" id="autotoc_md1"></a>
 Table of Contents</h1>
 <ul>
-<li>Overview</li>
-<li>Features</li>
-<li>Hardware Requirements</li>
-<li>Project Structure</li>
-<li>Getting Started</li>
-<li>Building and Flashing</li>
-<li>Configuration</li>
-<li>Architecture</li>
-<li>Development</li>
-<li>Troubleshooting</li>
+<li><a class="el" href="#overview">Overview</a></li>
+<li><a class="el" href="#features">Features</a></li>
+<li><a class="el" href="#hardware_requirements">Hardware Requirements</a></li>
+<li><a class="el" href="#project_structure">Project Structure</a></li>
+<li><a class="el" href="#getting_started">Getting Started</a></li>
+<li><a class="el" href="#building_and_flashing">Building and Flashing</a></li>
+<li><a class="el" href="#configuration">Configuration</a></li>
+<li><a class="el" href="#architecture">Architecture</a></li>
+<li><a class="el" href="#development">Development</a></li>
+<li><a class="el" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
+<p><a class="anchor" id="overview"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md2"></a>
 Overview</h1>
 <p>This project implements a feature-rich conference badge application built on the ESP-IDF framework. The badge supports interactive games, peer-to-peer communication via BLE, customizable LED patterns, touch-based controls, and audio synthesis with support for various musical compositions.</p>
+<p><a class="anchor" id="features"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md3"></a>
 Features</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md4"></a>
@@ -133,6 +135,7 @@ Badge Variants</h2>
 <li>Crest Badge</li>
 <li>FMAN25 Badge</li>
 </ul>
+<p><a class="anchor" id="hardware_requirements"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md6"></a>
 Hardware Requirements</h1>
 <ul>
@@ -143,6 +146,7 @@ Hardware Requirements</h1>
 <li>Battery power system</li>
 <li>BLE antenna</li>
 </ul>
+<p><a class="anchor" id="project_structure"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md7"></a>
 Project Structure</h1>
 <div class="fragment"><div class="line">fman25/</div>
@@ -163,7 +167,8 @@ Project Structure</h1>
 <div class="line">├── CMakeLists.txt          # Build configuration</div>
 <div class="line">├── sdkconfig               # ESP-IDF configuration</div>
 <div class="line">└── partitions_*.csv        # Flash partition tables</div>
-</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="autotoc_md8"></a>
+</div><!-- fragment --><p><a class="anchor" id="getting_started"></a></p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md8"></a>
 Getting Started</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
 Prerequisites</h2>
@@ -183,6 +188,7 @@ Initial Setup</h2>
 <li>Set up ESP-IDF environment: <div class="fragment"><div class="line">. $IDF_PATH/export.sh</div>
 </div><!-- fragment --></li>
 </ol>
+<p><a class="anchor" id="building_and_flashing"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md11"></a>
 Building and Flashing</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
@@ -208,6 +214,7 @@ Flashing</h2>
 Monitoring</h2>
 <p>Monitor serial output for debugging: </p><div class="fragment"><div class="line">idf.py -p $(ls /dev/cu.usbserial-*) monitor</div>
 </div><!-- fragment --><p>Exit monitor with <span class="tt">Ctrl+]</span></p>
+<p><a class="anchor" id="configuration"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
 Configuration</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
@@ -227,6 +234,7 @@ Key Configuration Options</h2>
 <li><b>Audio volume and synthesis settings</b></li>
 <li><b>Power management settings</b></li>
 </ul>
+<p><a class="anchor" id="architecture"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
 Architecture</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
@@ -257,6 +265,7 @@ State Management</h2>
 <li><b>Synth Mode</b>: Musical note synthesis</li>
 <li><b>Menu Mode</b>: Configuration and settings</li>
 </ul>
+<p><a class="anchor" id="development"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
 Development</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
@@ -281,6 +290,7 @@ BLE Service Extensions</h2>
 <li>Implement handlers in the appropriate service files</li>
 <li>Update the service registration code</li>
 </ol>
+<p><a class="anchor" id="troubleshooting"></a></p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md26"></a>
 Troubleshooting</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md27"></a>

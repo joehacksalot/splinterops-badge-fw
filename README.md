@@ -4,21 +4,23 @@ An interactive ESP32-based conference badge with BLE connectivity, LED control, 
 
 ## Table of Contents
 
-- Overview
-- Features
-- Hardware Requirements
-- Project Structure
-- Getting Started
-- Building and Flashing
-- Configuration
-- Architecture
-- Development
-- Troubleshooting
+- [Overview](@ref overview)
+- [Features](@ref features)
+- [Hardware Requirements](@ref hardware_requirements)
+- [Project Structure](@ref project_structure)
+- [Getting Started](@ref getting_started)
+- [Building and Flashing](@ref building_and_flashing)
+- [Configuration](@ref configuration)
+- [Architecture](@ref architecture)
+- [Development](@ref development)
+- [Troubleshooting](@ref troubleshooting)
 
+\anchor overview
 ## Overview
 
 This project implements a feature-rich conference badge application built on the ESP-IDF framework. The badge supports interactive games, peer-to-peer communication via BLE, customizable LED patterns, touch-based controls, and audio synthesis with support for various musical compositions.
 
+\anchor features
 ## Features
 
 ### Core Functionality
@@ -37,6 +39,7 @@ This project implements a feature-rich conference badge application built on the
 - Crest Badge
 - FMAN25 Badge
 
+\anchor hardware_requirements
 ## Hardware Requirements
 
 - ESP32 microcontroller
@@ -46,6 +49,7 @@ This project implements a feature-rich conference badge application built on the
 - Battery power system
 - BLE antenna
 
+\anchor project_structure
 ## Project Structure
 
 ```
@@ -69,6 +73,7 @@ fman25/
 └── partitions_*.csv        # Flash partition tables
 ```
 
+\anchor getting_started
 ## Getting Started
 
 ### Prerequisites
@@ -95,6 +100,7 @@ git submodule update --init --recursive
 . $IDF_PATH/export.sh
 ```
 
+\anchor building_and_flashing
 ## Building and Flashing
 
 ### Build Configuration
@@ -136,6 +142,7 @@ idf.py -p $(ls /dev/cu.usbserial-*) monitor
 
 Exit monitor with `Ctrl+]`
 
+\anchor configuration
 ## Configuration
 
 ### Badge Type Selection
@@ -152,6 +159,7 @@ The badge type is configured at compile time using preprocessor definitions:
 - **Audio volume and synthesis settings**
 - **Power management settings**
 
+\anchor architecture
 ## Architecture
 
 ### System Components
@@ -179,6 +187,7 @@ The badge operates in multiple modes:
 - **Synth Mode**: Musical note synthesis
 - **Menu Mode**: Configuration and settings
 
+\anchor development
 ## Development
 
 ### Adding New Songs
@@ -197,6 +206,7 @@ The badge operates in multiple modes:
 2. Implement handlers in the appropriate service files
 3. Update the service registration code
 
+\anchor troubleshooting
 ## Troubleshooting
 
 ### Common Issues
