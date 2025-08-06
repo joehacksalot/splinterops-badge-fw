@@ -12,7 +12,7 @@
 static const char BLE_DEVICE_NAME_TRON[]    = "IWCv1";
 static const char BLE_DEVICE_NAME_REACTOR[] = "IWCv2";
 static const char BLE_DEVICE_NAME_CREST[]   = "IWCv3";
-static const char BLE_DEVICE_NAME_FMAN25[]  = "FMan25";
+static const char BLE_DEVICE_NAME_FMAN25[]  = "IWCv4";
 
 uint32_t GetRandomNumber(uint32_t min, uint32_t max)
 {
