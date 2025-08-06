@@ -125,7 +125,8 @@ esp_err_t SystemState_Init(SystemState *this)
     // esp_log_level_set("MOD", ESP_LOG_INFO);
     // esp_log_level_set("SYS", ESP_LOG_INFO);
 
-    switch (GetBadgeType())
+    BadgeType badgeType = GetBadgeType();
+    switch (badgeType)
     {
         case BADGE_TYPE_TRON:
             break;
@@ -312,7 +313,7 @@ esp_err_t SystemState_Init(SystemState *this)
     if (firstBoot)
     {
         PlaySongEventNotificationData firstBootPlaySongNotificationData;
-        switch (GetBadgeType())
+        switch (badgeType)
         {
             case BADGE_TYPE_REACTOR:
                 firstBootPlaySongNotificationData.song = SONG_BONUS;
@@ -328,6 +329,19 @@ esp_err_t SystemState_Init(SystemState *this)
                 firstBootPlaySongNotificationData.song = SONG_BONUS_BONUS;
         }
         NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &firstBootPlaySongNotificationData, sizeof(firstBootPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+    }
+    else
+    {
+        if (badgeType == BADGE_TYPE_FMAN25)
+        {
+            uint32_t rnd = esp_random();
+            if ((rnd % 5) == 0)
+            {
+                PlaySongEventNotificationData randomBootPlaySongNotificationData;
+                randomBootPlaySongNotificationData.song = SONG_BONUS_BONUS;
+                NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &randomBootPlaySongNotificationData, sizeof(randomBootPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+            }
+        }
     }
 
     return ret;
