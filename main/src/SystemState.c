@@ -309,10 +309,24 @@ esp_err_t SystemState_Init(SystemState *this)
         ESP_LOGE(TAG, "Failed to initialize filesystem, skipping first boot byte check");
     }
 
-    // if (firstBoot)
+    if (firstBoot)
     {
         PlaySongEventNotificationData firstBootPlaySongNotificationData;
-        firstBootPlaySongNotificationData.song = SONG_BONUS_BONUS;
+        switch (GetBadgeType())
+        {
+            case BADGE_TYPE_REACTOR:
+                firstBootPlaySongNotificationData.song = SONG_BONUS;
+                break;
+            case BADGE_TYPE_CREST:
+                firstBootPlaySongNotificationData.song = SONG_ZELDA_OPENING;
+                break;
+            case BADGE_TYPE_FMAN25:
+                firstBootPlaySongNotificationData.song = SONG_RIGHT_ROUND;
+                break;
+            case BADGE_TYPE_TRON:
+            default:
+                firstBootPlaySongNotificationData.song = SONG_BONUS_BONUS;
+        }
         NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_PLAY_SONG, &firstBootPlaySongNotificationData, sizeof(firstBootPlaySongNotificationData), DEFAULT_NOTIFY_WAIT_DURATION);
     }
 
@@ -1081,11 +1095,11 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
                         break;
                     case BADGE_TYPE_CREST:
                         rssiThreshold = PEER_RSSID_SONG_THRESHOLD_CREST;
-                        successPlaySongNotificationData.song = SONG_ZELDA_THEME;
+                        successPlaySongNotificationData.song = SONG_ZELDA_OPENING;
                         break;
                     case BADGE_TYPE_FMAN25:
                         rssiThreshold = PEER_RSSID_SONG_THRESHOLD_FMAN25;
-                        successPlaySongNotificationData.song = SONG_BONUS;  // TODO2025
+                        successPlaySongNotificationData.song = SONG_MARGARITAVILLE;
                         break;
                     default:
                         successPlaySongNotificationData.song = SONG_BONUS_BONUS;

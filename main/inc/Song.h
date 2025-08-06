@@ -63,6 +63,8 @@ typedef enum Song_e
     SONG_BONUS,
     SONG_BONUS_BONUS,
     SONG_FANFARE,
+    SONG_RIGHT_ROUND,
+    SONG_MARGARITAVILLE,
     NUM_SONGS
 } Song;
 
