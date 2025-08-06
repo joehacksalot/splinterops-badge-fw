@@ -13,8 +13,41 @@ static esp_err_t _BleControl_ProcessTransferedFile(BleControl *this);
 static esp_err_t _BleControl_VerifyAllFramesPresent(BleControl *this);
 void _BleControl_ResetFrameContext(BleControl *this);
 
+/**
+ * @file BleControl_ServiceChar_FileTransfer.c
+ * @brief BLE File Transfer characteristic implementation.
+ *
+ * Handles reception of multi-frame files over the GATT File Transfer
+ * characteristic. Supports three payload types:
+ * - Settings JSON, applied to UserSettings and forwarded to the system.
+ * - Custom LED sequence JSON, installed into the LedSequences module.
+ * - Pairing test JSON, used to confirm and persist a new pairId.
+ *
+ * Responsibilities:
+ * - Parse and validate the configuration frame, detect pairing updates, and
+ *   initialize the transfer context.
+ * - Receive and assemble data frames into an internal buffer with bounds
+ *   checking and progress notifications.
+ * - Verify completeness and process the final file according to type.
+ * - Reset the transfer context for subsequent transfers.
+ */
 #define TAG "BLE"
 
+/**
+ * @brief Receive a chunk of file-transfer data over BLE.
+ *
+ * Accepts either a configuration frame (frame 0) or a data frame (frame >= 1).
+ * On config, initializes the transfer context and updates pairing if needed.
+ * On data, copies bytes into the receive buffer, emits progress notifications,
+ * and processes the file when all frames are present.
+ *
+ * @param this Pointer to BleControl instance.
+ * @param data Incoming ATT write payload buffer.
+ * @param size Length of the payload in bytes.
+ * @param final Indicates end-of-transfer hint from client (not strictly
+ *              required; completeness is verified via frame counts).
+ * @return ESP_OK on success; ESP_FAIL on invalid frames or bounds errors.
+ */
 esp_err_t _BleControl_BleReceiveFileDataAction(BleControl *this, uint8_t * data, int size, bool final)
 {
     esp_err_t ret = ESP_OK;
@@ -114,6 +147,12 @@ esp_err_t _BleControl_BleReceiveFileDataAction(BleControl *this, uint8_t * data,
     return ret;
 }
 
+/**
+ * @brief Verify that all expected data frames have been received.
+ *
+ * @param this Pointer to BleControl instance.
+ * @return ESP_OK if all frames are present; ESP_FAIL otherwise.
+ */
 static esp_err_t _BleControl_VerifyAllFramesPresent(BleControl *this)
 {
     esp_err_t ret = ESP_FAIL;
@@ -133,6 +172,18 @@ static esp_err_t _BleControl_VerifyAllFramesPresent(BleControl *this)
     return ret;
 }
 
+/**
+ * @brief Build a read response for the File Transfer characteristic.
+ *
+ * Populates a compact status/identity structure including badge id,
+ * select settings, badge type, song unlock bits, and current SSID.
+ *
+ * @param this Pointer to BleControl instance.
+ * @param buffer Output buffer to write response bytes into.
+ * @param size Size of the buffer in bytes.
+ * @param pLength Out: number of bytes written to buffer.
+ * @return ESP_OK on success.
+ */
 esp_err_t _BleControl_GetFileTransferReadResponse(BleControl *this, uint8_t * buffer, uint32_t size, uint16_t * pLength)
 {
     assert(this);
@@ -153,6 +204,18 @@ esp_err_t _BleControl_GetFileTransferReadResponse(BleControl *this, uint8_t * bu
     return ESP_OK;
 }
 
+/**
+ * @brief Process a fully received file according to its type.
+ *
+ * Validates JSON and performs one of:
+ * - Update custom LED sequence and notify completion.
+ * - Forward settings JSON to NotificationDispatcher for application.
+ * - Acknowledge pairing success and notify the system.
+ * Emits a NOTIFICATION_EVENTS_BLE_FILE_COMPLETE or _FAILED event at the end.
+ *
+ * @param this Pointer to BleControl instance.
+ * @return ESP_OK if processing succeeded; ESP_FAIL otherwise.
+ */
 static esp_err_t _BleControl_ProcessTransferedFile(BleControl *this)
 {
     esp_err_t ret = ESP_FAIL;
@@ -223,6 +286,13 @@ static esp_err_t _BleControl_ProcessTransferedFile(BleControl *this)
     return ret;
 }
 
+/**
+ * @brief Reset the file transfer frame context to initial state.
+ *
+ * Clears frame bookkeeping and receive buffer for the next transfer.
+ *
+ * @param this Pointer to BleControl instance.
+ */
 void _BleControl_ResetFrameContext(BleControl *this)
 {
     assert(this);
@@ -241,6 +311,13 @@ void _BleControl_ResetFrameContext(BleControl *this)
     }
 }
 
+/**
+ * @brief Initialize the File Transfer characteristic state.
+ *
+ * Currently a placeholder; retained for symmetry and future expansion.
+ *
+ * @param this Pointer to BleControl instance.
+ */
 void BleControl_ServiceChar_FileTransfer_Init(BleControl *this)
 {
 

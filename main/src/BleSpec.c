@@ -1,4 +1,20 @@
 
+/**
+ * @file BleSpec.c
+ * @brief BLE advertising block utilities (serialize/deserialize).
+ *
+ * Utilities for constructing and parsing BLE advertisement data blocks in the
+ * AD structure format: [Length][Type][Data...]. These helpers centralize
+ * buffer sizing, layout, and safety checks for use by advertisement builders
+ * and scanners.
+ *
+ * Notes
+ * - This implementation is currently disabled and kept for reference; all
+ *   functions below are commented out to avoid pulling in unused code. If
+ *   advertisement composition/parsing is needed, enable these functions and
+ *   include "BleSpec.h".
+ * - Functions ensure buffer bounds and return sizes consistent with BLE spec.
+ */
 // #include <string.h>
 // #include "BleSpec.h"
 

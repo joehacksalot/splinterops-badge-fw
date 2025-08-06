@@ -1,3 +1,24 @@
+/**
+ * @file NotificationDispatcher.h
+ * @brief Event-driven notification system for inter-component communication
+ * 
+ * This module provides the core event system that enables loose coupling between
+ * badge components. It implements a publish-subscribe pattern using ESP-IDF's
+ * event system to facilitate communication between:
+ * - Touch sensor events
+ * - BLE connection and data events
+ * - Game state changes
+ * - WiFi connectivity events
+ * - OTA update notifications
+ * - Audio/song playback events
+ * - Interactive game actions
+ * 
+ * The notification dispatcher serves as the central nervous system of the badge,
+ * allowing components to communicate without direct dependencies.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #ifndef NOTIFICATION_DISPATCHER_H_
 #define NOTIFICATION_DISPATCHER_H_
@@ -52,8 +73,47 @@ typedef struct NotificationDispatcher_t
     SemaphoreHandle_t notifyMutex;
 } NotificationDispatcher;
 
+/**
+ * @brief Initialize the notification dispatcher system
+ * 
+ * Initializes the ESP-IDF event loop system for inter-component communication.
+ * Sets up the event base, creates mutexes for thread-safe operations, and
+ * prepares the system for event registration and dispatching.
+ * 
+ * @param this Pointer to NotificationDispatcher instance to initialize
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this);
+
+/**
+ * @brief Dispatch a notification event to registered handlers
+ * 
+ * Sends an event notification to all registered handlers for the specified
+ * event type. Supports optional data payload and configurable wait timeout
+ * for event processing completion.
+ * 
+ * @param this Pointer to NotificationDispatcher instance
+ * @param notificationEvent Type of event to dispatch
+ * @param data Optional data payload to send with the event
+ * @param dataSize Size of the data payload in bytes
+ * @param waitDurationMSec Maximum time to wait for event processing (ms)
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t NotificationDispatcher_NotifyEvent(NotificationDispatcher *this, NotificationEvent notificationEvent, void *data, int dataSize, uint32_t waitDurationMSec);
+
+/**
+ * @brief Register an event handler for specific notification events
+ * 
+ * Registers a callback function to handle specific types of notification
+ * events. Multiple handlers can be registered for the same event type,
+ * and they will all be called when the event is dispatched.
+ * 
+ * @param this Pointer to NotificationDispatcher instance
+ * @param notificationEvent Type of event to handle
+ * @param eventHandler Callback function to handle the event
+ * @param eventHandlerArgs Optional arguments to pass to the handler
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t NotificationDispatcher_RegisterNotificationEventHandler(NotificationDispatcher *this, NotificationEvent notificationEvent, esp_event_handler_t eventHandler, void *eventHandlerArgs);
 
 

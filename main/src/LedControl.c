@@ -1,3 +1,24 @@
+/**
+ * @file LedControl.c
+ * @brief LED strip control and pattern management implementation
+ * 
+ * This module implements comprehensive LED control functionality including:
+ * - WS2812B LED strip control with RMT peripheral
+ * - JSON-based LED sequence parsing and execution
+ * - Dynamic pattern loading from disk storage
+ * - Multi-badge LED synchronization support
+ * - Battery-aware brightness control
+ * - Thread-safe LED operations with mutex protection
+ * - Status indicator LED patterns (BLE, error, success)
+ * - Custom LED sequence management and sharing
+ * - Real-time LED pattern updates and transitions
+ * 
+ * The LED control system manages up to 256 addressable LEDs with
+ * full RGB color control and configurable timing parameters.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <stdio.h>
 #include <string.h>

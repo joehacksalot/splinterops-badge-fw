@@ -1,3 +1,41 @@
+/**
+ * @file GpioControl.c
+ * @brief GPIO-based hardware control implementation
+ * 
+ * This module implements GPIO-based control for various badge hardware features
+ * including visual indicators, haptic feedback, and other actuator devices.
+ * Provides timed control with automatic shutoff for power management.
+ * 
+ * ## Key Features:
+ * - **LED eye control**: Independent left and right eye LED management
+ * - **Vibration motor**: Haptic feedback control with timing
+ * - **Timer-based operation**: Automatic shutoff after specified duration
+ * - **Power management**: Prevents accidental always-on states
+ * - **Thread-safe timers**: ESP-IDF timer integration for precise timing
+ * - **Extensible design**: Easy addition of new GPIO-controlled features
+ * 
+ * ## Hardware Mapping:
+ * - GPIO 22: Left eye LED indicator
+ * - GPIO 21: Right eye LED indicator  
+ * - GPIO 19: Vibration motor control
+ * - GPIO 18: Piezo buzzer (commented out/disabled)
+ * 
+ * ## Implementation Details:
+ * - Uses ESP-IDF GPIO driver for hardware control
+ * - Implements ESP timer callbacks for automatic feature shutoff
+ * - Provides duration-based control for all GPIO features
+ * - Handles timer creation, management, and cleanup automatically
+ * - Supports both immediate and timed GPIO operations
+ * 
+ * ## Usage Patterns:
+ * - Initialize once during system startup with GpioControl_Init()
+ * - Use GpioControl_Control() for timed feature activation
+ * - Features automatically turn off after specified duration
+ * - Thread-safe operation allows calls from multiple tasks
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include "driver/gpio.h"
 #include "esp_err.h"

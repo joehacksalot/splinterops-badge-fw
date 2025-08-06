@@ -1,3 +1,16 @@
+/**
+ * @file Notes.c
+ * @brief Musical note utilities: frequency lookup and note decomposition.
+ *
+ * Provides a compile-time lookup table mapping `NoteName` enumeration values to
+ * their corresponding frequencies (Hz), and helpers to retrieve a note's
+ * frequency as well as decompose a `NoteName` into base note and octave
+ * components (`NoteParts`). This module is used by the audio/synth systems.
+ *
+ * Notes
+ * - The `NoteFrequencies` array must align exactly with `NoteName` ordering.
+ * - Invalid note values return 0.0 Hz and log a message.
+ */
 
 #include "esp_log.h"
 
@@ -5,6 +18,14 @@
 
 static const char * TAG = "NOTE";
 
+/**
+ * @var NoteFrequencies
+ * @brief Lookup table mapping `NoteName` to frequency in Hz.
+ *
+ * Array index corresponds to the `NoteName` enum value. The first entry is
+ * the REST (0 Hz). All subsequent entries map enharmonic spellings (e.g.,
+ * CS vs DF) to the same frequency.
+ */
 const float NoteFrequencies[NOTE_TOTAL_NUM_NOTES] = 
 {
   FREQ_NOTE_REST,
@@ -155,6 +176,12 @@ const float NoteFrequencies[NOTE_TOTAL_NUM_NOTES] =
   FREQ_NOTE_FS8
 };
 
+/**
+ * @brief Get the frequency for a given note.
+ *
+ * @param note A value from `NoteName` enum.
+ * @return Frequency in Hz, or 0.0 if the note is invalid.
+ */
 float GetNoteFrequency(NoteName note)
 {
   if (note < NOTE_TOTAL_NUM_NOTES)
@@ -166,6 +193,15 @@ float GetNoteFrequency(NoteName note)
   return 0.0;
 }
 
+/**
+ * @brief Decompose a `NoteName` into base note and octave.
+ *
+ * Maps enharmonic spellings to the canonical base representation
+ * (e.g., DF -> CS). For REST, base and octave are set to NONE.
+ *
+ * @param note A value from `NoteName` enum.
+ * @return `NoteParts` with `.base` and `.octave` fields set.
+ */
 NoteParts GetNoteParts(NoteName note)
 {
   NoteParts parts;

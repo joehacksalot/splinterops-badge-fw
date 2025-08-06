@@ -1,3 +1,44 @@
+/**
+ * @file LedModing.c
+ * @brief LED mode coordination and state management implementation
+ * 
+ * This module implements the LED mode coordination system that manages the
+ * priority-based selection and activation of different LED display modes
+ * based on current badge state and active features.
+ * 
+ * ## Key Features:
+ * - **Priority-based mode selection**: Hierarchical LED mode prioritization
+ * - **State coordination**: Centralized LED mode state management
+ * - **Multi-mode support**: Touch, game, BLE, battery, network, and custom modes
+ * - **Dynamic switching**: Real-time mode transitions based on system events
+ * - **Status indication**: Visual feedback for system operations and states
+ * - **Interactive game integration**: LED coordination for multi-badge games
+ * - **Custom sequence support**: User-defined LED pattern integration
+ * 
+ * ## Mode Priority Hierarchy (highest to lowest):
+ * 1. BLE Reconnecting - Critical connectivity status
+ * 2. Interactive Game - Multi-badge game coordination
+ * 3. Song Mode - Audio-synchronized LED patterns
+ * 4. Sequence Preview - Custom LED sequence display
+ * 5. OTA Download - Firmware update indication
+ * 6. BLE File Transfer - Data transfer status
+ * 7. Network Test - Connectivity testing indication
+ * 8. Game Status - Game event status display
+ * 9. Touch Active - Touch interaction feedback
+ * 10. BLE Service/Connected - Bluetooth status
+ * 11. Battery Indicator - Power level indication
+ * 
+ * ## Implementation Details:
+ * - Maintains boolean flags for each possible LED mode state
+ * - Implements priority resolution algorithm for mode selection
+ * - Provides thread-safe state management for concurrent access
+ * - Integrates with LedControl module for actual LED pattern execution
+ * - Supports both temporary and persistent mode activations
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #include <string.h>
 
 #include "esp_log.h"

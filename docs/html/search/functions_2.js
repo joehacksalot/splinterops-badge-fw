@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['badgestats_5fincrementnumbatterychecks_0',['BadgeStats_IncrementNumBatteryChecks',['../_badge_stats_8c.html#a1455eaa5b454cfd9720f8d613d36c4c2',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumbledisables_1',['BadgeStats_IncrementNumBleDisables',['../_badge_stats_8c.html#ab40867057ca7412d9a8eae57490dc710',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumbleenables_2',['BadgeStats_IncrementNumBleEnables',['../_badge_stats_8c.html#a3bd5050084a2b626d14d45a845807806',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumbleseqxfers_3',['BadgeStats_IncrementNumBleSeqXfers',['../_badge_stats_8c.html#a9a3107802d1693f798059088291c7aca',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumblesetxfers_4',['BadgeStats_IncrementNumBleSetXfers',['../_badge_stats_8c.html#a4a331bc663dc033fa4a0a107382f3602',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumledcycles_5',['BadgeStats_IncrementNumLedCycles',['../_badge_stats_8c.html#a91a36cd728809ea92946e08f52401f60',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumnetworktests_6',['BadgeStats_IncrementNumNetworkTests',['../_badge_stats_8c.html#abb652bd0b0caf22df33688414eecc0f3',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumpowerons_7',['BadgeStats_IncrementNumPowerOns',['../_badge_stats_8c.html#a79282c4fc382a5fa9de2a6165b073ee9',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumtouchcmds_8',['BadgeStats_IncrementNumTouchCmds',['../_badge_stats_8c.html#a904c9481d48942a29789941c2832d0d7',1,'BadgeStats.c']]],
+  ['badgestats_5fincrementnumtouches_9',['BadgeStats_IncrementNumTouches',['../_badge_stats_8c.html#a010285ab487b0eeb011b9eacf40f0e4f',1,'BadgeStats.c']]],
+  ['badgestats_5finit_10',['BadgeStats_Init',['../_badge_stats_8c.html#a6e9a066b445b6f4f3cd87c671de36980',1,'BadgeStats.c']]],
+  ['badgestats_5fregisterbatterysensor_11',['BadgeStats_RegisterBatterySensor',['../_badge_stats_8c.html#af9303a9c0d794c830d9906de0d6f0452',1,'BadgeStats.c']]],
+  ['batterysensor_5fgetbatterypercent_12',['BatterySensor_GetBatteryPercent',['../_battery_sensor_8c.html#a75f90b3fad68fc7ac6c62695835e4fff',1,'BatterySensor.c']]],
+  ['batterysensor_5finit_13',['BatterySensor_Init',['../_battery_sensor_8c.html#a7b5d1616e0862b37a7a06d79a11836bd',1,'BatterySensor.c']]],
+  ['batterysensortask_14',['BatterySensorTask',['../_battery_sensor_8c.html#aee3a05a2a0fa2eacaa1e6bdab0a07148',1,'BatterySensor.c']]],
+  ['blecontrol_5fbleonconnectinteractivegamedataaction_15',['BleControl_BleOnConnectInteractiveGameDataAction',['../_ble_control___service_8c.html#ae37362b6f52f0b819817230400784a67',1,'BleControl_Service.c']]],
+  ['blecontrol_5fbleondisconnectinteractivegamedataaction_16',['BleControl_BleOnDisconnectInteractiveGameDataAction',['../_ble_control___service_8c.html#a0cae6d0c545eb9b63ab0079b2c8b8fd1',1,'BleControl_Service.c']]],
+  ['blecontrol_5fdisablebleservice_17',['BleControl_DisableBleService',['../_ble_control___service_8c.html#aea36c6fd6e65739fb0e1d0fff1ebf7d7',1,'BleControl_Service.c']]],
+  ['blecontrol_5fenablebleservice_18',['BleControl_EnableBleService',['../_ble_control___service_8c.html#a2b0130afd458c4adc7bbd8a7823e2ced',1,'BleControl_Service.c']]],
+  ['blecontrol_5fgetinstance_19',['BleControl_GetInstance',['../_ble_control_8c.html#a9b13b28849ba22d1d81da809c0d23a94',1,'BleControl.c']]],
+  ['blecontrol_5finit_20',['BleControl_Init',['../_ble_control_8c.html#a91b3de95254435e520479f3be042f653',1,'BleControl.c']]],
+  ['blecontrol_5fservicechar_5ffiletransfer_5finit_21',['BleControl_ServiceChar_FileTransfer_Init',['../_ble_control___service_char___file_transfer_8c.html#a4b3f078663ab38f838b14809ea060ac4',1,'BleControl_ServiceChar_FileTransfer.c']]],
+  ['blecontrol_5fsettouchsensoractive_22',['BleControl_SetTouchSensorActive',['../_ble_control___service_char___interactive_game_8c.html#acd64b08c883d948778e1b0a626431bb7',1,'BleControl_ServiceChar_InteractiveGame.c']]],
+  ['blecontrol_5fstartadvertisementscan_23',['BleControl_StartAdvertisementScan',['../_ble_control___adv_scan_8c.html#af8b942255ed1f3ca579a20012840f82c',1,'BleControl_AdvScan.c']]],
+  ['blecontrol_5fupdateeventid_24',['BleControl_UpdateEventId',['../_ble_control___service_8c.html#acf7065c8935905d069254c8370090229',1,'BleControl_Service.c']]]
+];

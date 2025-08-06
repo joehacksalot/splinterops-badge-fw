@@ -1,3 +1,35 @@
+/**
+ * @file JsonUtils.c
+ * @brief JSON parsing and validation utilities implementation
+ * 
+ * This module provides comprehensive JSON processing utilities for the badge
+ * firmware, enabling structured data parsing, validation, and extraction
+ * for configuration files, network communications, and data exchange.
+ * 
+ * ## Key Features:
+ * - **JSON validation**: Syntax checking and structure validation
+ * - **Share code extraction**: LED sequence share code parsing from JSON
+ * - **Error handling**: Robust parsing error detection and reporting
+ * - **Memory management**: Automatic JSON object cleanup and memory safety
+ * - **Type safety**: Safe string extraction with bounds checking
+ * - **Logging integration**: Detailed error reporting for debugging
+ * 
+ * ## Implementation Details:
+ * - Uses cJSON library for JSON parsing and manipulation
+ * - Provides safe string extraction with buffer size validation
+ * - Implements comprehensive error checking for all JSON operations
+ * - Handles malformed JSON gracefully with appropriate error codes
+ * - Ensures proper memory cleanup to prevent leaks
+ * 
+ * ## Usage Patterns:
+ * - Validate JSON strings before processing with JsonUtils_ValidateJson()
+ * - Extract share codes from LED sequence JSON with GetSharecodeFromJson()
+ * - Always check return codes for error handling
+ * - Functions handle null inputs safely
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <stdio.h>
 #include <string.h>

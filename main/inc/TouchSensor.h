@@ -1,3 +1,23 @@
+/**
+ * @file TouchSensor.h
+ * @brief Touch sensor input processing and event generation system
+ * 
+ * This module provides touch sensor functionality for the badge including:
+ * - Multi-touch sensor support with hardware abstraction
+ * - Touch event detection (touch, release, short press, long press)
+ * - Badge variant-specific touch sensor mapping
+ * - Touch sensor calibration and threshold management
+ * - Event-driven touch notification system
+ * - Integration with the badge's notification dispatcher
+ * 
+ * The system supports different touch sensor configurations for each badge
+ * variant (TRON, Reactor, Crest, FMAN25) with position-based naming
+ * conventions (12 o'clock, 1 o'clock, etc.) for intuitive development.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef TOUCH_SENSOR_H_
 #define TOUCH_SENSOR_H_
 
@@ -106,8 +126,43 @@ typedef struct TouchSensor_t
     bool touchEnabled;
 } TouchSensor;
 
+/**
+ * @brief Initialize the touch sensor system
+ * 
+ * Initializes the ESP32 touch sensor peripheral and configures all touch pads
+ * for the specific badge variant. Sets up touch thresholds, calibration,
+ * and integrates with the notification dispatcher for touch events.
+ * 
+ * @param this Pointer to TouchSensor instance to initialize
+ * @param pNotificationDispatcher Notification system for touch events
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher);
+
+/**
+ * @brief Get the active state of a specific touch sensor
+ * 
+ * Returns whether the specified touch sensor pad is currently being touched.
+ * This function provides real-time touch state information for interactive
+ * features and game logic.
+ * 
+ * @param this Pointer to TouchSensor instance
+ * @param pad_num Touch pad number to check (0-based index)
+ * @return 1 if touch sensor is active/touched, 0 if not touched
+ */
 int TouchSensor_GetTouchSensorActive(TouchSensor *this, int pad_num);
+
+/**
+ * @brief Enable or disable touch sensor processing
+ * 
+ * Controls whether touch sensor events are processed and dispatched.
+ * When disabled, touch sensors will not generate events or trigger
+ * interactive features.
+ * 
+ * @param this Pointer to TouchSensor instance
+ * @param enabled True to enable touch processing, false to disable
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t TouchSensor_SetTouchEnabled(TouchSensor *this, bool enabled);
 
 #endif // TOUCH_SENSOR_H_

@@ -1,3 +1,23 @@
+/**
+ * @file GameTypes.h
+ * @brief Common data types and constants for multi-badge gaming system
+ * 
+ * This module defines the core data structures and constants used throughout
+ * the interactive gaming system including:
+ * - Badge identification and authentication types
+ * - Peer communication data structures
+ * - Game event color coding and bit shifting
+ * - Network protocol constants and limits
+ * - Hash map types for peer tracking
+ * - Base64 encoding size definitions
+ * 
+ * These types enable secure multi-badge communication and game coordination
+ * across the badge network with proper identification and event tracking.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef GAME_TYPES_H_
 #define GAME_TYPES_H_
 

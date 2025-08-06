@@ -1,3 +1,37 @@
+/**
+ * @file DiskUtilities.c
+ * @brief File system and storage management implementation
+ * 
+ * This module implements comprehensive file system and storage management
+ * for the badge firmware, providing reliable persistent data storage
+ * across power cycles and system resets.
+ * 
+ * ## Key Features:
+ * - **FATFS integration**: Full FATFS file system support with wear leveling
+ * - **NVS management**: Non-Volatile Storage for configuration and settings
+ * - **Battery-aware writes**: Power level checking before disk operations
+ * - **Error handling**: Robust error recovery and validation mechanisms
+ * - **File size validation**: Ensures data integrity during read operations
+ * - **Automatic formatting**: Creates file system if mounting fails
+ * - **Wear leveling**: Extends flash memory lifespan through even usage
+ * 
+ * ## Implementation Details:
+ * - Uses ESP-IDF VFS (Virtual File System) for unified file operations
+ * - Implements wear leveling layer for SPI flash storage
+ * - Provides battery sensor integration for safe write operations
+ * - Handles NVS partition initialization and error recovery
+ * - Supports both read and write operations with comprehensive validation
+ * - Manages file system mounting and configuration automatically
+ * 
+ * ## Storage Architecture:
+ * - NVS partition: Configuration data, settings, key-value pairs
+ * - FATFS partition: Large files, user data, sequences, logs
+ * - Wear leveling: Automatic flash wear distribution
+ * - Error recovery: Automatic partition formatting on corruption
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include "esp_log.h"
 #include "esp_vfs_fat.h"

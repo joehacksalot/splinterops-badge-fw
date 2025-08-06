@@ -1,0 +1,71 @@
+# Doxygen configuration for FMAN25 Badge Firmware
+# Generated on 2025-08-06
+
+# Project
+PROJECT_NAME           = "FMAN25 Badge Firmware"
+PROJECT_BRIEF          = "ESP-IDF embedded firmware for interactive badge: BLE, LEDs, touch, audio, storage"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
+
+# Input
+INPUT                  = README.md \
+                         DOCUMENTATION.md \
+                         main/src
+FILE_PATTERNS          = *.h \
+                         *.c \
+                         *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */build/* \
+                         */.git/* \
+                         */managed_components/*
+
+# Paths and display
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = main/src
+INLINE_INHERITED_MEMB  = NO
+SHOW_INCLUDE_FILES     = YES
+
+# Source browser (off by default to keep docs small)
+SOURCE_BROWSER         = NO
+REFERENCED_BY_RELATION = NO
+REFERENCES_RELATION    = NO
+
+# Warnings
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+
+# Markdown main page
+USE_MDFILE_AS_MAINPAGE = README.md
+MARKDOWN_SUPPORT       = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SKIP_FUNCTION_MACROS   = YES
+
+# Diagrams
+HAVE_DOT               = NO
+# CLASS_DIAGRAMS removed (obsolete in recent Doxygen versions)
+
+# HTML
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+
+# LaTeX/PDF
+GENERATE_LATEX         = NO
+
+# Man pages/XML off
+GENERATE_MAN           = NO
+GENERATE_XML           = NO

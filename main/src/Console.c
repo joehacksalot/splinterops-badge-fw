@@ -1,11 +1,39 @@
-/* Console example
+/**
+ * @file Console.c
+ * @brief Interactive debugging console implementation
+ * 
+ * This module implements a comprehensive interactive debugging console system
+ * for the badge firmware, providing real-time command execution and system
+ * monitoring capabilities during development and troubleshooting.
+ * 
+ * ## Key Features:
+ * - **Interactive command line**: Full-featured console with line editing and history
+ * - **System command integration**: Access to badge system commands and diagnostics
+ * - **UART-based interface**: Serial communication for development and debugging
+ * - **Command history**: Persistent command history with linenoise integration
+ * - **Auto-completion**: Tab completion for commands and parameters
+ * - **Multi-threaded operation**: Dedicated console task for non-blocking operation
+ * - **Extensible command system**: Easy integration of new debug commands
+ * 
+ * ## Implementation Details:
+ * - Uses ESP-IDF console component for command parsing and execution
+ * - Integrates linenoise library for advanced line editing features
+ * - Implements dedicated FreeRTOS task for console operation
+ * - Supports both system-level and badge-specific debug commands
+ * - Provides UART VFS integration for standard I/O operations
+ * - Handles console initialization and configuration automatically
+ * 
+ * ## Usage Patterns:
+ * - Initialize once during system startup with Console_Init()
+ * - Console runs in background task, accessible via UART interface
+ * - Developers can connect via serial terminal for real-time debugging
+ * - Commands are processed asynchronously without blocking main system
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ * @note Based on ESP-IDF console example with badge-specific enhancements
+ */
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 
 #include <stdio.h>
 #include <stdlib.h>

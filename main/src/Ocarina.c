@@ -1,3 +1,25 @@
+/**
+ * @file Ocarina.c
+ * @brief Interactive musical instrument and song recognition implementation
+ * 
+ * This module implements the ocarina musical instrument functionality including:
+ * - Touch-based musical note input processing
+ * - Song pattern recognition for classic Zelda melodies
+ * - Real-time song matching and validation
+ * - Musical key sequence tracking and timing
+ * - Integration with audio synthesis for note playback
+ * - Song completion detection and notification
+ * - Support for 8 classic songs (Zelda's Lullaby, Epona's Song, etc.)
+ * - Touch sensor mapping to ocarina keys (X, Y, A, L, R)
+ * - Event-driven song recognition system
+ * 
+ * The ocarina system enables users to play classic melodies by touching
+ * sensor pads in the correct sequence, providing musical interaction.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #include <string.h>
 
 #include "driver/ledc.h"

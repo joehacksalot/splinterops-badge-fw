@@ -1,3 +1,23 @@
+/**
+ * @file WifiClient.h
+ * @brief WiFi connectivity and network management system
+ * 
+ * This module provides comprehensive WiFi functionality for the badge including:
+ * - WiFi station mode connection management
+ * - Network credential storage and retrieval
+ * - Connection state tracking and retry logic
+ * - Event-driven connectivity notifications
+ * - Integration with user settings for network configuration
+ * - Thread-safe network operations
+ * - Automatic reconnection handling
+ * 
+ * The WiFi client enables badge connectivity to internet services,
+ * game servers, and OTA update systems.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef WIFI_CLIENT_H
 #define WIFI_CLIENT_H
 
@@ -43,30 +63,86 @@ typedef struct WifiClient_t
     UserSettings *pUserSettings;
 } WifiClient;
 
+/**
+ * @brief Initialize the WiFi client system
+ * 
+ * Initializes the WiFi subsystem including ESP-IDF WiFi stack configuration,
+ * event handlers, connection management, and integration with user settings
+ * for network credentials and preferences.
+ * 
+ * @param this Pointer to WifiClient instance to initialize
+ * @param pNotificationDispatcher Notification system for WiFi events
+ * @param pUserSettings User settings for WiFi credentials and preferences
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings);
 
-// Immediately enable wifi
-// DOES NOT turn wifi off on its own
+/**
+ * @brief Immediately enable WiFi without client tracking
+ * 
+ * Enables WiFi immediately without reference counting. This function
+ * does NOT automatically turn WiFi off - it must be managed manually.
+ * Use WifiClient_RequestConnect() for managed WiFi connections.
+ * 
+ * @param this Pointer to WifiClient instance
+ * @return Current WiFi client state after enable attempt
+ */
 WifiClient_State WifiClient_Enable(WifiClient *this);
 
-// Request for wifi to be enabled with an amount of time you are willing to wait
-// Pass in 0 for waitTimeMS to immediately turn on wifi
-// This will increate numClients and keep wifi enabled until all clients are done
-// If wifi fails to connect, clients will be expected to try again
+/**
+ * @brief Request WiFi connection with client reference counting
+ * 
+ * Requests WiFi to be enabled with optional wait time. Uses reference
+ * counting to track multiple clients and keeps WiFi enabled until all
+ * clients disconnect. If WiFi fails to connect, clients should retry.
+ * 
+ * @param this Pointer to WifiClient instance
+ * @param waitTimeMS Maximum time to wait for connection (0 for immediate)
+ * @return Current WiFi client state after connection attempt
+ */
 WifiClient_State WifiClient_RequestConnect(WifiClient *this, uint32_t waitTimeMS);
 
-// Each client will need to call disable when they are done for wifi to disable itself
+/**
+ * @brief Disconnect WiFi client and decrement reference count
+ * 
+ * Each client must call this when done to properly manage WiFi state.
+ * WiFi will automatically disable when all clients have disconnected.
+ * 
+ * @param this Pointer to WifiClient instance
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t WifiClient_Disconnect(WifiClient *this);
 
-// Blocking call for wifi connect
-// Returns ESP_OK on success
-// Returns others on failure
+/**
+ * @brief Wait for WiFi connection to be established (blocking)
+ * 
+ * Blocks until WiFi connection is successfully established or fails.
+ * Used when synchronous WiFi connection is required.
+ * 
+ * @param this Pointer to WifiClient instance
+ * @return ESP_OK on successful connection, error code on failure
+ */
 esp_err_t WifiClient_WaitForConnected(WifiClient *this);
 
-// Non-blocking call for wifi connect status
-// Returns state of wifi client
+/**
+ * @brief Get current WiFi client state (non-blocking)
+ * 
+ * Returns the current state of the WiFi client without blocking.
+ * Used for polling WiFi connection status.
+ * 
+ * @param this Pointer to WifiClient instance
+ * @return Current WiFi client state
+ */
 WifiClient_State WifiClient_GetState(WifiClient *this);
 
+/**
+ * @brief Test WiFi connectivity
+ * 
+ * Performs a connectivity test to verify WiFi connection is working
+ * properly. Used for diagnostics and network validation.
+ * 
+ * @param this Pointer to WifiClient instance
+ */
 void WifiClient_TestConnect(WifiClient *this);
 
 #endif // WIFI_CLIENT_H

@@ -1,3 +1,23 @@
+/**
+ * @file HTTPGameClient.h
+ * @brief HTTP client for game server communication and coordination
+ * 
+ * This module provides HTTP-based communication with the game server including:
+ * - RESTful API communication for game coordination
+ * - Heartbeat system for badge status reporting
+ * - JSON request/response handling
+ * - Peer report aggregation and transmission
+ * - Thread-safe HTTP operations
+ * - Integration with WiFi client for connectivity
+ * - Game state synchronization with server backend
+ * 
+ * The HTTP game client enables centralized game coordination across
+ * multiple badges through server-mediated communication.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef HTTP_CLIENT_H
 #define HTTP_CLIENT_H
 
@@ -77,6 +97,19 @@ typedef struct HTTPGameClient_t
 } HTTPGameClient;
 
 
+/**
+ * @brief Initialize the HTTP game client system
+ * 
+ * Initializes the HTTP client for game server communication including
+ * request queue management, response handling, and integration with
+ * WiFi connectivity and battery monitoring for power-aware operations.
+ * 
+ * @param this Pointer to HTTPGameClient instance to initialize
+ * @param pWifiClient WiFi client for network connectivity
+ * @param pNotificationDispatcher Notification system for HTTP events
+ * @param pBatterySensor Battery sensor for power-aware HTTP operations
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t HTTPGameClient_Init(HTTPGameClient *this, WifiClient *pWifiClient, NotificationDispatcher *pNotificationDispatcher, BatterySensor *pBatterySensor);
 
 

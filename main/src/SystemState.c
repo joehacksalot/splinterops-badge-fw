@@ -1,4 +1,34 @@
-
+/**
+  * @file SystemState.c
+  * @brief Central system state management implementation for the Badge
+  * 
+  * This module implements the primary state machine and coordination logic for
+  * the badge firmware. It owns and initializes all major subsystems (BLE,
+  * WiFi, touch, LEDs, audio, games), manages timers and transient state, and
+  * routes events between components via the NotificationDispatcher.
+  * 
+  * Key responsibilities:
+  * - Initialize all subsystems and shared resources
+  * - Maintain global state flags and timers
+  * - Process touch commands and drive mode transitions
+  * - React to BLE, game, and network events
+  * - Coordinate LED modes and audio synthesis based on state
+  * 
+  * Implementation notes:
+  * - Runs a lightweight background task (`SystemStateTask`) used for periodic
+  *   checks and to trigger network tests on-demand
+  * - Uses FreeRTOS timers for debounce/hold behaviors and UI durations
+  * - Integrates tightly with `LedModing`, `LedSequences`, `SynthMode`,
+  *   `Ocarina`, `BleControl`, and `WifiClient`
+  * 
+  * Thread-safety:
+  * - Most functions are called from the main app task or event callbacks
+  * - Timer callbacks should do minimal work and defer heavier operations via
+  *   events when appropriate
+  * 
+  * @author Badge Development Team
+  * @date 2024
+  */
 #include <stdio.h>
 #include <string.h>
 
@@ -99,7 +129,14 @@ static const char * TAG = "SYS";
 // Internal Variables
 static SystemState *pSystemState = NULL;
 
-
+/**
+ * @brief Get the singleton `SystemState` instance.
+ * 
+ * Lazily allocates the global `SystemState` storage the first time it is
+ * requested. The structure contents are initialized by `SystemState_Init()`.
+ * 
+ * @return Pointer to the global `SystemState` object (never NULL after first allocation).
+ */
 SystemState* SystemState_GetInstance(void)
 {
     if (pSystemState == NULL)
@@ -109,6 +146,16 @@ SystemState* SystemState_GetInstance(void)
     return pSystemState;
 }
 
+/**
+ * @brief Initialize the `SystemState` and all subsystems.
+ * 
+ * Creates timers, initializes persistent storage and the virtual filesystem,
+ * sets up subsystem instances (console, notifications, sensors, LEDs, BLE,
+ * WiFi, audio, game client), and configures badge-type dependent features.
+ * 
+ * @param this Pointer to the `SystemState` to initialize. Must not be NULL.
+ * @return ESP_OK on success; suitable ESP-IDF error code on failure.
+ */
 esp_err_t SystemState_Init(SystemState *this)
 {
     esp_err_t ret= ESP_OK;
@@ -347,6 +394,15 @@ esp_err_t SystemState_Init(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief Background task for lightweight periodic processing.
+ * 
+ * Monitors the `networkTestActive` flag and triggers WiFi connectivity test
+ * requests when the value changes to true. Sleeps between checks to avoid
+ * unnecessary CPU usage.
+ * 
+ * @param pvParameters Pointer to the owning `SystemState` instance.
+ */
 static void SystemStateTask(void *pvParameters)
 {
     SystemState * this = (SystemState *)pvParameters;
@@ -364,6 +420,16 @@ static void SystemStateTask(void *pvParameters)
     }
 }
 
+/**
+ * @brief Process touch mode enable commands.
+ * 
+ * Handles the enable touch command and transitions the system into an active
+ * touch state, notifies interested subsystems, and arms the touch activity timer.
+ * 
+ * @param this Pointer to SystemState.
+ * @param touchCmd Touch command to evaluate in this mode.
+ * @return true if the command was handled; false otherwise.
+ */
 static bool SystemState_ProcessTouchModeEnabledModeCmd(SystemState *this, TouchActionsCmd touchCmd)
 {
     bool cmdProcessed = false;
@@ -385,7 +451,16 @@ static bool SystemState_ProcessTouchModeEnabledModeCmd(SystemState *this, TouchA
     return cmdProcessed;
 }
 
-
+/**
+ * @brief Process synth mode commands.
+ * 
+ * Manages enabling/disabling of touch-driven audio synthesis and Ocarina when
+ * the buzzer/audio hardware is present.
+ * 
+ * @param this Pointer to SystemState.
+ * @param touchCmd Synth-related command to process.
+ * @return true if the command was handled; false otherwise.
+ */
 static bool SystemState_ProcessSynthModeCmd(SystemState *this, TouchActionsCmd touchCmd)
 {
     bool cmdProcessed = false;
@@ -407,6 +482,17 @@ static bool SystemState_ProcessSynthModeCmd(SystemState *this, TouchActionsCmd t
     return cmdProcessed;
 }
 
+/**
+ * @brief Process menu commands.
+ * 
+ * Handles LED sequence selection, BLE pairing toggles, voltage meter, and touch
+ * enable/disable requests. Updates LED preview timers and statistics counters
+ * where appropriate.
+ * 
+ * @param this Pointer to SystemState.
+ * @param touchCmd Menu command to process.
+ * @return true if the command was handled; false otherwise.
+ */
 static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchCmd)
 {
     bool cmdProcessed = false;
@@ -524,6 +610,20 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
     return cmdProcessed;
 }
 
+/**
+ * @brief Process a high-level touch action command.
+ * 
+ * Applies guard conditions (clear-required, interactive game interlocks) and
+ * routes the command to one of three handlers based on current state:
+ * - Touch mode enable/disable
+ * - Synth mode controls
+ * - Menu navigation and actions
+ * 
+ * Increments badge statistics when a command is processed.
+ * 
+ * @param this Pointer to `SystemState`.
+ * @param touchCmd Enumerated touch action command to handle.
+ */
 static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd touchCmd)
 {
     ESP_LOGD(TAG, "Touch Action: %d", touchCmd);
@@ -569,6 +669,17 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
     }
 }
 
+/**
+ * @brief Handle low-level touch sensor state change notifications.
+ * 
+ * Updates BLE and LED subsystems with per-sensor activity, increments touch
+ * counters, and refreshes the touch activity timeout when touch remains active.
+ * 
+ * @param pObj Pointer to owning `SystemState` instance.
+ * @param eventBase Event base (unused, touch sensor domain).
+ * @param notificationEvent Specific touch sensor event ID.
+ * @param notificationData Pointer to `TouchSensorEventNotificationData` payload.
+ */
 static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Sensor Notification");
@@ -590,6 +701,17 @@ static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_bas
     }
 }
 
+/**
+ * @brief Handle high-level touch action notifications.
+ * 
+ * Extracts the `TouchActionsCmd` from the payload and forwards it to
+ * `SystemState_ProcessTouchActionCmd()`.
+ * 
+ * @param pObj Pointer to owning `SystemState`.
+ * @param eventBase Event base (unused, touch actions domain).
+ * @param notificationEvent Notification ID (unused).
+ * @param notificationData Pointer to `TouchActionsCmd` value.
+ */
 static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Touch Action Notification");
@@ -600,6 +722,18 @@ static void SystemState_TouchActionNotificationHandler(void *pObj, esp_event_bas
     SystemState_ProcessTouchActionCmd(this, touchCmd);
 }
 
+/**
+ * @brief Handle BLE-related notifications impacting system state.
+ * 
+ * Responds to BLE connection state changes, OTA events, and interactive game
+ * exchanges by updating LED modes, toggling reconnection indicators, and
+ * coordinating with other subsystems.
+ * 
+ * @param pObj Pointer to owning `SystemState`.
+ * @param eventBase BLE event base.
+ * @param notificationEvent Notification/event ID.
+ * @param notificationData Optional payload depending on event type.
+ */
 static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     SystemState *this = (SystemState *)pObj;
@@ -758,6 +892,17 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
     }
 }
 
+/**
+ * @brief Handle notifications for interactive game lifecycle events.
+ * 
+ * Responds to event start/join and end notifications by updating LED modes,
+ * scheduling heartbeats, and synchronizing the current event ID with BLE.
+ * 
+ * @param pObj Pointer to SystemState.
+ * @param eventBase Event base for game events.
+ * @param notificationEvent Specific game event type.
+ * @param notificationData Optional payload (e.g., event id string).
+ */
 static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGI(TAG, "Handling Game Event Notification");
@@ -795,6 +940,14 @@ static void SystemState_GameEventNotificationHandler(void *pObj, esp_event_base_
     };
 }
 
+/**
+ * @brief Timer expiry callback body for network test activity window.
+ * 
+ * Marks the network test as inactive and disables the corresponding LED mode.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK on success, error otherwise.
+ */
 static esp_err_t SystemState_NetworkTestInactiveTimerExpired(SystemState *this)
 {
     assert(this);
@@ -803,6 +956,14 @@ static esp_err_t SystemState_NetworkTestInactiveTimerExpired(SystemState *this)
     return LedModing_SetNetworkTestActive(&this->ledModing, false);
 }
 
+/**
+ * @brief Reset the cooldown timer that gates peer song replays.
+ * 
+ * Prevents immediate re-triggering of peer songs after one has just played.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was reset; error otherwise.
+ */
 static esp_err_t SystemState_ResetPeerSongCooldownTimer(SystemState *this)
 {
     assert(this);
@@ -815,6 +976,14 @@ static esp_err_t SystemState_ResetPeerSongCooldownTimer(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief Arm/reset the network test active timer and set active flag.
+ * 
+ * Used to bound the duration for which the network test UI remains active.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was reset; error otherwise.
+ */
 static esp_err_t SystemState_ResetNetworkTestActiveTimer(SystemState *this)
 {
     assert(this);
@@ -828,6 +997,12 @@ static esp_err_t SystemState_ResetNetworkTestActiveTimer(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief Arm/reset the success indication window after a network test.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was reset; error otherwise.
+ */
 static esp_err_t SystemState_ResetNetworkTestSuccessTimer(SystemState *this)
 {
     assert(this);
@@ -840,6 +1015,12 @@ static esp_err_t SystemState_ResetNetworkTestSuccessTimer(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief Stop the network test active timer.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was stopped; error otherwise.
+ */
 static esp_err_t SystemState_StopNetworkTestActiveTimer(SystemState *this)
 {
     assert(this);
@@ -852,6 +1033,14 @@ static esp_err_t SystemState_StopNetworkTestActiveTimer(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief FreeRTOS timer callback for network test active window expiry.
+ * 
+ * Retrieves the singleton and performs network test shutdown and touch timer
+ * stop to avoid UI overlap.
+ * 
+ * @param xTimer FreeRTOS timer handle (unused).
+ */
 static void SystemState_NetworkTestActiveTimerCallback(TimerHandle_t xTimer)
 {
     SystemState* systemState = SystemState_GetInstance();
@@ -859,6 +1048,14 @@ static void SystemState_NetworkTestActiveTimerCallback(TimerHandle_t xTimer)
     SystemState_StopTouchActiveTimer(systemState);
 }
 
+/**
+ * @brief Deactivate touch mode when the touch inactivity timer expires.
+ * 
+ * Disables touch sensors, updates LED/audible status, and notifies listeners.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if notification dispatch was successful.
+ */
 static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
 {
     assert(this);
@@ -874,6 +1071,14 @@ static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
     return NotificationDispatcher_NotifyEvent(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_DISABLED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
 }
 
+/**
+ * @brief Reset/arm the touch activity timer.
+ * 
+ * Keeps touch mode active while touch interactions continue.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was successfully reset.
+ */
 static esp_err_t SystemState_ResetTouchActiveTimer(SystemState *this)
 {
     esp_err_t ret = ESP_FAIL;
@@ -887,6 +1092,12 @@ static esp_err_t SystemState_ResetTouchActiveTimer(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief Stop the touch activity timer and transition to inactive state.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK after executing the inactive transition logic.
+ */
 static esp_err_t SystemState_StopTouchActiveTimer(SystemState *this)
 {
     // esp_err_t ret = ESP_FAIL;
@@ -900,12 +1111,23 @@ static esp_err_t SystemState_StopTouchActiveTimer(SystemState *this)
     return SystemState_TouchInactiveTimerExpired(this);
 }
 
+/**
+ * @brief FreeRTOS timer callback for touch activity timeout.
+ * 
+ * @param xTimer FreeRTOS timer handle (unused).
+ */
 static void SystemState_TouchActiveTimerCallback(TimerHandle_t xTimer)
 {
     SystemState* systemState = SystemState_GetInstance();
     SystemState_TouchInactiveTimerExpired(systemState);
 }
 
+/**
+ * @brief Turn off the battery indicator when its active window expires.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK on success.
+ */
 static esp_err_t SystemState_BatteryIndicatorInactiveTimerExpired(SystemState *this)
 {
     assert(this);
@@ -914,6 +1136,12 @@ static esp_err_t SystemState_BatteryIndicatorInactiveTimerExpired(SystemState *t
     return LedModing_SetBatteryIndicatorActive(&this->ledModing, false);
 }
 
+/**
+ * @brief Arm/reset the battery indicator active timer.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was reset; error otherwise.
+ */
 static esp_err_t SystemState_ResetBatteryIndicatorActiveTimer(SystemState *this)
 {
     assert(this);
@@ -931,6 +1159,11 @@ static esp_err_t SystemState_ResetBatteryIndicatorActiveTimer(SystemState *this)
     return ret;
 }
 
+/**
+ * @brief FreeRTOS timer callback for battery indicator active window expiry.
+ * 
+ * @param xTimer FreeRTOS timer handle (unused).
+ */
 static void SystemState_BatteryIndicatorActiveTimerCallback(TimerHandle_t xTimer)
 {
     SystemState* systemState = SystemState_GetInstance();
@@ -938,6 +1171,12 @@ static void SystemState_BatteryIndicatorActiveTimerCallback(TimerHandle_t xTimer
     SystemState_StopTouchActiveTimer(systemState);
 }
 
+/**
+ * @brief Stop the LED sequence preview when its timer expires.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK on success.
+ */
 static esp_err_t SystemState_LedSequencePreviewInactiveTimerExpired(SystemState *this)
 {
     assert(this);
@@ -945,6 +1184,12 @@ static esp_err_t SystemState_LedSequencePreviewInactiveTimerExpired(SystemState 
     return LedModing_SetLedSequencePreviewActive(&this->ledModing, false);
 }
 
+/**
+ * @brief Arm/reset the LED sequence preview timer.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK if the timer was reset; error otherwise.
+ */
 static esp_err_t SystemState_ResetLedSequencePreviewActiveTimer(SystemState *this)
 {
     assert(this);
@@ -962,12 +1207,25 @@ static esp_err_t SystemState_ResetLedSequencePreviewActiveTimer(SystemState *thi
     return ret;
 }
 
+/**
+ * @brief FreeRTOS timer callback for LED sequence preview expiry.
+ * 
+ * @param xTimer FreeRTOS timer handle (unused).
+ */
 static void SystemState_LedSequencePreviewActiveTimerCallback(TimerHandle_t xTimer)
 {
     SystemState* systemState = SystemState_GetInstance();
     SystemState_LedSequencePreviewInactiveTimerExpired(systemState);
 }
 
+/**
+ * @brief Toggle and update LED game status when its timer expires.
+ * 
+ * Flips the internal flag, re-arms the timer, and updates LED mode state.
+ * 
+ * @param this Pointer to SystemState.
+ * @return ESP_OK on success; error otherwise.
+ */
 static esp_err_t SystemState_LedGameStatusToggleTimerExpired(SystemState *this)
 {
     assert(this);
@@ -985,18 +1243,39 @@ static esp_err_t SystemState_LedGameStatusToggleTimerExpired(SystemState *this)
     return LedModing_SetGameStatusActive(&this->ledModing, this->ledGameStatusActive);
 }
 
+/**
+ * @brief FreeRTOS timer callback for LED game status toggle.
+ * 
+ * @param xTimer FreeRTOS timer handle (unused).
+ */
 static void SystemState_LedGameStatusToggleTimerCallback(TimerHandle_t xTimer)
 {
     SystemState* systemState = SystemState_GetInstance();
     SystemState_LedGameStatusToggleTimerExpired(systemState);
 }
 
+/**
+ * @brief FreeRTOS timer callback to clear the peer song cooldown flag.
+ * 
+ * @param xTimer FreeRTOS timer handle (unused).
+ */
 static void SystemState_PeerSongCooldownTimerCallback(TimerHandle_t xTimer)
 {
     SystemState* systemState = SystemState_GetInstance();
     systemState->peerSongWaitingCooldown = false;
 }
 
+/**
+ * @brief Handle notifications conveying network test results.
+ * 
+ * Caches the success flag, stops the active window, and triggers the success
+ * indication timer.
+ * 
+ * @param pObj Pointer to SystemState.
+ * @param eventBase Event base (network test domain).
+ * @param notificationEvent Event ID (unused).
+ * @param notificationData Pointer to bool success flag.
+ */
 static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGI(TAG, "Handling Network Test Notification: %d", *((bool *) notificationData));
@@ -1008,6 +1287,17 @@ static void SystemState_NetworkTestNotificationHandler(void *pObj, esp_event_bas
     SystemState_ResetNetworkTestSuccessTimer(this);
 }
 
+/**
+ * @brief Handle song playback and note change related notifications.
+ * 
+ * Updates LED status for song activity and manages first boot and peer song
+ * cooldown behaviors based on the song event details.
+ * 
+ * @param pObj Pointer to SystemState.
+ * @param eventBase Event base (song domain).
+ * @param notificationEvent Event ID.
+ * @param notificationData Pointer to SongNoteChangeEventNotificationData.
+ */
 static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     ESP_LOGD(TAG, "Handling Song Note Change Notification: %d", *((bool *) notificationData));
@@ -1049,6 +1339,17 @@ static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_
     }
 }
 
+/**
+ * @brief Handle interactive game state updates from BLE or other sources.
+ * 
+ * Enables/disables interactive game LED mode and audio feedback based on the
+ * active bit in the provided mapping payload.
+ * 
+ * @param pObj Pointer to SystemState.
+ * @param eventBase Event base (interactive game domain).
+ * @param notificationEvent Event ID.
+ * @param notificationData Pointer to InteractiveGameData payload.
+ */
 static void SystemState_InteractiveGameNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     SystemState *this = (SystemState *)pObj;
@@ -1067,6 +1368,17 @@ static void SystemState_InteractiveGameNotificationHandler(void *pObj, esp_event
     this->interactiveGameTouchSensorsToLightBits.u = touchSensorsToLightBits.u;
 }
 
+/**
+ * @brief Handle peer badge heartbeat notifications.
+ * 
+ * Plays a badge-type specific song when a nearby peer is detected above a
+ * configured RSSI threshold, with cooldown and de-duplication to avoid spam.
+ * 
+ * @param pObj Pointer to SystemState.
+ * @param eventBase Event base (BLE peer domain).
+ * @param notificationEvent Event ID.
+ * @param notificationData Pointer to PeerReport payload.
+ */
 static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_base_t eventBase, int32_t notificationEvent, void *notificationData)
 {
     SystemState *this = (SystemState *)pObj;

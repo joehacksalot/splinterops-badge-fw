@@ -1,3 +1,22 @@
+/**
+ * @file BleControl.h
+ * @brief Bluetooth Low Energy control and communication system
+ * 
+ * This module provides the core BLE functionality for the badge including:
+ * - BLE stack initialization and management
+ * - Service and characteristic definitions
+ * - Advertising and scanning capabilities
+ * - Peer discovery and connection management
+ * - File transfer over BLE
+ * - Interactive game communication
+ * - Event-based communication with other badge components
+ * 
+ * The BLE system supports multiple service profiles including file transfer
+ * and interactive gaming, with robust frame-based data transmission protocols.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #ifndef BLE_CONFIG_H_
 #define BLE_CONFIG_H_
@@ -68,8 +87,48 @@ typedef struct BleControl_t
     SemaphoreHandle_t bleMutex;
 } BleControl;
 
+/**
+ * @brief Get the singleton instance of the BLE control system
+ * 
+ * Returns the global BLE control instance for system-wide access.
+ * This follows the singleton pattern to ensure only one BLE controller
+ * exists throughout the badge system lifecycle.
+ * 
+ * @return Pointer to the BLE control singleton instance
+ */
 BleControl * BleControl_GetInstance();
+
+/**
+ * @brief Initialize the BLE control system with required dependencies
+ * 
+ * Initializes the complete BLE stack including:
+ * - BLE stack configuration and startup
+ * - Service and characteristic registration
+ * - Advertising configuration with badge identification
+ * - Connection management setup
+ * - Frame-based file transfer protocol initialization
+ * - Interactive game communication setup
+ * - Integration with notification dispatcher for events
+ * 
+ * @param this Pointer to BleControl instance to initialize
+ * @param pNotificationDispatcher Notification system for BLE events
+ * @param pUserSettings User settings for BLE configuration
+ * @param pGameSettings Game state for interactive BLE features
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings, GameState *pGameSettings);
+
+/**
+ * @brief Update the event identifier for BLE advertising
+ * 
+ * Updates the event ID used in BLE advertising payload to identify
+ * the current badge event or conference. This allows badges to
+ * discover and connect to other badges from the same event.
+ * 
+ * @param this Pointer to BleControl instance
+ * @param newEventId New event identifier string to broadcast
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t BleControl_UpdateEventId(BleControl *this, char *newEventId);
 
 #endif // BLE_CONFIG_H_

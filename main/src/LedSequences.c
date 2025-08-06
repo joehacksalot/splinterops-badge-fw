@@ -1,3 +1,46 @@
+/**
+ * @file LedSequences.c
+ * @brief LED sequence management and storage implementation
+ * 
+ * This module implements comprehensive LED sequence management for the badge
+ * firmware, providing both built-in and custom LED pattern storage, loading,
+ * and execution capabilities with persistent storage support.
+ * 
+ * ## Key Features:
+ * - **Built-in sequences**: Pre-defined LED patterns embedded in firmware
+ * - **Custom sequences**: User-defined LED patterns with persistent storage
+ * - **Share code support**: Unique identifiers for sequence sharing between badges
+ * - **Disk persistence**: Automatic saving/loading of custom sequences
+ * - **Battery-aware operations**: Power level checking before disk writes
+ * - **Memory management**: Dynamic allocation for custom sequence storage
+ * - **JSON format support**: Structured LED sequence data format
+ * - **Sequence validation**: Format checking and error handling
+ * 
+ * ## Sequence Architecture:
+ * - **Built-in sequences**: 2 default patterns stored in flash memory
+ * - **Custom sequences**: 1 user-definable pattern with disk persistence
+ * - **Share codes**: 8-byte unique identifiers for each custom sequence
+ * - **JSON format**: Structured data format for sequence definition
+ * - **Index-based access**: Sequential numbering for all sequences
+ * 
+ * ## Implementation Details:
+ * - Uses embedded JSON data for built-in sequences
+ * - Implements dynamic memory allocation for custom sequences
+ * - Provides disk I/O integration for sequence persistence
+ * - Supports battery-aware disk operations to prevent data corruption
+ * - Handles sequence loading, validation, and error recovery
+ * - Manages share code generation and storage
+ * 
+ * ## Storage Layout:
+ * - Built-in sequences: Flash memory (read-only)
+ * - Custom sequences: FATFS partition (read-write)
+ * - Share codes: RAM cache with disk backup
+ * - Sequence metadata: Index tables and size information
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>

@@ -1,3 +1,24 @@
+/**
+ * @file TouchSensor.c
+ * @brief Touch sensor input processing and event generation implementation
+ * 
+ * This module implements touch sensor functionality including:
+ * - ESP32 capacitive touch sensor initialization and configuration
+ * - Multi-touch pad monitoring with configurable thresholds
+ * - Touch event detection (press, release, short press, long press)
+ * - Touch filtering and debouncing with 50ms filter period
+ * - Event-driven touch notification system
+ * - Touch sensor calibration and threshold management
+ * - Thread-safe touch processing task
+ * - Integration with notification dispatcher for system events
+ * 
+ * The touch sensor system supports up to 10 touch pads with configurable
+ * sensitivity and provides reliable touch input for badge interaction.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // memset

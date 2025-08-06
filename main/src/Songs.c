@@ -1,3 +1,20 @@
+/**
+ * @file Songs.c
+ * @brief Song management and audio synthesis implementation
+ * 
+ * This module implements the song playback system for the badge, including:
+ * - Song library management and access
+ * - Note timing calculations based on tempo
+ * - Song filtering and selection logic
+ * - Integration with the audio synthesis system
+ * 
+ * The module maintains a comprehensive library of songs including classic
+ * Zelda themes, custom compositions, and system sounds. It provides tempo-based
+ * note duration calculations and supports various musical note types.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <stdio.h>
 #include "esp_log.h"

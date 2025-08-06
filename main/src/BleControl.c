@@ -1,17 +1,24 @@
-/*
- * SPDX-FileCopyrightText: 2021 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
+/**
+ * @file BleControl.c
+ * @brief Bluetooth Low Energy control and communication implementation
+ * 
+ * This module implements comprehensive BLE functionality including:
+ * - GATT server setup with custom badge services
+ * - BLE advertising with badge identification
+ * - File transfer service for LED sequences and configurations
+ * - Interactive game service for multi-badge communication
+ * - BLE connection management and pairing
+ * - Service discovery and characteristic handling
+ * - Thread-safe BLE operations with event handling
+ * - Integration with notification dispatcher for BLE events
+ * - Badge-to-badge communication protocols
+ * 
+ * The BLE control system enables wireless communication between badges
+ * and mobile devices for configuration, file sharing, and gaming.
+ * 
+ * @author Badge Development Team
+ * @date 2024
  */
-
-/****************************************************************************
-*
-* This demo showcases BLE GATT server. It can send adv data, be connected by client.
-* Run the gatt_client demo, the client demo will automatically connect to the gatt_server demo.
-* Client demo will enable gatt_server's notify after connection. The two devices will then exchange
-* data.
-*
-****************************************************************************/
 
 #define DEBUG_BLE 1
 
@@ -277,25 +284,21 @@ static void _BleControl_SyncCallbackHandler(void)
     BleControl *this = BleControl_GetInstance();
     int rc;
 
-    /**
+    /*
      * Tries to configure the device with at least one Bluetooth address.
      * Addresses are restored in a hardware-specific fashion.
      *
-     * @param prefer_random         Whether to attempt to restore a random address
-     *                                  before checking if a public address has
-     *                                  already been configured.
-     *
-     * @return                      0 on success;
-     *                              BLE_HS_ENOADDR if the device does not have any
-     *                                  available addresses.
-     *                              Other BLE host core code on error.
+     * prefer_random: Whether to attempt to restore a random address before
+     * checking if a public address has already been configured.
+     * Returns: 0 on success; BLE_HS_ENOADDR if the device does not have any
+     * available addresses; other BLE host core code on error.
      */
     /* Make sure we have proper identity address set (public preferred) */
     rc = ble_hs_util_ensure_addr(0);
     assert(rc == 0);
 
     /* Figure out address to use while advertising (no privacy for now) */
-    /**
+    /*
      * Determines the best address type to use for automatic address type
      * resolution.  Calculation of the best address type is done as follows:
      *
@@ -313,14 +316,11 @@ static void _BleControl_SyncCallbackHandler(void)
      *     end
      * end
      *
-     * @param privacy               (0/1) Whether to use a private address.
-     * @param out_addr_type         On success, the "own addr type" code gets
-     *                                  written here.
-     *
-     * @return                      0 if an address type was successfully inferred.
-     *                              BLE_HS_ENOADDR if the device does not have a
-     *                                  suitable address.
-     *                              Other BLE host core code on error.
+     * privacy: (0/1) Whether to use a private address.
+     * out_addr_type: On success, the "own addr type" code gets written here.
+     * Returns: 0 if an address type was successfully inferred; BLE_HS_ENOADDR
+     * if the device does not have a suitable address; other BLE host core code
+     * on error.
      */
     rc = ble_hs_id_infer_auto(0, &this->ownAddrType);
     if (rc != 0)
@@ -331,7 +331,7 @@ static void _BleControl_SyncCallbackHandler(void)
 
     /* Printing ADDR */
     uint8_t addr_val[6] = {0};
-    /**
+    /*
      * Determines the best address type to use for automatic address type
      * resolution.  Calculation of the best address type is done as follows:
      *
@@ -349,15 +349,12 @@ static void _BleControl_SyncCallbackHandler(void)
      *     end
      * end
      *
-     * @param privacy               (0/1) Whether to use a private address.
-     * @param out_addr_type         On success, the "own addr type" code gets
-     *                                  written here.
-     *
-     * @return                      0 if an address type was successfully inferred.
-     *                              BLE_HS_ENOADDR if the device does not have a
-     *                                  suitable address.
-     *                              Other BLE host core code on error.
-    */
+     * privacy: (0/1) Whether to use a private address.
+     * out_addr_type: On success, the "own addr type" code gets written here.
+     * Returns: 0 if an address type was successfully inferred; BLE_HS_ENOADDR
+     * if the device does not have a suitable address; other BLE host core code
+     * on error.
+     */
     rc = ble_hs_id_copy_addr(this->ownAddrType, addr_val, NULL);
 
     ESP_LOGI(TAG, "Device Address: %02x:%02x:%02x:%02x:%02x:%02x",

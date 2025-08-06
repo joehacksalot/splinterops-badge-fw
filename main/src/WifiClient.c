@@ -1,3 +1,26 @@
+/**
+ * @file WifiClient.c
+ * @brief Wi-Fi client service for STA mode connection management.
+ *
+ * This module manages Wi-Fi STA lifecycle: initialization, scanning,
+ * selecting an AP, connecting with retry/backoff, and clean disconnection.
+ * It provides a small API for other modules to request Wi-Fi connectivity
+ * and to wait for connection completion.
+ *
+ * Features
+ * - Event-driven state machine running in a dedicated FreeRTOS task.
+ * - Mutex-protected public API for thread safety.
+ * - Event group bits to signal CONNECTED vs DISCONNECTED results.
+ * - Configurable retry count and minimal power save mode.
+ * - Preference order: custom user-provided SSID, then DEFCON SSID.
+ *
+ * Threading model
+ * - Public API acquires `clientMutex`.
+ * - Event handler `WifiIpEventHandler` runs in ESP event loop context and also
+ *   acquires the mutex to update state.
+ * - `_WifiTask` periodically evaluates pending start requests and triggers
+ *   enable when the desired start time is reached.
+ */
 
 #include <string.h>
 
@@ -66,7 +89,18 @@ void _WifiClient_Enable(WifiClient *this);
 //     }
 // }
 
-// Should be called by app_main on boot to prevent race condition on initial initialization
+/**
+ * @brief Initialize the Wi-Fi client module and start its control task.
+ *
+ * Sets up event loop, netif, Wi-Fi driver, event handlers, station mode,
+ * default power save, and creates the internal FreeRTOS task that manages
+ * connection sequencing.
+ *
+ * @param this Pointer to WifiClient instance storage.
+ * @param pNotificationDispatcher Global notification dispatcher.
+ * @param pUserSettings User settings providing optional custom SSID/password.
+ * @return ESP_OK on success; ESP_FAIL on allocation or initialization failure.
+ */
 esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings)
 {
     esp_err_t retVal = ESP_FAIL;
@@ -130,7 +164,15 @@ esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificatio
     return retVal;
 }
 
-// Assumes the mutex is already taken
+/**
+ * @brief Enable Wi-Fi connection attempt using configured SSID preference.
+ *
+ * Assumes the caller holds `clientMutex`. Stops Wi-Fi to ensure clean state,
+ * scans for APs, prefers custom SSID from UserSettings if present, otherwise
+ * falls back to DEFCON SSID, and starts connection attempts.
+ *
+ * @param this Pointer to WifiClient instance.
+ */
 void _WifiClient_Enable(WifiClient *this)
 {
     if(this->state == WIFI_CLIENT_STATE_DISCONNECTED || 
@@ -198,6 +240,15 @@ void _WifiClient_Enable(WifiClient *this)
     }
 }
 
+/**
+ * @brief Background control loop for Wi-Fi client.
+ *
+ * Periodically checks for pending connection requests and triggers enable
+ * when the desired start time elapses. Logs mutex errors and yields briefly
+ * between iterations.
+ *
+ * @param pvParameters WifiClient* passed during task creation.
+ */
 static void _WifiTask(void *pvParameters)
 {
     WifiClient *this = (WifiClient *)pvParameters;
@@ -225,7 +276,14 @@ static void _WifiTask(void *pvParameters)
     }
 }
 
-// TODO: SH Test the immediate code with game logic later on
+/**
+ * @brief Immediately attempt to enable Wi-Fi.
+ *
+ * Thread-safe wrapper that acquires the mutex and calls internal enable.
+ *
+ * @param this Pointer to WifiClient instance.
+ * @return Current WifiClient_State after attempting enable.
+ */
 WifiClient_State WifiClient_Enable(WifiClient *this)
 {
     assert(this);
@@ -247,6 +305,17 @@ WifiClient_State WifiClient_Enable(WifiClient *this)
     return this->state;
 }
 
+/**
+ * @brief Request Wi-Fi connection, optionally delayed by waitTimeMS.
+ *
+ * If Wi-Fi is idle or failed/disconnected, schedules an immediate or delayed
+ * start. Multiple callers increment `numClients` and the connection remains
+ * active while clients are present.
+ *
+ * @param this Pointer to WifiClient instance.
+ * @param waitTimeMS Delay before attempting to start; 0 starts immediately.
+ * @return Current WifiClient_State after processing the request.
+ */
 WifiClient_State WifiClient_RequestConnect(WifiClient *this, uint32_t waitTimeMS)
 {
     assert(this);
@@ -309,6 +378,14 @@ WifiClient_State WifiClient_RequestConnect(WifiClient *this, uint32_t waitTimeMS
     return this->state;
 }
 
+/**
+ * @brief Block until connected or a disconnect occurs.
+ *
+ * Waits on event group bits set by the event handler and clears them on exit.
+ *
+ * @param this Pointer to WifiClient instance.
+ * @return ESP_OK if connected; ESP_FAIL if disconnected; logs on unknown bits.
+ */
 esp_err_t WifiClient_WaitForConnected(WifiClient *this)
 {
     esp_err_t ret = ESP_FAIL;
@@ -334,6 +411,12 @@ esp_err_t WifiClient_WaitForConnected(WifiClient *this)
     return ret;
 }
 
+/**
+ * @brief Retrieve current Wi-Fi client state in a thread-safe manner.
+ *
+ * @param this Pointer to WifiClient instance.
+ * @return Current WifiClient_State; logs error if mutex acquisition fails.
+ */
 WifiClient_State WifiClient_GetState(WifiClient *this)
 {
     WifiClient_State retVal = WIFI_CLIENT_STATE_UNKNOWN;
@@ -353,6 +436,13 @@ WifiClient_State WifiClient_GetState(WifiClient *this)
     return retVal;
 }
 
+/**
+ * @brief Convenience test: connect, wait, notify result, then disconnect.
+ *
+ * Notifies NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE with a bool success.
+ *
+ * @param this Pointer to WifiClient instance.
+ */
 void WifiClient_TestConnect(WifiClient *this)
 {
     WifiClient_RequestConnect(this, 0);
@@ -364,6 +454,14 @@ void WifiClient_TestConnect(WifiClient *this)
     WifiClient_Disconnect(this);
 }
 
+/**
+ * @brief Decrement client count and stop Wi-Fi when no clients remain.
+ *
+ * Transitions to DISCONNECTED via event handler. Thread-safe via mutex.
+ *
+ * @param this Pointer to WifiClient instance.
+ * @return ESP_OK if esp_wifi_stop succeeds; ESP_FAIL otherwise.
+ */
 esp_err_t WifiClient_Disconnect(WifiClient *this)
 {
     esp_err_t ret = ESP_FAIL;
@@ -406,6 +504,17 @@ esp_err_t WifiClient_Disconnect(WifiClient *this)
 }
 
 // Assuming this handler is being called serially
+/**
+ * @brief ESP event handler for Wi-Fi/IP events.
+ *
+ * Updates internal state machine on START, STOP, DISCONNECTED, and GOT_IP,
+ * sets event group bits, and manages retry counters.
+ *
+ * @param arg WifiClient* passed during handler registration.
+ * @param event_base WIFI_EVENT or IP_EVENT.
+ * @param event_id Specific event ID.
+ * @param event_data Pointer to event-specific data (e.g., IP info).
+ */
 static void WifiIpEventHandler(void * arg, esp_event_base_t event_base, int32_t event_id, void * event_data)
 {
     WifiClient *this = (WifiClient *)arg;

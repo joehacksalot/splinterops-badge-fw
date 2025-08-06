@@ -1,3 +1,19 @@
+/**
+  * @file CircularBuffer.c
+  * @brief Generic fixed-size circular buffer utilities for arbitrary element types.
+  *
+  * This module implements a simple circular buffer that stores a fixed capacity
+  * of elements of uniform size. Operations provided include initialization,
+  * push-back, pop-front, clear, count, and sequence matching of the last N
+  * elements. Memory for the buffer is allocated at initialization and freed
+  * during cleanup.
+  *
+  * Notes
+  * - Not thread-safe. Protect with a mutex if accessed from multiple tasks.
+  * - Buffer is considered full when count == capacity; further pushes fail.
+  * - All operations are O(1) except sequence matching which is O(N).
+  * - Logging uses ESP-IDF logging macros.
+  */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,8 +56,6 @@ esp_err_t CircularBuffer_Init(CircularBuffer *cb, size_t capacity, size_t size)
  *
  * @param cb Pointer to the circular pBuffer structure.
  *
- * @return void
- *
  * @throws None
  */
 void CircularBuffer_Free(CircularBuffer *cb)
@@ -54,8 +68,6 @@ void CircularBuffer_Free(CircularBuffer *cb)
  * Clears the circular buffer and resets size back to 0.
  *
  * @param cb Pointer to the circular buffer structure.
- *
- * @return void
  *
  * @throws None
  */

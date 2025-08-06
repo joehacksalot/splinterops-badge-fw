@@ -1,3 +1,25 @@
+/**
+ * @file LedControl.h
+ * @brief LED strip control and pattern management system
+ * 
+ * This module provides comprehensive LED control functionality for the badge including:
+ * - WS2812 LED strip hardware abstraction
+ * - Multi-badge variant support (TRON, Reactor, Crest, FMAN25)
+ * - RGB color management and manipulation
+ * - Pattern generation and animation sequences
+ * - Battery level indication via LED colors
+ * - Game state visualization
+ * - Touch feedback and status indicators
+ * - Custom LED sequence support
+ * - Brightness control and power management
+ * 
+ * The system supports different LED configurations per badge variant and provides
+ * a unified interface for all LED operations across the badge ecosystem.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef LED_TASK_H_
 #define LED_TASK_H_
 
@@ -275,15 +297,120 @@ typedef struct LedControl_t
     GameState *pGameState;
 } LedControl;
 
+/**
+ * @brief Initialize the LED control system
+ * 
+ * Initializes the LED strip hardware, configures WS2812 driver, sets up
+ * LED patterns and sequences, and integrates with system components for
+ * dynamic LED control based on badge state and user interactions.
+ * 
+ * @param this Pointer to LedControl instance to initialize
+ * @param pNotificationDispatcher Notification system for LED events
+ * @param pUserSettings User settings for LED preferences
+ * @param pBatterySensor Battery sensor for power-aware LED control
+ * @param pGameState Game state for interactive LED patterns
+ * @param batteryIndicatorHoldTime Duration to display battery indicator
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_Init(LedControl *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings, BatterySensor *pBatterySensor, GameState *pGameState, uint32_t batteryIndicatorHoldTime);
+
+/**
+ * @brief Set the inner LED ring state
+ * 
+ * Controls the state and behavior of the inner LED ring, including
+ * patterns for touch feedback, game status, battery indication,
+ * and other system states.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param state New inner LED state to activate
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_SetInnerLedState(LedControl *this, InnerLedState state);
+
+/**
+ * @brief Set the outer LED ring state
+ * 
+ * Controls the state and behavior of the outer LED ring, including
+ * sequences, touch lighting, game events, BLE status, and other
+ * visual feedback modes.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param state New outer LED state to activate
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_SetOuterLedState(LedControl *this, OuterLedState state);
+
+/**
+ * @brief Set a custom LED sequence by index
+ * 
+ * Activates a specific custom LED sequence from the available
+ * sequence library. Custom sequences can be user-defined or
+ * pre-programmed patterns.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param customIndex Index of the custom sequence to activate
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_SetLedCustomSequence(LedControl *this, int customIndex);
+
 // esp_err_t LedControl_InitiateStatusIndicatorSequence(LedControl *this, LedStatusIndicator ledIndicatorStatus, uint32_t holdTime);
+
+/**
+ * @brief Set the overall LED mode
+ * 
+ * Changes the primary LED operating mode, which determines how
+ * the LED system responds to events and displays patterns.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param mode New LED mode to activate
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode);
+
+/**
+ * @brief Set the current LED sequence index
+ * 
+ * Directly sets the active LED sequence by its index in the
+ * sequence library.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param sequenceIndex Index of the sequence to activate
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_SetCurrentLedSequenceIndex(LedControl *this, int sequenceIndex);
+
+/**
+ * @brief Cycle through available LED sequences
+ * 
+ * Moves to the next or previous LED sequence in the library,
+ * allowing users to browse through available patterns.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param direction True for next sequence, false for previous
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t LedControl_CycleSelectedLedSequence(LedControl *this, bool direction);
+
+/**
+ * @brief Get the current LED sequence index
+ * 
+ * Returns the index of the currently active LED sequence.
+ * 
+ * @param this Pointer to LedControl instance
+ * @return Current LED sequence index, or -1 on error
+ */
 int LedControl_GetCurrentLedSequenceIndex(LedControl *this);
+
+/**
+ * @brief Update LEDs based on touch sensor events
+ * 
+ * Processes touch sensor events and updates LED patterns accordingly,
+ * providing visual feedback for touch interactions.
+ * 
+ * @param this Pointer to LedControl instance
+ * @param touchSensorEvent Type of touch event that occurred
+ * @param touchSensorIdx Index of the touch sensor that triggered
+ */
 void LedControl_SetTouchSensorUpdate(LedControl *this, TouchSensorEvent touchSensorEvent, int touchSensorIdx);
 
 #endif // LED_TASK_H_

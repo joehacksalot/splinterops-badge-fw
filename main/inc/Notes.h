@@ -1,3 +1,21 @@
+/**
+ * @file Notes.h
+ * @brief Musical note definitions and frequency mapping system
+ * 
+ * This module provides comprehensive musical note support including:
+ * - Standard musical note name definitions (C, C#, D, etc.)
+ * - Octave range support (0-8) for full musical spectrum
+ * - Note frequency calculation and mapping
+ * - Integration with audio synthesis system
+ * - Support for chromatic scale and musical intervals
+ * - Frequency lookup tables for efficient audio generation
+ * 
+ * Used by the audio synthesis and ocarina systems to provide
+ * accurate musical note generation and playback.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #ifndef NOTE_FREQUENCIES_H_
 #define NOTE_FREQUENCIES_H_

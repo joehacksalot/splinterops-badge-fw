@@ -5,6 +5,25 @@
  * it under the terms of the MIT license. See LICENSE for details.
  */
 
+/**
+ * @file hashmap.c
+ * @brief Open-addressing hashmap implementation integrated from David Leeds' MIT-licensed library.
+ *
+ * Provides a generic pointer-based hashmap with linear probing, configurable
+ * hash and compare functions, optional key duplication/free hooks, iterator
+ * helpers, and load-factor-based resizing. Used within the firmware as a
+ * utility map for dynamic key/value associations.
+ *
+ * Provenance
+ * - Original author: David Leeds <davidesleeds@gmail.com> (2016–2020)
+ * - License: MIT (see license header above and project LICENSE file)
+ *
+ * Notes
+ * - Table size is always a power of two; target load factor ~0.75.
+ * - Not thread-safe; callers must synchronize access if used across tasks.
+ * - Public API and types are declared in `hashmap_base.h`.
+ */
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>

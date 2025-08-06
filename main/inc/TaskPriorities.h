@@ -1,3 +1,23 @@
+/**
+ * @file TaskPriorities.h
+ * @brief FreeRTOS task priority definitions for badge system coordination
+ * 
+ * This header defines the priority hierarchy for all FreeRTOS tasks in the badge system.
+ * Priority values increase with importance (higher numbers = higher priority) following
+ * FreeRTOS conventions. The priority assignment ensures proper system responsiveness:
+ * 
+ * - **Critical Real-time (21-15)**: BLE control, LED control, touch sensors
+ * - **System Core (14-10)**: System state, audio synthesis, network communication
+ * - **Application Logic (9-6)**: Game state, notifications, console
+ * - **Background Services (5-1)**: User settings, statistics, battery monitoring
+ * 
+ * This priority structure maintains responsive user interaction while ensuring
+ * background services operate without interfering with real-time operations.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef TASK_PRIORITIES_H_
 #define TASK_PRIORITIES_H_
 

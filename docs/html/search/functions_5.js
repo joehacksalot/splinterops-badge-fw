@@ -1,0 +1,23 @@
+var searchData=
+[
+  ['gamestate_5faddpeerreport_0',['GameState_AddPeerReport',['../_game_state_8c.html#af5b245ffd60466bdfc0c8c2f0424453b',1,'GameState.c']]],
+  ['gamestate_5finit_1',['GameState_Init',['../_game_state_8c.html#ab8015eda5cdd8da4d4348216906adad2',1,'GameState.c']]],
+  ['gamestate_5fsendheartbeat_2',['GameState_SendHeartBeat',['../_game_state_8c.html#aeb3018705c8e7e93fd1c85c601f63d96',1,'GameState.c']]],
+  ['gamestate_5fseteventid_3',['GameState_SetEventId',['../_game_state_8c.html#a5672fffdb3e24333cc02a19dda9cbee7',1,'GameState.c']]],
+  ['getbadgebledevicename_4',['GetBadgeBleDeviceName',['../_utilities_8c.html#a89715f2d2f2f4cc39a3b056845d9e5c9',1,'Utilities.c']]],
+  ['getbadgetype_5',['GetBadgeType',['../_utilities_8c.html#a957953e395d54b455b3a695a968fc7f8',1,'Utilities.c']]],
+  ['getbatteryvoltage_6',['GetBatteryVoltage',['../_battery_sensor_8c.html#a506d5954b481568722c0982eab4745da',1,'BatterySensor.c']]],
+  ['getnotefrequency_7',['GetNoteFrequency',['../_notes_8c.html#a796accda6006e8f5c92ec38721e32a38',1,'Notes.c']]],
+  ['getnoteparts_8',['GetNoteParts',['../_notes_8c.html#ad587a58e67b50cc7504a0dd64f1b0c22',1,'Notes.c']]],
+  ['getnotetypeinmilliseconds_9',['GetNoteTypeInMilliseconds',['../_songs_8c.html#acefde01179aa131386d1cbc27e41ebb9',1,'Songs.c']]],
+  ['getrandomnumber_10',['GetRandomNumber',['../_utilities_8c.html#a6b7690e643a207346c18f7fd3fc94622',1,'Utilities.c']]],
+  ['getsharecodefromjson_11',['GetSharecodeFromJson',['../_json_utils_8c.html#a5907bcaa9d33aff3132105272f06b816',1,'JsonUtils.c']]],
+  ['getsong_12',['GetSong',['../_songs_8c.html#a28608c2dcea512a303645afb20dd0309',1,'Songs.c']]],
+  ['gpiocontrol_5fcontrol_13',['GpioControl_Control',['../_gpio_control_8c.html#aba4cf4b926a65d4b1cccb1ab0257ea4c',1,'GpioControl.c']]],
+  ['gpiocontrol_5finit_14',['GpioControl_Init',['../_gpio_control_8c.html#a0dc007e6d8c1e228e8dc1e37687b2c91',1,'GpioControl.c']]],
+  ['gpiocontrol_5flefteyetimeouteventhandler_15',['GpioControl_LeftEyeTimeoutEventHandler',['../_gpio_control_8c.html#ad2f8055e8b98e29557dec73ba2ba8558',1,'GpioControl.c']]],
+  ['gpiocontrol_5fresettimer_16',['GpioControl_ResetTimer',['../_gpio_control_8c.html#ae2fe2de14fd7dca97b18448dc4f820e4',1,'GpioControl.c']]],
+  ['gpiocontrol_5frighteyetimeouteventhandler_17',['GpioControl_RightEyeTimeoutEventHandler',['../_gpio_control_8c.html#a0cb88f3278beeb10ce8709e595d1bfb9',1,'GpioControl.c']]],
+  ['gpiocontrol_5ftimeouteventhandleraction_18',['GpioControl_TimeoutEventHandlerAction',['../_gpio_control_8c.html#a9ccb6d8b737a8066be1f843bc1cccb10',1,'GpioControl.c']]],
+  ['gpiocontrol_5fvibrationtimeouteventhandler_19',['GpioControl_VibrationTimeoutEventHandler',['../_gpio_control_8c.html#a4dc951cc2856edba0870e02ebc516ca5',1,'GpioControl.c']]]
+];

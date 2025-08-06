@@ -1,4 +1,27 @@
 
+/**
+ * @file BleSpec.h
+ * @brief Bluetooth Low Energy specification definitions and data structures
+ * 
+ * This header contains BLE specification-compliant definitions including:
+ * - BLE advertising data format structures
+ * - Flag bit definitions for BLE advertising
+ * - Standard BLE data block structures
+ * - Bluetooth SIG assigned number references
+ * - BLE advertisement payload formatting
+ * - Compliance with official Bluetooth specifications
+ * 
+ * Currently contains placeholder/reference implementations for future
+ * BLE specification compliance enhancements.
+ * 
+ * References:
+ * - Bluetooth SIG Assigned Numbers specification
+ * - BLE Core Specification advertising data formats
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 // #ifndef BLE_SPEC_H
 // #define BLE_SPEC_H
 

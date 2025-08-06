@@ -1,3 +1,24 @@
+/**
+ * @file NotificationDispatcher.c
+ * @brief Event-driven notification system implementation
+ * 
+ * This module implements the central notification dispatcher including:
+ * - Event queue management with 100-message capacity
+ * - Thread-safe notification delivery system
+ * - Observer pattern implementation for loose coupling
+ * - Multi-subscriber notification broadcasting
+ * - Priority-based event processing
+ * - Event filtering and routing capabilities
+ * - Integration with FreeRTOS task system
+ * - Mutex-protected concurrent access
+ * - System-wide event coordination
+ * 
+ * The notification dispatcher enables decoupled communication between
+ * badge subsystems through a centralized event management system.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <stdint.h>
 #include <string.h>

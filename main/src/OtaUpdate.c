@@ -1,3 +1,37 @@
+/**
+ * @file OtaUpdate.c
+ * @brief Over-the-Air (OTA) firmware update management implementation
+ * 
+ * This module provides the core functionality for performing Over-the-Air (OTA)
+ * firmware updates on the badge. It handles checking for new firmware versions,
+ * downloading updates securely, and managing the update process, including
+ * rollback capabilities.
+ * 
+ * ## Key Features:
+ * - **Automatic update checks**: Periodically checks for new firmware versions
+ * - **Secure downloads**: Utilizes HTTPS and TLS for secure firmware retrieval
+ * - **Badge-specific updates**: Supports different firmware versions for various badge types
+ * - **Rollback support**: Enables reverting to a previous firmware version if an update fails
+ * - **Notification integration**: Informs the user about update status
+ * - **WiFi management**: Handles WiFi connection for update downloads
+ * - **Error handling**: Robust error detection and recovery mechanisms
+ * 
+ * ## Implementation Details:
+ * - Runs as a FreeRTOS task (`OtaUpdateTask`) for background operation
+ * - Uses `esp_http_client` and `esp_https_ota` for HTTP/HTTPS communication and OTA updates
+ * - Integrates with `esp_crt_bundle` for certificate validation
+ * - Checks application descriptions (`esp_app_desc_t`) to determine if an update is required
+ * - Defines badge-specific OTA URLs based on build configurations
+ * - Provides an HTTP event handler (`HttpEventHandler`) for managing download progress
+ * - Implements a rollback mechanism (`CancelRollback`) for failed updates
+ * 
+ * ## Configuration:
+ * - OTA update URL is configured via `CONFIG_OTA_UPDATE_URL` in `sdkconfig`.
+ * - Update check delay and WiFi wait times are configurable.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -39,6 +73,19 @@ static const char * TAG = "ota_task";
 #define OTA_CHECK_DELAY_MS      OTA_CHECK_DELAY_HOURS * HOURS_TO_MS
 #define OTA_WIFI_WAIT_TIME_MS   0 * 60 * 1000                       // Immediately turn on wifi
 
+/**
+ * @brief Initializes the OTA update module.
+ * 
+ * This function initializes the OTA update module, setting up references to
+ * the WiFi client and notification dispatcher. It also creates a FreeRTOS task
+ * (`OtaUpdateTask`) that will periodically check for and handle firmware updates.
+ * 
+ * @param this Pointer to the `OtaUpdate` instance.
+ * @param pWifiClient Pointer to the `WifiClient` instance for managing WiFi connectivity.
+ * @param pNotificationDispatcher Pointer to the `NotificationDispatcher` for sending update notifications.
+ * @return `ESP_OK` if the initialization is successful.
+ * @return `ESP_FAIL` if the FreeRTOS task creation fails.
+ */
 esp_err_t OtaUpdate_Init(OtaUpdate *this, WifiClient *pWifiClient, NotificationDispatcher * pNotificationDispatcher)
 {
     assert(this);
@@ -51,6 +98,17 @@ esp_err_t OtaUpdate_Init(OtaUpdate *this, WifiClient *pWifiClient, NotificationD
     return ESP_OK;
 }
 
+/**
+ * @brief Determines whether an OTA update should proceed based on version info.
+ *
+ * Compares the SHA256 (and version metadata if needed) of the currently running
+ * firmware with the server-provided image description. If the images differ,
+ * an OTA update is required and an event is dispatched to notify the system.
+ *
+ * @param this Pointer to the OtaUpdate instance.
+ * @param new_app_info Pointer to the new image's application descriptor obtained via OTA.
+ * @return ESP_OK if an update should proceed; ESP_FAIL if the running image matches the new image or on error.
+ */
 // Checks header information to see if updating should proceed
 static esp_err_t CheckUpdateRequired(OtaUpdate * this, esp_app_desc_t * new_app_info)
 {
@@ -87,7 +145,16 @@ static esp_err_t CheckUpdateRequired(OtaUpdate * this, esp_app_desc_t * new_app_
 }
 
 #ifdef CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
-static void CancelRollback(void)
+/**
+ * @brief Cancels a pending firmware rollback.
+ * 
+ * Confirms that the newly updated firmware is functioning correctly and cancels
+ * any pending rollback operation. This prevents the system from reverting to the
+ * previous firmware version on the next boot.
+ * 
+ * @note Available only when `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` is enabled.
+ */
+void CancelRollback(void)
 {
     const esp_partition_t *running = esp_ota_get_running_partition();
     esp_ota_img_states_t ota_state;
@@ -108,6 +175,16 @@ static void CancelRollback(void)
 }
 #endif
 
+/**
+ * @brief Background task that checks for, downloads, and applies OTA updates.
+ *
+ * Manages WiFi connectivity, performs HTTPS requests to the configured OTA URL,
+ * validates the incoming image, streams it to flash, and finalizes the update.
+ * Sends notifications for progress and completion or failure. On success, the
+ * device reboots into the new firmware.
+ *
+ * @param pvParameters OtaUpdate* passed at task creation time.
+ */
 static void OtaUpdateTask(void *pvParameters)
 {
     OtaUpdate * this = (OtaUpdate *)pvParameters;
@@ -240,6 +317,16 @@ static void OtaUpdateTask(void *pvParameters)
     vTaskDelete(NULL);
 }
 
+/**
+ * @brief HTTP client event callback used during OTA image retrieval.
+ *
+ * Handles connection, header, data, and error events. Accumulates response data
+ * into the provided user buffer for simple status queries and logs progress for
+ * large transfers. The OTA data stream itself is read via esp_https_ota APIs.
+ *
+ * @param evt Event structure provided by esp_http_client containing context and data.
+ * @return ESP_OK when the event is handled successfully; ESP_FAIL on unrecoverable error.
+ */
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)
 {
     static int output_len;

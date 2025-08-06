@@ -1,3 +1,18 @@
+/**
+ * @file Song.h
+ * @brief Musical note definitions and song structure for badge audio system
+ * 
+ * This module defines the musical note system, song data structures, and
+ * audio synthesis framework for the badge. It supports various note types,
+ * tempo control, and complex musical compositions including dotted notes,
+ * triplets, and slurs.
+ * 
+ * The system supports multiple song formats and provides a comprehensive
+ * library of musical pieces including Zelda themes and custom compositions.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #ifndef SONG_H_
 #define SONG_H_

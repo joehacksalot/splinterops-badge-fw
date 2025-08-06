@@ -1,0 +1,25 @@
+var _game_state_8c =
+[
+    [ "FIRST_HEARTBEAT_POWERON_DELAY_MS", "_game_state_8c.html#aefb76183383298c47029d426fe68fd12", null ],
+    [ "GAME_HEARTBEAT_INTERVAL_MS", "_game_state_8c.html#ad45cdec604ead2c997e3105c7fc32d11", null ],
+    [ "GAME_STATUS_FILE_NAME", "_game_state_8c.html#a760872c4c0415d088fe61ebe6cb9d612", null ],
+    [ "GAME_TASK_DELAY_MS", "_game_state_8c.html#a8ffaa520dd264ccbecd5fbca0d43637d", null ],
+    [ "MUTEX_MAX_WAIT_MS", "_game_state_8c.html#ab882dba7e87a338fd0e0c189017b0d98", null ],
+    [ "_GameState_CheckEventIdChanged", "_game_state_8c.html#a1738910e6c76ecd7cf690b6f928e761c", null ],
+    [ "_GameState_IsBlankEvent", "_game_state_8c.html#a4e501e543c4e7a5312fd42e7016d765b", null ],
+    [ "_GameState_IsCurrentEvent", "_game_state_8c.html#aaaf652936acc11d570698e88a25c01aa", null ],
+    [ "_GameState_NotificationHandler", "_game_state_8c.html#a4f8a3b5243b12163ad611498c67eb4ff", null ],
+    [ "_GameState_ProcessHeartBeatResponse", "_game_state_8c.html#a13eb004cb18a90cb32f6ca74119b62d5", null ],
+    [ "_GameState_ReadGameStatusDataFileFromDisk", "_game_state_8c.html#a93fd6972252fc1b142c58290afa559ee", null ],
+    [ "_GameState_ResetEventId", "_game_state_8c.html#a7bbeefa37b315c61047493f8736099b7", null ],
+    [ "_GameState_SendHeartbeatHandler", "_game_state_8c.html#af1a83489afe12d20e508a6d92ad9fe85", null ],
+    [ "_GameState_Task", "_game_state_8c.html#ab501b699c1dfb1de453b7360e1686475", null ],
+    [ "_GameState_TryAddSeenEventId", "_game_state_8c.html#afed43667cd52f9c5f07dfd11e15811b0", null ],
+    [ "_GameState_WriteGameStatusDataFileToDisk", "_game_state_8c.html#a8edc85f212cf1a13e6e0be42e7923cf9", null ],
+    [ "GameState_AddPeerReport", "_game_state_8c.html#af5b245ffd60466bdfc0c8c2f0424453b", null ],
+    [ "GameState_Init", "_game_state_8c.html#ab8015eda5cdd8da4d4348216906adad2", null ],
+    [ "GameState_SendHeartBeat", "_game_state_8c.html#aeb3018705c8e7e93fd1c85c601f63d96", null ],
+    [ "GameState_SetEventId", "_game_state_8c.html#a5672fffdb3e24333cc02a19dda9cbee7", null ],
+    [ "mapIndices", "_game_state_8c.html#a6355ab9ca41f7c40b61466b86bcd6640", null ],
+    [ "TAG", "_game_state_8c.html#a5a85b9c772bbeb480b209a3e6ea92b4c", null ]
+];

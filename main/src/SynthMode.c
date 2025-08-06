@@ -1,3 +1,26 @@
+/**
+ * @file SynthMode.c
+ * @brief Audio synthesis and musical playback system implementation
+ * 
+ * This module implements comprehensive audio synthesis functionality including:
+ * - PWM-based audio generation using LEDC peripheral (GPIO18)
+ * - Touch-responsive musical note synthesis
+ * - Song playback with tempo control and note scheduling
+ * - Real-time frequency generation for musical notes
+ * - Song queue management for sequential playback
+ * - Octave shifting and pitch control
+ * - Thread-safe audio operations with mutex protection
+ * - Integration with touch sensors for interactive music
+ * - User settings integration for audio preferences
+ * - Timer-based note duration and sequencing
+ * 
+ * The synth mode transforms the badge into a musical instrument using
+ * 4-bit PWM resolution at high speed mode for audio output.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #include <string.h>
 
 #include "driver/ledc.h"

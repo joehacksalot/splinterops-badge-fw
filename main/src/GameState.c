@@ -1,3 +1,24 @@
+/**
+ * @file GameState.c
+ * @brief Multi-badge game state management and peer communication implementation
+ * 
+ * This module implements the interactive game system including:
+ * - Persistent game state storage and retrieval
+ * - Peer badge discovery and mapping
+ * - Game heartbeat and synchronization system
+ * - Base64 encoding/decoding for data transmission
+ * - Thread-safe game state operations
+ * - Game session management and timeouts
+ * - Integration with BLE for peer communication
+ * - File-based game state persistence
+ * - Game event notification system
+ * 
+ * The game state system enables coordinated multi-badge gaming experiences
+ * with persistent progress tracking and peer interaction.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include "string.h"
 #include "esp_log.h"

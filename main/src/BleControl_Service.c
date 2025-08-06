@@ -21,6 +21,30 @@
 #include "BleControl_ServiceChar_FileTransfer.h"
 #include "BleControl_ServiceChar_InteractiveGame.h"
 
+/**
+ * @file BleControl_Service.c
+ * @brief BLE GATT service host for badge features (file transfer, interactive game).
+ *
+ * This module manages the NimBLE GATT server lifecycle and GAP interactions
+ * for the badge. It exposes two primary characteristics:
+ * - File Transfer: receive JSON settings and custom LED sequence files and
+ *   publish progress/status via NotificationDispatcher.
+ * - Interactive Game: bidirectional characteristic used to drive and reflect
+ *   interactive touch/LED gameplay state.
+ *
+ * Responsibilities:
+ * - Start/stop advertising with either service UUID or manufacturer data.
+ * - Dynamically register and delete the service and its characteristics.
+ * - Handle GAP events (connect, disconnect, MTU, PHY updates, etc.).
+ * - Handle GATT access events for characteristic read/write/notify.
+ * - Maintain an inactivity timer to auto-disable the service after a timeout.
+ * - Coordinate with UserSettings to manage pairing and service UUID updates.
+ *
+ * Thread-safety:
+ * - Uses an internal mutex (bleMutex) around service enable/disable logic.
+ * - GAP/GATT callbacks execute in NimBLE host context; heavy work is minimized
+ *   and notifications are forwarded to NotificationDispatcher.
+ */
 #define TAG "BLE"
 #define BLE_DISABLE_TIMER_TIMEOUT_USEC      60 * 1000 * 1000    // 1 minute of service inactivity
 #define BLE_PREFERRED_MAX_TX_TIMEOUT_USEC   1500                // 1.5ms
@@ -153,9 +177,13 @@ void _BleControl_StopAdvertisement(BleControl *this)
 }
 
 /**
- * Enables advertising with the following parameters:
- *     o General discoverable mode.
- *     o Undirected connectable mode.
+ * @brief Start BLE advertising for this device.
+ *
+ * Configures advertisement fields and parameters. When advertiseService is true,
+ * includes the service UUID and sets connectable mode; otherwise advertises game data.
+ *
+ * @param this Pointer to BleControl instance.
+ * @param advertiseService True to advertise the GATT service, false for game data.
  */
 void _BleControl_StartAdvertisement(BleControl *this, bool advertiseService)
 {
@@ -228,7 +256,7 @@ void _BleControl_StartAdvertisement(BleControl *this, bool advertiseService)
     // adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(240);
     ESP_LOGI(TAG, "Starting advertising %s", advertiseService ? "with service" : "with game data");
 
-    /** @brief Start advertising
+    /* @brief Start advertising
      *
      * This function configures and start advertising procedure.
      *
@@ -305,7 +333,7 @@ esp_err_t BleControl_EnableBleService(BleControl *this, bool pairingMode, uint32
             _BleControl_StopAdvertisement(this);
             _BleControl_StartAdvertisement(this, true);
 
-            /**
+            /*
              * Adds a set of services for registration.  All services added
              * in this manner get registered immidietely.
              *
@@ -365,7 +393,7 @@ esp_err_t BleControl_DisableBleService(BleControl *this, bool notify)
             _BleControl_StopAdvertisement(this);
             _BleControl_StartAdvertisement(this, false);
 
-            /**
+            /*
              * Deletes a service with corresponding uuid.  All services deleted
              * in this manner will be deleted immidietely.
              *
@@ -417,17 +445,13 @@ esp_err_t BleControl_DisableBleService(BleControl *this, bool notify)
 }
 
 /**
- * The nimble host executes this callback when a GAP event occurs.  The
- * application associates a GAP event callback with each connection that forms.
+ * @brief GAP event callback invoked by NimBLE host.
  *
- * @param event                 The type of event being signalled.
- * @param ctxt                  Various information pertaining to the event.
- * @param arg                   Application-specified argument
+ * The application associates a GAP event callback with each connection that forms.
  *
- * @return                      0 if the application successfully handled the
- *                                  event; nonzero on failure.  The semantics
- *                                  of the return code is specific to the
- *                                  particular GAP event being signalled.
+ * @param event The GAP event being signalled.
+ * @param arg   Application-specified argument.
+ * @return 0 if the application successfully handled the event; nonzero on failure.
  */
 static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
 {
@@ -441,7 +465,7 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
     {
     case BLE_GAP_EVENT_CONNECT:
         /* A new connection was established or a connection attempt failed. */
-        /**
+        /*
          * The status of the connection attempt;
          *     o 0: the connection was successfully established.
          *     o BLE host error code: the connection attempt failed for
@@ -450,7 +474,7 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
         if (event->connect.status == 0)
         {
             ESP_LOGI(TAG, "Device %u Connected. status=%d ", event->connect.conn_handle, event->connect.status);
-            /**
+            /*
              * Searches for a connection with the specified handle.  If a matching
              * connection is found, the supplied connection descriptor is filled
              * correspondingly.
@@ -538,7 +562,7 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
         return 0;
 
     case BLE_GAP_EVENT_SUBSCRIBE:
-        /**
+        /*
          * Represents a state change in a peer's subscription status.  In this
          * comment, the term "update" is used to refer to either a notification
          * or an indication.  This event is triggered by any of the following
@@ -679,6 +703,19 @@ static int _BleControl_GapEventHandler(struct ble_gap_event *event, void *arg)
 //         const struct ble_gatt_dsc_def *dsc;
 //     };
 // };
+/**
+ * @brief GATT access callback for characteristics and descriptors.
+ *
+ * Invoked by NimBLE when a client reads or writes a locally registered
+ * characteristic or descriptor.
+ *
+ * @param conn_handle Connection handle, or BLE_HS_CONN_HANDLE_NONE if none.
+ * @param attr_handle Attribute value handle being accessed.
+ * @param ctxt        Access context including operation type and pointers to
+ *                    the characteristic/descriptor definition and mbuf.
+ * @param arg         Application-specified argument.
+ * @return 0 on success; nonzero error code on failure.
+ */
 static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
     const ble_uuid_t *uuid;
@@ -717,14 +754,9 @@ static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t at
             {
                 ESP_LOGE(TAG, "Failed to get file transfer app characteristic value");
             }
-            /**
-             * Append data onto a mbuf (Chained memory buffer)
-             *
-             * @param om   The mbuf to append the data onto
-             * @param data The data to append onto the mbuf
-             * @param len  The length of the data to append
-             *
-             * @return 0 on success, and an error code on failure
+            /*
+             * Append data onto an mbuf (chained memory buffer).
+             * Returns 0 on success, error code on failure.
              */
             rc = os_mbuf_append(ctxt->om,
                                 bleReadBuffer,
@@ -748,14 +780,9 @@ static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t at
             {
                 ESP_LOGE(TAG, "Failed to get interactive game app characteristic value");
             }
-            /**
-             * Append data onto a mbuf (Chained memory buffer)
-             *
-             * @param om   The mbuf to append the data onto
-             * @param data The data to append onto the mbuf
-             * @param len  The length of the data to append
-             *
-             * @return 0 on success, and an error code on failure
+            /*
+             * Append data onto an mbuf (chained memory buffer).
+             * Returns 0 on success, error code on failure.
              */
             rc = os_mbuf_append(ctxt->om,
                                 bleReadBuffer,
@@ -821,24 +848,13 @@ static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t at
             ESP_LOGI(TAG, "Descriptor read by NimBLE stack; attr_handle=%d", attr_handle);
         }
         uuid = ctxt->dsc->uuid;
-        /** @brief Compares two Bluetooth UUIDs.
-         *
-         * @param uuid1  The first UUID to compare.
-         * @param uuid2  The second UUID to compare.
-         *
-         * @return       0 if the two UUIDs are equal, nonzero if the UUIDs differ.
-         */
-        
+        // Compares two Bluetooth UUIDs so that they can be ordered and inserted into a tree.
+        // 16- and 32-bit UUIDs are sorted before 128-bit UUIDs. Within each group, the UUIDs are sorted numerically.
         if (ble_uuid_cmp(uuid, &file_transfer_app_gatt_svr_dsc_uuid.u) == 0)
         {
-            /**
-             * Append data onto a mbuf (Chained memory buffer)
-             *
-             * @param om   The mbuf to append the data onto
-             * @param data The data to append onto the mbuf
-             * @param len  The length of the data to append
-             *
-             * @return 0 on success, and an error code on failure
+            /*
+             * Append data onto an mbuf (chained memory buffer).
+             * Returns 0 on success, error code on failure.
              */
             rc = os_mbuf_append(ctxt->om,
                                 file_transfer_app_gatt_svr_dsc_val,
@@ -847,14 +863,9 @@ static int _BleControl_GattServiceEventHandler(uint16_t conn_handle, uint16_t at
         }
         else if (ble_uuid_cmp(uuid, &interactive_game_app_gatt_svr_dsc_uuid.u) == 0)
         {
-            /**
-             * Append data onto a mbuf (Chained memory buffer)
-             *
-             * @param om   The mbuf to append the data onto
-             * @param data The data to append onto the mbuf
-             * @param len  The length of the data to append
-             *
-             * @return 0 on success, and an error code on failure
+            /*
+             * Append data onto an mbuf (chained memory buffer).
+             * Returns 0 on success, error code on failure.
              */
             rc = os_mbuf_append(ctxt->om,
                                 interactive_game_app_gatt_svr_dsc_val,

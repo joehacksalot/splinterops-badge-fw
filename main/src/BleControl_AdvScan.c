@@ -16,6 +16,29 @@
 #include "BleControl.h"
 #include "BleControl_Service.h"
 
+/**
+ * @file BleControl_AdvScan.c
+ * @brief BLE advertisement scanning and parsing for peer detection and service enable triggers.
+ *
+ * This module configures and runs a passive NimBLE scan, parses incoming
+ * advertisement payloads to detect:
+ * - Peer badge heartbeats (custom manufacturer data), which are translated
+ *   into PeerReport notifications for the NotificationDispatcher.
+ * - A special 128-bit UUID pattern used to request enabling the badge's BLE
+ *   GATT service (pairing flow).
+ *
+ * Responsibilities:
+ * - Start and manage GAP discovery scanning via NimBLE.
+ * - Parse manufacturer data into IwcAdvertisingPayload and build PeerReport.
+ * - Notify interested subsystems when peers are detected or when a service
+ *   enable request is observed.
+ *
+ * Notes:
+ * - Scanning is configured as passive to minimize traffic and conserve power.
+ * - Uses MbedTLS base64 for compact ID encoding in PeerReport.
+ * - Thread-safety: invoked from NimBLE host context; interacts with
+ *   NotificationDispatcher which internally serializes notifications.
+ */
 #define TAG "BLE"
 
 static void _BleControl_ProcessAdvertisement(BleControl * this, const uint8_t *advertisementData, uint8_t advertisementDataLen, uint16_t rssi);
@@ -24,6 +47,14 @@ static bool _BleControl_ParseEnableBleServiceAdvertisingPacket(BleControl *this,
 static int _BleControl_ScanEventHandler(struct ble_gap_event *event, void *arg);
 static PeerReport _BleControl_CreatePeerReport(BleControl * this, IwcAdvertisingPayload eventAdvPacket, uint16_t rssi);
 
+/**
+ * @brief Start a passive BLE advertisement scan using NimBLE.
+ *
+ * Configures GAP discovery to run indefinitely and forwards each discovered
+ * advertisement to the internal event handler for parsing and processing.
+ *
+ * @param this Pointer to BleControl instance.
+ */
 void BleControl_StartAdvertisementScan(BleControl * this)
 {
     uint8_t own_addr_type;
@@ -93,6 +124,18 @@ static int _BleControl_ScanEventHandler(struct ble_gap_event *event, void *arg)
     }
 }
 
+/**
+ * @brief Process a single advertisement report.
+ *
+ * Parses the payload to detect either a badge heartbeat or a BLE service
+ * enable request and takes appropriate action (notify peer heartbeat,
+ * enable service, or ignore).
+ *
+ * @param this Pointer to BleControl instance.
+ * @param advertisementData Raw advertisement data buffer.
+ * @param advertisementDataLen Length of the advertisement data buffer.
+ * @param rssi RSSI associated with the advertisement.
+ */
 static void _BleControl_ProcessAdvertisement(BleControl * this, const uint8_t *advertisementData, uint8_t advertisementDataLen, uint16_t rssi)
 {
     IwcAdvertisingPayload eventAdvPacket;
@@ -125,6 +168,18 @@ static void _BleControl_ProcessAdvertisement(BleControl * this, const uint8_t *a
     }
 }
 
+/**
+ * @brief Parse manufacturer data for a valid event advertising payload.
+ *
+ * Validates the custom manufacturer data length and magic number, and if
+ * valid, copies the payload out to the provided structure.
+ *
+ * @param this Pointer to BleControl instance.
+ * @param advertisementData Raw advertisement data buffer.
+ * @param advertisementDataLen Length of the advertisement data.
+ * @param pEventAdvertisementPayload Out pointer to filled payload on success.
+ * @return true if a valid payload was found; false otherwise.
+ */
 static bool _BleControl_ParseEventAdvertisingPacket(BleControl *this, const uint8_t *advertisementData, uint8_t advertisementDataLen, IwcAdvertisingPayload *pEventAdvertisementPayload)
 {
     assert(this);
@@ -149,6 +204,12 @@ static bool _BleControl_ParseEventAdvertisingPacket(BleControl *this, const uint
     return result;
 }
 
+/**
+ * @brief Format a MAC address string from a 6-byte address.
+ *
+ * @param addr Pointer to a 6-byte address.
+ * @return Pointer to a static buffer containing the formatted string.
+ */
 char *
 addr_str(const void *addr)
 {
@@ -162,6 +223,12 @@ addr_str(const void *addr)
     return buf;
 }
 
+/**
+ * @brief Print a byte buffer as colon-separated hex values.
+ *
+ * @param bytes Buffer to print.
+ * @param len Length of the buffer.
+ */
 void print_bytes(const uint8_t *bytes, int len)
 {
     int i;
@@ -172,6 +239,11 @@ void print_bytes(const uint8_t *bytes, int len)
     }
 }
 
+/**
+ * @brief Print a BLE UUID to stdout using NimBLE formatting.
+ *
+ * @param uuid UUID to print.
+ */
 void
 print_uuid(const ble_uuid_t *uuid)
 {
@@ -180,6 +252,14 @@ print_uuid(const ble_uuid_t *uuid)
     printf("%s", ble_uuid_to_str(uuid, buf));
 }
 
+/**
+ * @brief Debug print of parsed advertisement fields.
+ *
+ * Prints common fields that may be present in a parsed advertisement for
+ * development and debugging visibility.
+ *
+ * @param fields Parsed advertisement fields from NimBLE helper.
+ */
 void
 print_adv_fields(const struct ble_hs_adv_fields *fields)
 {
@@ -288,6 +368,18 @@ print_adv_fields(const struct ble_hs_adv_fields *fields)
     }
 }
 
+/**
+ * @brief Parse advertisements for a BLE service enable request.
+ *
+ * Matches a 128-bit UUID pattern derived from the current pairId and a
+ * trailing magic number to determine if the badge should enable its GATT
+ * service.
+ *
+ * @param this Pointer to BleControl instance.
+ * @param advertisementData Raw advertisement data buffer.
+ * @param advertisementDataLen Length of the advertisement data.
+ * @return true if the enable pattern is detected; false otherwise.
+ */
 static bool _BleControl_ParseEnableBleServiceAdvertisingPacket(BleControl *this, const uint8_t *advertisementData, uint8_t advertisementDataLen)
 {
     assert(this);
@@ -323,6 +415,17 @@ static bool _BleControl_ParseEnableBleServiceAdvertisingPacket(BleControl *this,
     return ret;
 }
 
+/**
+ * @brief Build a PeerReport from a valid event advertising payload.
+ *
+ * Base64 encodes badge and event IDs for compact transport and attaches RSSI
+ * and parsed badge type.
+ *
+ * @param this Pointer to BleControl instance.
+ * @param eventAdvPacket Parsed event advertising payload.
+ * @param rssi RSSI observed for the advertisement.
+ * @return A filled PeerReport structure.
+ */
 static PeerReport _BleControl_CreatePeerReport(BleControl * this, IwcAdvertisingPayload eventAdvPacket, uint16_t rssi)
 {
     assert(this);

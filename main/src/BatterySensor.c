@@ -1,3 +1,21 @@
+/**
+ * @file BatterySensor.c
+ * @brief Battery monitoring and power management implementation
+ * 
+ * This module implements battery monitoring functionality including:
+ * - ADC-based battery voltage measurement with multisampling
+ * - Battery percentage calculation with calibrated voltage ranges
+ * - Continuous battery monitoring task with configurable intervals
+ * - Low battery detection and notification system
+ * - Power management integration for battery-aware operations
+ * - Thread-safe battery status reporting
+ * 
+ * The battery sensor uses ADC Channel 7 (GPIO35) with 12dB attenuation
+ * for accurate voltage measurement across the 3.0V-4.18V battery range.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +44,17 @@ static const adc_unit_t ADC_UNIT        = ADC_UNIT_1;
 
 static const char * TAG = "BAT";
 
-// Should be called from app_main to initialize hardware once
+/**
+ * @brief Initialize the battery sensor module and ADC hardware.
+ *
+ * Creates the battery percentage mutex, configures the ADC unit/channel,
+ * initializes calibration (if supported), and starts the battery monitoring
+ * FreeRTOS task pinned to APP_CPU_NUM. Should be called once from app_main.
+ *
+ * @param this Pointer to the BatterySensor instance (must be non-NULL).
+ * @param pNotificationDispatcher Optional dispatcher for posting notifications.
+ * @return ESP_OK on success, ESP_FAIL otherwise.
+ */
 esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotificationDispatcher)
 {
     esp_err_t retVal = ESP_FAIL;
@@ -125,15 +153,16 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
 //         if (xSemaphoreGive(this->batteryPercentMutex) != pdTRUE)
 //         {
 //             ESP_LOGE(TAG, "Failed to give bat mutex at GetBatteryPercent");
-//         }
-//     }
-//     else
-//     {
-//         ESP_LOGE(TAG, "Failed to take mutex");
-//     }
-//     return ret;
-// }
-
+/**
+ * @brief Get the most recent battery percentage as an integer.
+ *
+ * Thread-safe accessor that locks the internal mutex and returns the last
+ * computed battery percentage rounded down to an integer in [0, 100].
+ * If the mutex cannot be acquired within 50 ms, returns -1 to indicate error.
+ *
+ * @param this Pointer to the BatterySensor instance (must be non-NULL).
+ * @return Battery percentage [0..100] on success, or -1 on failure.
+ */
 int BatterySensor_GetBatteryPercent(BatterySensor *this)
 {
     assert(this);

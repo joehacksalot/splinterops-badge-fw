@@ -1,3 +1,21 @@
+/**
+ * @file BleControl_Service.h
+ * @brief BLE GATT service definitions and data structures
+ * 
+ * This module defines the core BLE service functionality including:
+ * - GATT service and characteristic definitions
+ * - File type enumeration for BLE transfers (LED sequences, settings, test files)
+ * - Badge settings response data structures with packed bit fields
+ * - Service initialization and management functions
+ * - Integration with BLE control system
+ * - Data serialization for BLE communication
+ * 
+ * The service layer provides structured BLE communication protocols
+ * for badge configuration, file transfer, and status reporting.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #ifndef BLECONTROL_SERVICE_H_
 #define BLECONTROL_SERVICE_H_

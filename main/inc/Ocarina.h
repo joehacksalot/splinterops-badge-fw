@@ -1,3 +1,23 @@
+/**
+ * @file Ocarina.h
+ * @brief Interactive musical instrument and song recognition system
+ * 
+ * This module provides ocarina-style musical gameplay functionality including:
+ * - Touch-based musical note input system
+ * - Song pattern recognition and matching
+ * - Unlockable song library management
+ * - Musical key mapping to touch sensors
+ * - Circular buffer for note sequence tracking
+ * - Integration with badge audio synthesis
+ * - Achievement system for discovered songs
+ * 
+ * The ocarina system transforms the badge into an interactive musical instrument,
+ * allowing users to play melodies and unlock new songs through pattern recognition.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
+
 #ifndef OCARINA_H_
 #define OCARINA_H_
 
@@ -51,7 +71,31 @@ typedef struct Ocarina_t
 } Ocarina;
 
 
+/**
+ * @brief Initialize the ocarina musical instrument system
+ * 
+ * Initializes the interactive ocarina gameplay system including song
+ * recognition, key sequence tracking, and musical pattern matching.
+ * Sets up the circular buffer for key sequences and integrates with
+ * the notification system for song completion events.
+ * 
+ * @param this Pointer to Ocarina instance to initialize
+ * @param pNotificationDispatcher Notification system for ocarina events
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t Ocarina_Init(Ocarina* this, NotificationDispatcher* pNotificationDispatcher);
+
+/**
+ * @brief Enable or disable ocarina mode
+ * 
+ * Controls whether the ocarina system is active and processing touch
+ * inputs for musical gameplay. When disabled, touch inputs will not
+ * be interpreted as musical notes.
+ * 
+ * @param this Pointer to Ocarina instance
+ * @param enabled True to enable ocarina mode, false to disable
+ * @return ESP_OK on success, error code on failure
+ */
 esp_err_t Ocarina_SetModeEnabled(Ocarina *this, bool enabled);
 
 #endif // OCARINA_H_

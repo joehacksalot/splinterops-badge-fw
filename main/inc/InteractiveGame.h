@@ -1,3 +1,21 @@
+/**
+ * @file InteractiveGame.h
+ * @brief Interactive multi-badge game state and feather collection system
+ * 
+ * This module defines the data structures for the interactive game system including:
+ * - Feather collection tracking (9 collectible feathers)
+ * - Game state management with bit-packed data structures
+ * - Active game session tracking
+ * - Failure state handling and recovery
+ * - Memory-efficient storage using bit fields
+ * 
+ * The interactive game enables users to collect virtual "feathers" through
+ * badge interactions, creating an engaging multi-player experience across
+ * the badge network.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #ifndef INTERACTIVE_GAME_H_
 #define INTERACTIVE_GAME_H_

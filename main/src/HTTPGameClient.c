@@ -1,3 +1,46 @@
+/**
+ * @file HTTPGameClient.c
+ * @brief HTTP-based game server communication implementation
+ * 
+ * This module implements comprehensive HTTP client functionality for communicating
+ * with remote game servers, enabling multi-badge interactive gaming experiences
+ * and real-time peer discovery through cloud-based coordination.
+ * 
+ * ## Key Features:
+ * - **Cloud game coordination**: Real-time multi-badge game state synchronization
+ * - **Peer discovery**: Automatic detection of nearby badges through server heartbeats
+ * - **Request queuing**: Asynchronous HTTP request management with retry logic
+ * - **Battery-aware networking**: Power level checking before network operations
+ * - **JSON protocol**: Structured data exchange with game servers
+ * - **WiFi integration**: Seamless WiFi client coordination and management
+ * - **Event-driven architecture**: Notification-based request triggering
+ * - **Timeout handling**: Robust error recovery and request expiration
+ * 
+ * ## Implementation Details:
+ * - Uses ESP-IDF HTTP client with TLS support for secure communications
+ * - Implements dedicated FreeRTOS task for non-blocking network operations
+ * - Provides request queue with automatic expiration and cleanup
+ * - Integrates with notification system for event-driven requests
+ * - Supports JSON parsing and generation for structured data exchange
+ * - Handles WiFi connection management and timeout scenarios
+ * - Implements heartbeat protocol for peer discovery and game coordination
+ * 
+ * ## Game Protocol:
+ * - Heartbeat messages: Periodic server communication for peer discovery
+ * - Peer reports: RSSI-based proximity detection and reporting
+ * - Game state sync: Real-time multi-badge game coordination
+ * - Event enrollment: Badge registration for specific game events
+ * - Status updates: Battery level and operational status reporting
+ * 
+ * ## Network Architecture:
+ * - HTTPS endpoints: Secure cloud-based game server communication
+ * - Request/response: Asynchronous HTTP request-response pattern
+ * - JSON payloads: Structured data format for all communications
+ * - Error handling: Comprehensive timeout and retry mechanisms
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <stdio.h>
 #include <sys/time.h>

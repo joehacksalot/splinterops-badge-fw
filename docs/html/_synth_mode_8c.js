@@ -1,0 +1,25 @@
+var _synth_mode_8c =
+[
+    [ "DEFAULT_LEDC_CHANNEL", "_synth_mode_8c.html#a0de95ea91c147999a7c8ce064cf708c2", null ],
+    [ "DEFAULT_LEDC_DUTY_OFF", "_synth_mode_8c.html#a27d75ced7812ae1803f6958369c2295f", null ],
+    [ "DEFAULT_LEDC_DUTY_ON", "_synth_mode_8c.html#abf09b7f020a2eff6378ba52c509e4e17", null ],
+    [ "DEFAULT_LEDC_DUTY_RESOLUTION", "_synth_mode_8c.html#aa312403cd7280a27e63804d10e8c2878", null ],
+    [ "DEFAULT_LEDC_FREQ", "_synth_mode_8c.html#adcc0ec3c0106f666eb994541d87b9b15", null ],
+    [ "DEFAULT_LEDC_SPEED_MODE", "_synth_mode_8c.html#ac117d1da32e75e777bc7737494ff8754", null ],
+    [ "DEFAULT_LEDC_TIMER", "_synth_mode_8c.html#aba97686d2a5efd43468f1abf021b130a", null ],
+    [ "DISABLE_SOUND", "_synth_mode_8c.html#a0a5133864d22bba60562b21a79e9a20c", null ],
+    [ "MUTEX_MAX_WAIT_MS", "_synth_mode_8c.html#ab882dba7e87a338fd0e0c189017b0d98", null ],
+    [ "SPEAKER_GPIO_NUM", "_synth_mode_8c.html#a2c96bac98e6d73da3196c2c20f7e6e93", null ],
+    [ "SynthMode_ConfigurePWM", "_synth_mode_8c.html#ab031bd2c04192dd30f8b6c7ccd8a2989", null ],
+    [ "SynthMode_GetTouchSoundEnabled", "_synth_mode_8c.html#a0c6f50d769845f1c4ad61ffcaf49337b", null ],
+    [ "SynthMode_Init", "_synth_mode_8c.html#ae4a583a7503654f1c1529f5a0aa74d7a", null ],
+    [ "SynthMode_PlaySong", "_synth_mode_8c.html#af46804ee1e1becc14debf12e76ca7666", null ],
+    [ "SynthMode_PlaySongNotificationHandler", "_synth_mode_8c.html#a74c94fff64c283091b07d81263fd0097", null ],
+    [ "SynthMode_PlayTone", "_synth_mode_8c.html#aec7b250a8cc9dbd9eae146adf6d8ee93", null ],
+    [ "SynthMode_SetTouchSoundEnabled", "_synth_mode_8c.html#a47c82e3b9f5234eef2bee44f5fed9ece", null ],
+    [ "SynthMode_StopTone", "_synth_mode_8c.html#a3acd271945fbac036fe907a04cedb0b1", null ],
+    [ "SynthMode_TouchSensorNotificationHandler", "_synth_mode_8c.html#a893248bc94b8a833ab564711bfcadd0c", null ],
+    [ "SynthModeTask", "_synth_mode_8c.html#a14458210e49f52de322f7d909b089453", null ],
+    [ "TAG", "_synth_mode_8c.html#a5a85b9c772bbeb480b209a3e6ea92b4c", null ],
+    [ "touchFrequencyMapping", "_synth_mode_8c.html#a997f3bef7ee64e7d64c65a483bd83169", null ]
+];

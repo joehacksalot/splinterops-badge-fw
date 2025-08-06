@@ -1,3 +1,24 @@
+/**
+ * @file UserSettings.c
+ * @brief User preferences and configuration management implementation
+ * 
+ * This module implements comprehensive user settings functionality including:
+ * - Persistent settings storage with JSON serialization
+ * - Secure key generation using SHA-256 and MAC address
+ * - Base64 encoding/decoding for data transmission
+ * - Battery-aware settings write operations
+ * - Thread-safe settings access with mutex protection
+ * - Periodic settings persistence (60-second intervals)
+ * - User preference validation and defaults
+ * - Integration with disk utilities for file operations
+ * - Settings migration and version management
+ * 
+ * The user settings system provides reliable configuration storage
+ * with cryptographic security for sensitive badge data.
+ * 
+ * @author Badge Development Team
+ * @date 2024
+ */
 
 #include <string.h>
 #include "mbedtls/base64.h"
