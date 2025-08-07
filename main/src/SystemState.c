@@ -322,7 +322,7 @@ esp_err_t SystemState_Init(SystemState *this)
                 firstBootPlaySongNotificationData.song = SONG_ZELDA_OPENING;
                 break;
             case BADGE_TYPE_FMAN25:
-                firstBootPlaySongNotificationData.song = SONG_RIGHT_ROUND;
+                firstBootPlaySongNotificationData.song = SONG_MARGARITAVILLE;
                 break;
             case BADGE_TYPE_TRON:
             default:
@@ -1113,7 +1113,7 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
                         break;
                     case BADGE_TYPE_FMAN25:
                         rssiThreshold = PEER_RSSID_SONG_THRESHOLD_FMAN25;
-                        successPlaySongNotificationData.song = SONG_MARGARITAVILLE;
+                        successPlaySongNotificationData.song = SONG_RIGHT_ROUND;
                         break;
                     default:
                         successPlaySongNotificationData.song = SONG_BONUS_BONUS;

@@ -14,7 +14,11 @@
 #include "LedControl.h"
 #include "LedSequences.h"
 
+#ifdef FMAN25_BADGE
+#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 4
+#else
 #define LED_SEQ_NUM_BUILT_IN_SEQUENCES 2
+#endif
 #define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 #define NUM_LED_SEQUENCES (LED_SEQ_NUM_BUILT_IN_SEQUENCES + LED_SEQ_NUM_CUSTOM_SEQUENCES)
 
@@ -28,6 +32,10 @@ BatterySensor *pBatterySensor = NULL;
 static char * user_led_sequences[NUM_LED_SEQUENCES] = {
   (char * )led_seq_default1,
   (char * )led_seq_default2,
+#ifdef FMAN25_BADGE
+  (char * )led_seq_default3,
+  (char * )led_seq_default4,
+#endif
   0 // custom led seq 0
 };
 

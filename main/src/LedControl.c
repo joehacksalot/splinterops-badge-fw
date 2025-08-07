@@ -1423,7 +1423,14 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
         case LED_MODE_SONG:
             ESP_LOGD(TAG, "Setting LED mode to song mode");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_SONG_MODE);
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         case LED_MODE_TOUCH:
             ESP_LOGD(TAG, "Setting LED mode to touch");
@@ -1444,7 +1451,11 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             ESP_LOGD(TAG, "Setting LED mode to battery");
             initRet = LedControl_InitServiceDrawBatteryIndicatorSequence(this);
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BATTERY_STATUS);
-            if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
             {
                 innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_BATTERY_STATUS);
             }
@@ -1456,7 +1467,11 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
         case LED_MODE_BLE_FILE_TRANSFER_PERCENT:
             ESP_LOGD(TAG, "Setting LED mode to ble file transfer percent complete");
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_FILE_XFER_PCNT);
-            if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
             {
                 innerRet = LedControl_SetInnerLedState(this, INNER_LED_MODE_BLE_FILE_XFER_PCNT);
             }
@@ -1469,7 +1484,11 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             ESP_LOGD(TAG, "Setting LED mode to network test");
             this->networkTestRuntimeInfo.success = false;
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_NETWORK_TEST);
-            if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else if (badgeType == BADGE_TYPE_TRON || badgeType == BADGE_TYPE_REACTOR)
             {
                 innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_NETWORK_TEST);
             }
@@ -1486,20 +1505,48 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             break;
         case LED_MODE_GAME_STATUS:
             ESP_LOGD(TAG, "Setting LED mode to game status");
-            outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else 
+            {
+                outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_LED_SEQUENCE);
+            }
             innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_GAME_STATUS);
             break;
         case LED_MODE_BLE_FILE_TRANSFER_ENABLED:
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_SERVICE_ENABLE);
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         case LED_MODE_BLE_FILE_TRANSFER_CONNECTED:
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_SERVICE_CONNECTED);
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else 
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         case LED_MODE_OTA_DOWNLOAD_IP:
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_OTA_DOWNLOAD_IP);
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else 
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         case LED_MODE_INTERACTIVE_GAME:
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_GAME_INTERACTIVE);
@@ -1507,7 +1554,14 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
             break;
         case LED_MODE_BLE_RECONNECTING:
             outerRet = LedControl_SetOuterLedState(this, OUTER_LED_STATE_BLE_RECONNECTING);
-            innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            if (badgeType == BADGE_TYPE_FMAN25)
+            {
+                innerRet = LedControl_SetInnerLedState(this, OUTER_LED_STATE_OFF);
+            }
+            else 
+            {
+                innerRet = LedControl_SetInnerLedState(this, INNER_LED_STATE_LED_SEQUENCE);
+            }
             break;
         default:
             ESP_LOGE(TAG, "Invalid mode: %d", mode);
