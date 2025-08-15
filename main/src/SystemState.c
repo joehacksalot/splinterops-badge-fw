@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "esp_check.h"
+#include "esp_event.h"
 #include "esp_log.h"
 #include "esp_random.h"
 #include "esp_system.h"
@@ -224,7 +225,17 @@ esp_err_t SystemState_Init(SystemState *this)
     cJSON_InitHooks(&memoryHook);
 
     ESP_ERROR_CHECK(Console_Init());
-    ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher));
+
+    // Create the event loop
+    esp_event_loop_args_t notificationDispatcherTaskArgs =
+    {
+        .queue_size = NOTIFICATION_QUEUE_SIZE,
+        .task_name = "NotificationsEventLoop",
+        .task_priority = NOTIFICATIONS_TASK_PRIORITY,
+        .task_stack_size = configMINIMAL_STACK_SIZE * 3,
+        .task_core_id = APP_CPU_NUM
+    };
+    ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher, &notificationDispatcherTaskArgs));
     ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher));
     ESP_ERROR_CHECK(BadgeStats_Init(&this->badgeStats));
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));

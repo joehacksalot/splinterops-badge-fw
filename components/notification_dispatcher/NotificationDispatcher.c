@@ -18,7 +18,7 @@
 // Internal Constants
 static const char * TAG = "ND";
 
-esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this)
+esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this, esp_event_loop_args_t *touchTaskArgs)
 {
     static bool initialized = false;
     esp_err_t ret = false;
@@ -31,16 +31,7 @@ esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this)
         memset(this, 0, sizeof(*this));
         this->notificationEventBase = "NotificationEventBase";
 
-        // Create the event loop
-        esp_event_loop_args_t touchTaskArgs =
-        {
-            .queue_size = NOTIFICATION_QUEUE_SIZE,
-            .task_name = "NotificationsEventLoop",
-            .task_priority = NOTIFICATIONS_TASK_PRIORITY,
-            .task_stack_size = configMINIMAL_STACK_SIZE * 3,
-            .task_core_id = APP_CPU_NUM
-        };
-        ESP_ERROR_CHECK(esp_event_loop_create(&touchTaskArgs, &this->eventLoopHandle));
+        ESP_ERROR_CHECK(esp_event_loop_create(touchTaskArgs, &this->eventLoopHandle));
 
         // Create mutex for notifies
         this->notifyMutex = xSemaphoreCreateMutex();
@@ -51,7 +42,7 @@ esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this)
     return ret;
 }
 
-esp_err_t NotificationDispatcher_NotifyEvent(NotificationDispatcher *this, NotificationEvent notificationEvent, void *data, int dataSize, uint32_t waitDurationMSec)
+esp_err_t NotificationDispatcher_NotifyEvent(NotificationDispatcher *this, int notificationEvent, void *data, int dataSize, uint32_t waitDurationMSec)
 {
     assert(this);
     assert(this->eventLoopHandle);
@@ -94,7 +85,7 @@ esp_err_t NotificationDispatcher_NotifyEvent(NotificationDispatcher *this, Notif
     return ret;
 }
 
-esp_err_t NotificationDispatcher_RegisterNotificationEventHandler(NotificationDispatcher *this, NotificationEvent notificationEvent, esp_event_handler_t eventHandler, void *eventHandlerArgs)
+esp_err_t NotificationDispatcher_RegisterNotificationEventHandler(NotificationDispatcher *this, int notificationEvent, esp_event_handler_t eventHandler, void *eventHandlerArgs)
 {
     assert(this);
     return esp_event_handler_instance_register_with(this->eventLoopHandle,
