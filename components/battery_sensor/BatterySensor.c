@@ -4,7 +4,6 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 
-#include "TaskPriorities.h"
 #include "BatterySensor.h"
 #include "NotificationDispatcher.h"
 #include "Utilities.h"
@@ -20,14 +19,13 @@ static float GetBatteryVoltage(BatterySensor *this);
 static void BatterySensorTask(void *pvParameters);
 
 // Internal Constants
-static const adc_channel_t ADC_CHANNEL  = ADC_CHANNEL_7;    // GPIO35 if ADC1
 static const adc_atten_t ADC_ATTEN      = ADC_ATTEN_DB_12;
 static const adc_unit_t ADC_UNIT        = ADC_UNIT_1;
 
 static const char * TAG = "BAT";
 
 // Should be called from app_main to initialize hardware once
-esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotificationDispatcher)
+esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotificationDispatcher, int adcChannel, int priority, int cpuNumber)
 {
     esp_err_t retVal = ESP_FAIL;
     assert(this);
@@ -36,6 +34,7 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
     {
         this->initialized = true;
         this->pNotificationDispatcher = pNotificationDispatcher;
+        this->adcChannel = (adc_channel_t)adcChannel;
 
         this->batteryPercentMutex = xSemaphoreCreateMutex();
         assert(this->batteryPercentMutex);
@@ -46,7 +45,7 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
 
         this->hwData.adc_channel_config.bitwidth   = ADC_BITWIDTH_DEFAULT;
         this->hwData.adc_channel_config.atten      = ADC_ATTEN;
-        ESP_ERROR_CHECK(adc_oneshot_config_channel(this->hwData.adc_handle, ADC_CHANNEL, &this->hwData.adc_channel_config));
+        ESP_ERROR_CHECK(adc_oneshot_config_channel(this->hwData.adc_handle, this->adcChannel, &this->hwData.adc_channel_config));
 
         // ADC1 Calibration Init
         this->hwData.adc_cali_chan_handle = NULL;
@@ -58,7 +57,7 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
             adc_cali_curve_fitting_config_t cali_config = 
             {
                 .unit_id = ADC_UNIT,
-                .chan = ADC_CHANNEL,
+                .chan = this->adcChannel,
                 .atten = ADC_ATTEN,
                 .bitwidth = ADC_BITWIDTH_DEFAULT,
             };
@@ -109,7 +108,7 @@ esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotif
                 break;
         }
 
-        assert(xTaskCreatePinnedToCore(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 2, this, BATT_SENSE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+        assert(xTaskCreatePinnedToCore(BatterySensorTask, "BatterySensorTask", configMINIMAL_STACK_SIZE * 2, this, priority, NULL, cpuNumber) == pdPASS);
     }
 
     return retVal;
@@ -189,15 +188,15 @@ static float GetBatteryVoltage(BatterySensor *this)
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++)
         {
-            ESP_ERROR_CHECK(adc_oneshot_read(this->hwData.adc_handle, ADC_CHANNEL, &adc_reading));
-            ESP_LOGD(TAG, "ADC%d Channel[%d] Raw Data: %d", ADC_UNIT, ADC_CHANNEL, adc_reading);
+            ESP_ERROR_CHECK(adc_oneshot_read(this->hwData.adc_handle, this->adcChannel, &adc_reading));
+            ESP_LOGD(TAG, "ADC%d Channel[%d] Raw Data: %d", ADC_UNIT, this->adcChannel, adc_reading);
             adc_average += adc_reading;
         }
         adc_average /= NO_OF_SAMPLES;
 
         int milliVoltage = 0;
         ESP_ERROR_CHECK(adc_cali_raw_to_voltage(this->hwData.adc_cali_chan_handle, adc_average, &milliVoltage));
-        ESP_LOGD(TAG, "ADC%d Channel[%d] Cali Voltage: %d mV", ADC_UNIT, ADC_CHANNEL, milliVoltage);
+        ESP_LOGD(TAG, "ADC%d Channel[%d] Cali Voltage: %d mV", ADC_UNIT, this->adcChannel, milliVoltage);
 
         // Convert adc_reading to voltage
         retVal = (float)(milliVoltage) / 1000 * DIVIDER_VALUE;

@@ -13,7 +13,7 @@ typedef struct NotificationDispatcher_t
     SemaphoreHandle_t notifyMutex;
 } NotificationDispatcher;
 
-esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this, esp_event_loop_args_t *touchTaskArgs);
+esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this, int queueSize, int priority, int cpuNumber);
 esp_err_t NotificationDispatcher_NotifyEvent(NotificationDispatcher *this, int notificationEvent, void *data, int dataSize, uint32_t waitDurationMSec);
 esp_err_t NotificationDispatcher_RegisterNotificationEventHandler(NotificationDispatcher *this, int notificationEvent, esp_event_handler_t eventHandler, void *eventHandlerArgs);
 

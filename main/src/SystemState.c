@@ -33,6 +33,8 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
+#define BATTERY_SENSOR_ADC_CHANNEL (ADC_CHANNEL_7)
+
 #define PEER_RSSID_SONG_THRESHOLD_TRON              (-50)
 #define PEER_RSSID_SONG_THRESHOLD_REACTOR           (-50)
 #define PEER_RSSID_SONG_THRESHOLD_CREST             (-58)
@@ -49,7 +51,7 @@
 #define TOUCH_ACTIVE_TIMEOUT_DURATION_MSEC   (5000)
 #define BATTERY_SEQUENCE_DRAW_DURATION_MSEC  (3000)
 #define BLE_SERVICE_DISABLE_TIMEOUT_AFTER_GAME_INTERRUPTION (10 * 1000 * 1000)
-#define FIRSTBOOT_FILE_NAME MOUNT_PATH "/fb"
+#define FIRSTBOOT_FILE_NAME CONFIG_MOUNT_PATH "/fb"
 
 #if defined(TRON_BADGE) || defined(REACTOR_BADGE)
 #define BATTERY_SEQUENCE_HOLD_DURATION_MSEC  (2000)
@@ -228,18 +230,8 @@ esp_err_t SystemState_Init(SystemState *this)
     cJSON_InitHooks(&memoryHook);
 
     ESP_ERROR_CHECK(Console_Init());
-
-    // Create the event loop
-    esp_event_loop_args_t notificationDispatcherTaskArgs =
-    {
-        .queue_size = NOTIFICATION_QUEUE_SIZE,
-        .task_name = "NotificationsEventLoop",
-        .task_priority = NOTIFICATIONS_TASK_PRIORITY,
-        .task_stack_size = configMINIMAL_STACK_SIZE * 3,
-        .task_core_id = APP_CPU_NUM
-    };
-    ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher, &notificationDispatcherTaskArgs));
-    ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher));
+    ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher, NOTIFICATION_QUEUE_SIZE, NOTIFICATIONS_TASK_PRIORITY, APP_CPU_NUM));
+    ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher, BATTERY_SENSOR_ADC_CHANNEL, BATT_SENSE_TASK_PRIORITY, APP_CPU_NUM));
     ESP_ERROR_CHECK(BadgeStats_Init(&this->badgeStats));
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));
     ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings, &this->batterySensor)); // uses bootloader random enable logic

@@ -5,7 +5,6 @@
 #include "freertos/task.h"
 #include "mbedtls/base64.h"
 
-#include "DiskDefines.h"
 #include "DiskUtilities.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
@@ -15,7 +14,7 @@
 #include "TimeUtils.h"
 #include "Utilities.h"
 
-#define GAME_STATUS_FILE_NAME MOUNT_PATH "/game"
+#define GAME_STATUS_FILE_NAME CONFIG_MOUNT_PATH "/game"
 #define MUTEX_MAX_WAIT_MS                (50)
 #define GAME_HEARTBEAT_INTERVAL_MS       (5*60*1000)
 #define GAME_TASK_DELAY_MS               (100)

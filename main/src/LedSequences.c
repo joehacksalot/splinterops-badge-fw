@@ -9,7 +9,6 @@
 
 #include "led_sequences_json.hpp"
 #include "BatterySensor.h"
-#include "DiskDefines.h"
 #include "DiskUtilities.h"
 #include "LedControl.h"
 #include "LedSequences.h"
@@ -93,7 +92,7 @@ esp_err_t LedSequences_UpdateCustomLedSequence(int index, const char * const seq
     memset((void *)custom_led_sequences[index], 0, MAX_CUSTOM_LED_SEQUENCE_SIZE);
     memcpy((void *)custom_led_sequences[index], sequence, sequence_size);
     char filename[30] = "";
-    snprintf(filename, sizeof(filename), "%s/custom%d.txt", MOUNT_PATH, index);
+    snprintf(filename, sizeof(filename), "%s/custom%d.txt", CONFIG_MOUNT_PATH, index);
     // Open and overwrite file
 
     esp_err_t ret = WriteFileToDisk(pBatterySensor, filename, (void *)custom_led_sequences[index], MAX_CUSTOM_LED_SEQUENCE_SIZE);
@@ -126,7 +125,7 @@ esp_err_t LedSequences_Init(BatterySensor *pBatterySensorRef)
   for (int i = 0; i < LED_SEQ_NUM_CUSTOM_SEQUENCES; i++)
   {
     char filename[30] = "";
-    snprintf(filename, sizeof(filename), "%s/custom%d.txt", MOUNT_PATH, i);
+    snprintf(filename, sizeof(filename), "%s/custom%d.txt", CONFIG_MOUNT_PATH, i);
 
     FILE * fp = fopen(filename, "rb");
     if (fp != 0)

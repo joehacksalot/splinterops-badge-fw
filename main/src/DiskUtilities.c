@@ -3,7 +3,6 @@
 #include "esp_vfs_fat.h"
 #include "nvs_flash.h"
 
-#include "DiskDefines.h"
 #include "DiskUtilities.h"
 
 #define TAG  "FS"
@@ -46,7 +45,7 @@ esp_err_t DiskUtilities_InitFs(void)
             .format_if_mount_failed = true
     };
     
-    esp_err_t ret = esp_vfs_fat_spiflash_mount_rw_wl(MOUNT_PATH, "storage", &mount_config, &wl_handle);
+    esp_err_t ret = esp_vfs_fat_spiflash_mount_rw_wl(CONFIG_MOUNT_PATH, "storage", &mount_config, &wl_handle);
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to mount FATFS (%s)", esp_err_to_name(ret));

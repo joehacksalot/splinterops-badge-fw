@@ -15,12 +15,14 @@ The NotificationDispatcher creates a dedicated FreeRTOS event loop that handles 
 
 ## API Functions
 
-### `NotificationDispatcher_Init(NotificationDispatcher *this, esp_event_loop_args_t *touchTaskArgs)`
-Initializes the notification dispatcher with custom event loop configuration.
+### `NotificationDispatcher_Init(NotificationDispatcher *this, int queueSize, int priority, int cpuNumber)`
+Initializes the notification dispatcher with specified queue size, task priority and CPU core.
 
 **Parameters:**
 - `this`: Pointer to NotificationDispatcher instance
-- `touchTaskArgs`: Event loop configuration (queue size, task name, priority, stack size, core ID)
+- `queueSize`: Number of events that can be queued before dropping messages
+- `priority`: FreeRTOS task priority for the event loop
+- `cpuNumber`: CPU core to run the event loop on (0 or 1)
 
 **Returns:** `ESP_OK` on success, error code otherwise
 
@@ -66,14 +68,7 @@ The component supports the following notification events (defined in `Notificati
 
 // Initialize the dispatcher
 NotificationDispatcher dispatcher;
-esp_event_loop_args_t loopArgs = {
-    .queue_size = 100,
-    .task_name = "NotificationsEventLoop",
-    .task_priority = 5,
-    .task_stack_size = configMINIMAL_STACK_SIZE * 3,
-    .task_core_id = APP_CPU_NUM
-};
-NotificationDispatcher_Init(&dispatcher, &loopArgs);
+NotificationDispatcher_Init(&dispatcher, 100, 5, APP_CPU_NUM);
 
 // Register an event handler
 static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
@@ -114,8 +109,9 @@ The NotificationDispatcher uses a mutex (`notifyMutex`) to ensure thread-safe ac
 
 ## Configuration
 
-The event loop can be configured through the `esp_event_loop_args_t` structure:
-- **queue_size**: Number of events that can be queued (default: 100)
-- **task_priority**: FreeRTOS task priority for event processing
-- **task_stack_size**: Stack size for the event loop task
-- **task_core_id**: CPU core to run the event loop on (APP_CPU_NUM recommended)
+The event loop is configured through the initialization parameters:
+- **queueSize**: Number of events that can be queued before dropping messages
+- **priority**: FreeRTOS task priority for event processing
+- **cpuNumber**: CPU core to run the event loop on (APP_CPU_NUM recommended)
+- **task_name**: Fixed as "NotificationsEventLoop"
+- **task_stack_size**: Fixed as `configMINIMAL_STACK_SIZE * 3`

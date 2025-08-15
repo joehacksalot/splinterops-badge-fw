@@ -1,5 +1,11 @@
 menu "Badge Additional Configuration"
 
+    config CONFIG_MOUNT_PATH
+        string "Mount Path"
+        default "/data"
+        help
+            Path to mount the FAT filesystem
+
     config CONSOLE_STORE_HISTORY
         bool "Store console command history in flash"
         default y

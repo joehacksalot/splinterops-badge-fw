@@ -30,9 +30,10 @@ typedef struct BatterySensor_t
     SemaphoreHandle_t batteryPercentMutex;
     BatterySensorHwData hwData;
     NotificationDispatcher *pNotificationDispatcher;
+    adc_channel_t adcChannel;
 } BatterySensor;
 
-esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotificationDispatcher);
+esp_err_t BatterySensor_Init(BatterySensor *this, NotificationDispatcher *pNotificationDispatcher, int adcChannel, int priority, int cpuNumber);
 int BatterySensor_GetBatteryPercent(BatterySensor *this);
 
 #endif // BATT_SENSE_TASK_H_

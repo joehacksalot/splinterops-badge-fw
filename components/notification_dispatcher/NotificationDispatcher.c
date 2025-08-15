@@ -15,7 +15,7 @@
 // Internal Constants
 static const char * TAG = "ND";
 
-esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this, esp_event_loop_args_t *touchTaskArgs)
+esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this, int queueSize, int priority, int cpuNumber)
 {
     static bool initialized = false;
     esp_err_t ret = false;
@@ -28,7 +28,16 @@ esp_err_t NotificationDispatcher_Init(NotificationDispatcher *this, esp_event_lo
         memset(this, 0, sizeof(*this));
         this->notificationEventBase = "NotificationEventBase";
 
-        ESP_ERROR_CHECK(esp_event_loop_create(touchTaskArgs, &this->eventLoopHandle));
+        // Create the event loop
+        esp_event_loop_args_t eventLoopArgs =
+        {
+            .queue_size = queueSize,
+            .task_name = "NotificationsEventLoop",
+            .task_priority = priority,
+            .task_stack_size = configMINIMAL_STACK_SIZE * 3,
+            .task_core_id = cpuNumber
+        };
+        ESP_ERROR_CHECK(esp_event_loop_create(&eventLoopArgs, &this->eventLoopHandle));
 
         // Create mutex for notifies
         this->notifyMutex = xSemaphoreCreateMutex();

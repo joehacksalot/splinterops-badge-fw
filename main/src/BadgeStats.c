@@ -7,12 +7,11 @@
 
 #include "BadgeStats.h"
 #include "BatterySensor.h"
-#include "DiskDefines.h"
 #include "DiskUtilities.h"
 #include "TaskPriorities.h"
 #include "Utilities.h"
 
-#define STATS_FILE_NAME       MOUNT_PATH "/stats"
+#define STATS_FILE_NAME       CONFIG_MOUNT_PATH "/stats"
 #define BADGE_WRITE_PERIOD_MS (15 * 60 * 1000)
 #define MUTEX_MAX_WAIT_MS     (50)
 static const char *TAG = "STA";
