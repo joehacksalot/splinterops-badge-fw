@@ -15,6 +15,7 @@
 
 #include "BleControl.h"
 #include "BleControl_Service.h"
+#include "NotificationEvents.h"
 
 #define TAG "BLE"
 

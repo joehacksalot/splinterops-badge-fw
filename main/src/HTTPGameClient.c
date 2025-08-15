@@ -17,6 +17,7 @@
 #include "BatterySensor.h"
 #include "GameState.h"
 #include "HTTPGameClient.h"
+#include "NotificationEvents.h"
 #include "SynthModeNotifications.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"

@@ -20,6 +20,7 @@
 #include "BleControl_Service.h"
 #include "BleControl_ServiceChar_FileTransfer.h"
 #include "BleControl_ServiceChar_InteractiveGame.h"
+#include "NotificationEvents.h"
 
 #define TAG "BLE"
 #define BLE_DISABLE_TIMER_TIMEOUT_USEC      60 * 1000 * 1000    // 1 minute of service inactivity

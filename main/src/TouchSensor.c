@@ -9,6 +9,7 @@
 #include "TimeUtils.h"
 
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "TouchSensor.h"
 #include "TaskPriorities.h"
 #include "Utilities.h"

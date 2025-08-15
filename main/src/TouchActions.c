@@ -4,6 +4,7 @@
 
 #include "TouchActions.h"
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 
 // Internal Function Declarations
 static esp_err_t CommandDetected(TouchActions *this, TouchActionsCmd touchActionCmd);

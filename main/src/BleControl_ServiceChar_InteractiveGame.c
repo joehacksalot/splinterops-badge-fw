@@ -6,6 +6,7 @@
 #include "host/ble_gatt.h"
 
 #include "BleControl.h"
+#include "NotificationEvents.h"
 
 #define TAG "BleGame"
 #define BITS_IN_A_BYTE (8)

@@ -8,6 +8,7 @@
 #include "BleControl_Service.h"
 #include "JsonUtils.h"
 #include "LedSequences.h"
+#include "NotificationEvents.h"
 
 static esp_err_t _BleControl_ProcessTransferedFile(BleControl *this);
 static esp_err_t _BleControl_VerifyAllFramesPresent(BleControl *this);

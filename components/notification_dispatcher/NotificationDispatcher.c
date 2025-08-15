@@ -8,11 +8,8 @@
 #include "freertos/task.h"
 
 #include "NotificationDispatcher.h"
-#include "SystemState.h"
-#include "TaskPriorities.h"
 
 // Size of notification queue before dropping messages
-#define NOTIFICATION_QUEUE_SIZE (100)
 #define MUTEX_WAIT_DURATION_MS  (100)
 
 // Internal Constants

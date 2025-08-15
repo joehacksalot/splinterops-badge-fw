@@ -16,6 +16,7 @@
 #include "LedControl.h"
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "SynthModeNotifications.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"

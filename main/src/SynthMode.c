@@ -7,6 +7,7 @@
 #include "freertos/timers.h"
 
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "TaskPriorities.h"
 #include "TouchSensor.h"
 #include "Song.h"

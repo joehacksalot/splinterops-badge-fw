@@ -5,6 +5,7 @@
 
 #include "WifiClient.h"
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "UserSettings.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"

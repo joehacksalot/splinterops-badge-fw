@@ -12,6 +12,7 @@
 #include "OtaUpdate.h"
 #include "TaskPriorities.h"
 #include "Utilities.h"
+#include "NotificationEvents.h"
 
 // Internal Function Declarations
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt);

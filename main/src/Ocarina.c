@@ -7,6 +7,7 @@
 #include "freertos/timers.h"
 
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "Ocarina.h"
 #include "SynthModeNotifications.h"
 #include "TouchSensor.h"

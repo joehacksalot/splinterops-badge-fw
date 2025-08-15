@@ -20,6 +20,7 @@
 #include "LedModing.h"
 #include "LedSequences.h"
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "Ocarina.h"
 #include "OtaUpdate.h"
 #include "SynthMode.h"
@@ -36,6 +37,8 @@
 #define PEER_RSSID_SONG_THRESHOLD_REACTOR           (-50)
 #define PEER_RSSID_SONG_THRESHOLD_CREST             (-58)
 #define PEER_RSSID_SONG_THRESHOLD_FMAN25            (-58)
+
+#define NOTIFICATION_QUEUE_SIZE (100)
 
 #define LED_GAME_STATUS_TOGGLE_DURATION_MSEC (5000)
 #define PEER_SONG_COOLDOWN_DURATION_MSEC     (3*60*1000) // 3 min

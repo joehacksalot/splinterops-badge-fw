@@ -9,6 +9,7 @@
 #include "DiskUtilities.h"
 #include "GameState.h"
 #include "NotificationDispatcher.h"
+#include "NotificationEvents.h"
 #include "SynthModeNotifications.h"
 #include "TaskPriorities.h"
 #include "TimeUtils.h"
