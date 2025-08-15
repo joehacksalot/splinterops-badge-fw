@@ -23,7 +23,7 @@ menu "Badge Additional Configuration"
 
     config WIFI_SSID
         string "WiFi SSID"
-        default "DEFCON"
+        default "DefCon-Open"
         help
             SSID (Network Name) to connect to
     

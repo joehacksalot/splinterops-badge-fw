@@ -114,11 +114,19 @@ CircularBuffer_Free(&intBuffer);
 
 ```mermaid
 graph TD
-    A[CircularBuffer] --> B[esp_common]
-    A --> C[freertos]
-    A --> D[log]
+    A["CircularBuffer<br/><small>splinterops</small>"] --> B["esp_common<br/><small>esp-idf</small>"]
+    A --> C["freertos<br/><small>freertos</small>"]
+    A --> D["log<br/><small>esp-idf</small>"]
     
+    %% SplinterOps components
     style A fill:#e1f5fe
+    
+    %% ESP-IDF components
+    style B fill:#fff2cc
+    style D fill:#fff2cc
+    
+    %% FreeRTOS components
+    style C fill:#f8cecc
 ```
 
 ## Component Structure

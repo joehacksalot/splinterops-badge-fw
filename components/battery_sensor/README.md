@@ -86,14 +86,25 @@ if (batteryPercent >= 0) {
 
 ```mermaid
 graph TD
-    A[BatterySensor] --> B[esp_adc]
-    A --> C[freertos]
-    A --> D[log]
-    A --> E[driver]
-    A --> F[notification_dispatcher]
-    A --> G[utilities]
+    A["BatterySensor<br/><small>splinterops</small>"] --> B["esp_adc<br/><small>esp-idf</small>"]
+    A --> C["freertos<br/><small>freertos</small>"]
+    A --> D["log<br/><small>esp-idf</small>"]
+    A --> E["driver<br/><small>esp-idf</small>"]
+    A --> F["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> G["utilities<br/><small>splinterops</small>"]
     
+    %% SplinterOps components
     style A fill:#e1f5fe
+    style F fill:#e1f5fe
+    style G fill:#e1f5fe
+    
+    %% ESP-IDF components
+    style B fill:#fff2cc
+    style D fill:#fff2cc
+    style E fill:#fff2cc
+    
+    %% FreeRTOS components
+    style C fill:#f8cecc
 ```
 
 ## Component Structure
