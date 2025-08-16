@@ -35,7 +35,7 @@ static bool _GameState_IsBlankEvent(char *eventIdB64);
 static esp_err_t _GameState_ReadGameStatusDataFileFromDisk(GameState *this);
 static esp_err_t _GameState_WriteGameStatusDataFileToDisk(GameState *this);
 
-esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor)
+esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeMetrics *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor)
 {
     assert(this);
     memset(this, 0, sizeof(*this));

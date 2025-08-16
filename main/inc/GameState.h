@@ -6,7 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-#include "BadgeStats.h"
+#include "BadgeMetrics.h"
 #include "BatterySensor.h"
 #include "GameTypes.h"
 #include "NotificationDispatcher.h"
@@ -46,12 +46,12 @@ typedef struct GameState_t
     PeerReport peerReports[MAX_PEER_MAP_DEPTH];
     uint32_t numPeerReports;
     NotificationDispatcher *pNotificationDispatcher;
-    BadgeStats *pBadgeStats;
+    BadgeMetrics *pBadgeStats;
     UserSettings *pUserSettings;
     BatterySensor *pBatterySensor;
 } GameState;
 
-esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeStats *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor);
+esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationDispatcher, BadgeMetrics *pBadgeStats, UserSettings *pUserSettings, BatterySensor *pBatterySensor);
 void GameState_SetEventId(GameState *this, char *newEventIdB64);
 void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs);
 

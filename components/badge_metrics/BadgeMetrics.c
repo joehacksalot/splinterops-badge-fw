@@ -5,10 +5,8 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-#include "BadgeStats.h"
-#include "BatterySensor.h"
+#include "BadgeMetrics.h"
 #include "DiskUtilities.h"
-#include "TaskPriorities.h"
 #include "Utilities.h"
 
 #define STATS_FILE_NAME       CONFIG_MOUNT_PATH "/stats"
@@ -17,52 +15,52 @@
 static const char *TAG = "STA";
 
 //static void BadgeStatsTask(void *pvParameters);
-//static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this);
-//static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this);
+//static esp_err_t BadgeMetrics_ReadBadgeStatsFileFromDisk(BadgeMetrics *this);
+//static esp_err_t BadgeMetrics_WriteBadgeStatsFileToDisk(BadgeMetrics *this);
 
-esp_err_t BadgeStats_Init(BadgeStats *this)
+esp_err_t BadgeMetrics_Init(BadgeMetrics *this)
 {
     assert(this);
     memset(this, 0, sizeof(*this));
-    this->pBatterySensor = NULL;
+    // this->pBatterySensor = NULL;
     this->mutex = xSemaphoreCreateMutex();
     assert(this->mutex);
-    // if (BadgeStats_ReadBadgeStatsFileFromDisk(this) != ESP_OK)
+    // if (BadgeMetrics_ReadBadgeStatsFileFromDisk(this) != ESP_OK)
     // {
-    //     BadgeStats_WriteBadgeStatsFileToDisk(this);
+    //     BadgeMetrics_WriteBadgeStatsFileToDisk(this);
     // }
-    BadgeStats_IncrementNumPowerOns(this);
+    BadgeMetrics_IncrementNumPowerOns(this);
 
     // assert(xTaskCreatePinnedToCore(_BadgeStatsTask, "BadgeStatsTask", configMINIMAL_STACK_SIZE * 4, this, BADGE_STAT_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS); // Commented to prevent disk writes. statistics will still be captured, but not saved to disk
     return ESP_OK;
 }
 
-esp_err_t BadgeStats_RegisterBatterySensor(BadgeStats *this, BatterySensor *pBatterySensor)
-{
-    assert(this);
-    assert(pBatterySensor);
-    this->pBatterySensor = pBatterySensor;
-    return ESP_OK;
-}
+// esp_err_t BadgeMetrics_RegisterBatterySensor(BadgeMetrics *this, BatterySensor *pBatterySensor)
+// {
+//     assert(this);
+//     assert(pBatterySensor);
+//     this->pBatterySensor = pBatterySensor;
+//     return ESP_OK;
+// }
 
 
 // static void BadgeStatsTask(void *pvParameters)
 // {
-//     BadgeStats *this = (BadgeStats *)pvParameters;
+//     BadgeMetrics *this = (BadgeMetrics *)pvParameters;
 //     assert(this);
 //     while (true)
 //     {
 //         if (this->updateNeeded)
 //         {
 //             ESP_LOGI(TAG, "Writing Stats File");
-//             BadgeStats_WriteBadgeStatsFileToDisk(this);
+//             BadgeMetrics_WriteBadgeStatsFileToDisk(this);
 //             this->updateNeeded = false;
 //         }
 //         vTaskDelay(pdMS_TO_TICKS(BADGE_WRITE_PERIOD_MS));
 //     }
 // }
 
-void BadgeStats_IncrementNumPowerOns(BadgeStats *this)
+void BadgeMetrics_IncrementNumPowerOns(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -81,7 +79,7 @@ void BadgeStats_IncrementNumPowerOns(BadgeStats *this)
 }
 
 
-void BadgeStats_IncrementNumTouches(BadgeStats *this)
+void BadgeMetrics_IncrementNumTouches(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -99,7 +97,7 @@ void BadgeStats_IncrementNumTouches(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumTouchCmds(BadgeStats *this)
+void BadgeMetrics_IncrementNumTouchCmds(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -117,7 +115,7 @@ void BadgeStats_IncrementNumTouchCmds(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumLedCycles(BadgeStats *this)
+void BadgeMetrics_IncrementNumLedCycles(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -135,7 +133,7 @@ void BadgeStats_IncrementNumLedCycles(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumBatteryChecks(BadgeStats *this)
+void BadgeMetrics_IncrementNumBatteryChecks(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -153,7 +151,7 @@ void BadgeStats_IncrementNumBatteryChecks(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumBleEnables(BadgeStats *this)
+void BadgeMetrics_IncrementNumBleEnables(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -171,7 +169,7 @@ void BadgeStats_IncrementNumBleEnables(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumBleDisables(BadgeStats *this)
+void BadgeMetrics_IncrementNumBleDisables(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -189,7 +187,7 @@ void BadgeStats_IncrementNumBleDisables(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumBleSeqXfers(BadgeStats *this)
+void BadgeMetrics_IncrementNumBleSeqXfers(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -207,7 +205,7 @@ void BadgeStats_IncrementNumBleSeqXfers(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumBleSetXfers(BadgeStats *this)
+void BadgeMetrics_IncrementNumBleSetXfers(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -225,7 +223,7 @@ void BadgeStats_IncrementNumBleSetXfers(BadgeStats *this)
     }
 }
 
-void BadgeStats_IncrementNumNetworkTests(BadgeStats *this)
+void BadgeMetrics_IncrementNumNetworkTests(BadgeMetrics *this)
 {
     assert(this);
     if (xSemaphoreTake(this->mutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
@@ -243,7 +241,7 @@ void BadgeStats_IncrementNumNetworkTests(BadgeStats *this)
     }
 }
 
-// static esp_err_t BadgeStats_ReadBadgeStatsFileFromDisk(BadgeStats *this)
+// static esp_err_t BadgeMetrics_ReadBadgeStatsFileFromDisk(BadgeMetrics *this)
 // {
 //     esp_err_t ret = ESP_FAIL;
 //     assert(this);
@@ -272,7 +270,7 @@ void BadgeStats_IncrementNumNetworkTests(BadgeStats *this)
 //     return ret;
 // }
 
-// static esp_err_t BadgeStats_WriteBadgeStatsFileToDisk(BadgeStats *this)
+// static esp_err_t BadgeMetrics_WriteBadgeStatsFileToDisk(BadgeMetrics *this)
 // {
 //     esp_err_t ret = ESP_FAIL;
 //     assert(this);

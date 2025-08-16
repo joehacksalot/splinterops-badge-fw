@@ -11,7 +11,7 @@
 #include "esp_system.h"
 #include "mbedtls/base64.h"
 
-#include "BadgeStats.h"
+#include "BadgeMetrics.h"
 #include "BleControl.h"
 #include "BleControl_Service.h"
 #include "BleControl_ServiceChar_FileTransfer.h"
@@ -232,12 +232,12 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(Console_Init());
     ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher, NOTIFICATION_QUEUE_SIZE, NOTIFICATIONS_TASK_PRIORITY, APP_CPU_NUM));
     ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher, BATTERY_SENSOR_ADC_CHANNEL, BATT_SENSE_TASK_PRIORITY, APP_CPU_NUM));
-    ESP_ERROR_CHECK(BadgeStats_Init(&this->badgeStats));
+    ESP_ERROR_CHECK(BadgeMetrics_Init(&this->badgeStats));
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));
     ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings, &this->batterySensor)); // uses bootloader random enable logic
 
     ESP_ERROR_CHECK(LedSequences_Init(&this->batterySensor));
-    ESP_ERROR_CHECK(BadgeStats_RegisterBatterySensor(&this->badgeStats, &this->batterySensor));
+    // ESP_ERROR_CHECK(BadgeMetrics_RegisterBatterySensor(&this->badgeStats, &this->batterySensor));
     ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings, &this->batterySensor));
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
@@ -442,7 +442,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             LedModing_CycleSelectedLedSequence(&this->ledModing, true);
             LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
             SystemState_ResetLedSequencePreviewActiveTimer(this);
-            BadgeStats_IncrementNumLedCycles(&this->badgeStats);
+            BadgeMetrics_IncrementNumLedCycles(&this->badgeStats);
             cmdProcessed = true;
             break;
         case TOUCH_ACTIONS_CMD_PREV_LED_SEQUENCE:
@@ -451,7 +451,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             LedModing_CycleSelectedLedSequence(&this->ledModing, false);
             LedModing_SetLedSequencePreviewActive(&this->ledModing, true);
             SystemState_ResetLedSequencePreviewActiveTimer(this);
-            BadgeStats_IncrementNumLedCycles(&this->badgeStats);
+            BadgeMetrics_IncrementNumLedCycles(&this->badgeStats);
             cmdProcessed = true;
             break;
         case TOUCH_ACTIONS_CMD_DISPLAY_VOLTAGE_METER:
@@ -459,7 +459,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
             LedModing_SetBatteryIndicatorActive(&this->ledModing, true);
             SystemState_ResetBatteryIndicatorActiveTimer(this);
-            BadgeStats_IncrementNumBatteryChecks(&this->badgeStats);
+            BadgeMetrics_IncrementNumBatteryChecks(&this->badgeStats);
             cmdProcessed = true;
             this->batteryIndicatorActive = true;
             break;
@@ -477,7 +477,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             {
                 ESP_LOGE(TAG, "Failed to enable BLE Service");
             }
-            BadgeStats_IncrementNumBleEnables(&this->badgeStats);
+            BadgeMetrics_IncrementNumBleEnables(&this->badgeStats);
             cmdProcessed = true;
             break;
         case TOUCH_ACTIONS_CMD_DISABLE_BLE_PAIRING:
@@ -500,7 +500,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             {
                 ESP_LOGW(TAG, "Failed to set BLE Service Enable Active false");
             }
-            BadgeStats_IncrementNumBleDisables(&this->badgeStats);
+            BadgeMetrics_IncrementNumBleDisables(&this->badgeStats);
             cmdProcessed = true;
             break;
         case TOUCH_ACTIONS_CMD_NETWORK_TEST:
@@ -508,7 +508,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
             LedModing_SetNetworkTestActive(&this->ledModing, true);
             SystemState_ResetNetworkTestActiveTimer(this);
-            BadgeStats_IncrementNumNetworkTests(&this->badgeStats);
+            BadgeMetrics_IncrementNumNetworkTests(&this->badgeStats);
             cmdProcessed = true;
             break;
         case TOUCH_ACTIONS_CMD_TOGGLE_SYNTH_MODE_ENABLE:
@@ -571,7 +571,7 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
 
     if (cmdProcessed)
     {
-        BadgeStats_IncrementNumTouchCmds(&this->badgeStats);
+        BadgeMetrics_IncrementNumTouchCmds(&this->badgeStats);
     }
 }
 
@@ -585,7 +585,7 @@ static void SystemState_TouchSensorNotificationHandler(void *pObj, esp_event_bas
     bool active = touchSensorEventNotificationData.touchSensorEvent != TOUCH_SENSOR_EVENT_RELEASED;
     BleControl_SetTouchSensorActive(&this->bleControl, touchSensorEventNotificationData.touchSensorIdx, active);
     LedControl_SetTouchSensorUpdate(&this->ledControl, touchSensorEventNotificationData.touchSensorEvent, touchSensorEventNotificationData.touchSensorIdx);
-    BadgeStats_IncrementNumTouches(&this->badgeStats);
+    BadgeMetrics_IncrementNumTouches(&this->badgeStats);
     if (this->interactiveGameTouchSensorsToLightBits.s.active)
     {
         GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 250);
@@ -746,7 +746,7 @@ static void SystemState_BleNotificationHandler(void *pObj, esp_event_base_t even
             {
                 ESP_LOGW(TAG, "Failed to reset LED sequence preview active timer");
             }
-            BadgeStats_IncrementNumBleDisables(&this->badgeStats);
+            BadgeMetrics_IncrementNumBleDisables(&this->badgeStats);
         }
         else
         {

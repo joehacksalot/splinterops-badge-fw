@@ -5,7 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 
-#include "BadgeStats.h"
+#include "BadgeMetrics.h"
 #include "BatterySensor.h"
 #include "BleControl.h"
 #include "GameState.h"
@@ -49,7 +49,7 @@ typedef struct SystemState_t
     TimerHandle_t ledGameStatusToggleTimer;
     TimerHandle_t peerSongCooldownTimer;
     AppConfig appConfig;
-    BadgeStats badgeStats;
+    BadgeMetrics badgeStats;
     BatterySensor batterySensor;
     BleControl bleControl;
     GameState gameState;
