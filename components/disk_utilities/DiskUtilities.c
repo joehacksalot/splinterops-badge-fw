@@ -7,6 +7,8 @@
 
 #define TAG  "FS"
 
+#define BATTERY_NO_FLASH_WRITE_THRESHOLD (10)
+
 esp_err_t DiskUtilities_InitNvs(void)
 {
     static bool initialized = false;

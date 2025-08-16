@@ -73,10 +73,6 @@ if (result == ESP_OK) {
 int batteryPercent = BatterySensor_GetBatteryPercent(&batterySensor);
 if (batteryPercent >= 0) {
     ESP_LOGI("BATTERY", "Battery level: %d%%", batteryPercent);
-    
-    if (batteryPercent < BATTERY_NO_FLASH_WRITE_THRESHOLD) {
-        ESP_LOGW("BATTERY", "Low battery - disabling flash writes");
-    }
 } else {
     ESP_LOGE("BATTERY", "Failed to read battery level");
 }
@@ -94,17 +90,17 @@ graph TD
     A --> G["utilities<br/><small>splinterops</small>"]
     
     %% SplinterOps components
-    style A fill:#e1f5fe
-    style F fill:#e1f5fe
-    style G fill:#e1f5fe
+    style A fill:#e1f5fe,color:#000000
+    style F fill:#e1f5fe,color:#000000
+    style G fill:#e1f5fe,color:#000000
     
     %% ESP-IDF components
-    style B fill:#fff2cc
-    style D fill:#fff2cc
-    style E fill:#fff2cc
+    style B fill:#fff2cc,color:#000000
+    style D fill:#fff2cc,color:#000000
+    style E fill:#fff2cc,color:#000000
     
     %% FreeRTOS components
-    style C fill:#f8cecc
+    style C fill:#f8cecc,color:#000000
 ```
 
 ## Component Structure
@@ -138,9 +134,6 @@ The BatterySensor uses a mutex (`batteryPercentMutex`) to ensure thread-safe acc
 - **Voltage accuracy**: ±50mV typical (with calibration)
 - **Task overhead**: Minimal - sleeps between samples
 
-## Low Battery Handling
-
-The component defines `BATTERY_NO_FLASH_WRITE_THRESHOLD` (10%) as a critical battery level. Applications should check this threshold before performing flash write operations to prevent data corruption due to power loss.
 
 ## Voltage Calculation
 

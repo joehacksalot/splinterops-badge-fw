@@ -91,14 +91,14 @@ graph TD
     A --> D["log<br/><small>esp-idf</small>"]
     
     %% SplinterOps components
-    style A fill:#e1f5fe
+    style A fill:#e1f5fe,color:#000000
     
     %% ESP-IDF components
-    style B fill:#fff2cc
-    style D fill:#fff2cc
+    style B fill:#fff2cc,color:#000000
+    style D fill:#fff2cc,color:#000000
     
     %% FreeRTOS components
-    style C fill:#f8cecc
+    style C fill:#f8cecc,color:#000000
 ```
 
 ## Component Structure

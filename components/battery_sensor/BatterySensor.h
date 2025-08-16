@@ -11,7 +11,6 @@
 
 #include "NotificationDispatcher.h"
 
-#define BATTERY_NO_FLASH_WRITE_THRESHOLD (10)
 
 typedef struct BatterySensorHwData_t
 {

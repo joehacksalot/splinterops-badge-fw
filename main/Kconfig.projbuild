@@ -1,6 +1,6 @@
 menu "Badge Additional Configuration"
 
-    config CONFIG_MOUNT_PATH
+    config MOUNT_PATH
         string "Mount Path"
         default "/data"
         help
