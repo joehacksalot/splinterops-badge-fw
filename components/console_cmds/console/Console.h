@@ -11,6 +11,6 @@
 #define HISTORY_PATH CONFIG_MOUNT_PATH "/history.txt"
 #endif // CONFIG_CONSOLE_STORE_HISTORY
 
-esp_err_t Console_Init(void);
+esp_err_t Console_Init(int consolePriority);
 
 #endif // CONSOLE_TASK_H

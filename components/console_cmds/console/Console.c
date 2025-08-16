@@ -23,7 +23,6 @@
 #include "DiskUtilities.h"
 #include "console_system.h"
 #include "Console.h"
-#include "TaskPriorities.h"
 #include "Utilities.h"
 
 #ifdef CONFIG_ESP_CONSOLE_USB_CDC
@@ -46,7 +45,7 @@ static const char* TAG = "ConsoleTask";
 const char* prompt = LOG_COLOR_I PROMPT_STR "> " LOG_RESET_COLOR;
 
 
-esp_err_t Console_Init(void)
+esp_err_t Console_Init(int consolePriority)
 {
     esp_err_t ret = ESP_OK;
 
@@ -168,7 +167,7 @@ esp_err_t Console_Init(void)
 #endif //CONFIG_LOG_COLORS
     }
     
-    assert(xTaskCreatePinnedToCore(ConsoleTask, "ConsoleTask", configMINIMAL_STACK_SIZE * 2, NULL, CONSOLE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+    assert(xTaskCreatePinnedToCore(ConsoleTask, "ConsoleTask", configMINIMAL_STACK_SIZE * 2, NULL, consolePriority, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
 }
 

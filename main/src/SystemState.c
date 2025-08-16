@@ -229,12 +229,12 @@ esp_err_t SystemState_Init(SystemState *this)
     memoryHook.free_fn = &free;
     cJSON_InitHooks(&memoryHook);
 
-    ESP_ERROR_CHECK(Console_Init());
+    ESP_ERROR_CHECK(Console_Init(CONSOLE_TASK_PRIORITY));
     ESP_ERROR_CHECK(NotificationDispatcher_Init(&this->notificationDispatcher, NOTIFICATION_QUEUE_SIZE, NOTIFICATIONS_TASK_PRIORITY, APP_CPU_NUM));
     ESP_ERROR_CHECK(BatterySensor_Init(&this->batterySensor, &this->notificationDispatcher, BATTERY_SENSOR_ADC_CHANNEL, BATT_SENSE_TASK_PRIORITY, APP_CPU_NUM));
     ESP_ERROR_CHECK(BadgeMetrics_Init(&this->badgeStats));
     ESP_ERROR_CHECK(GpioControl_Init(&this->gpioControl));
-    ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings, &this->batterySensor)); // uses bootloader random enable logic
+    ESP_ERROR_CHECK(UserSettings_Init(&this->userSettings, &this->batterySensor, USER_SETTINGS_TASK_PRIORITY)); // uses bootloader random enable logic
 
     ESP_ERROR_CHECK(LedSequences_Init(&this->batterySensor));
     // ESP_ERROR_CHECK(BadgeMetrics_RegisterBatterySensor(&this->badgeStats, &this->batterySensor));

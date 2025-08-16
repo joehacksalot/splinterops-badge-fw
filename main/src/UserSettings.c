@@ -31,7 +31,7 @@ static void UserSettings_Task(void *pvParameters);
 static esp_err_t UserSettings_ReadUserSettingsFileFromDisk(UserSettings *this);
 static esp_err_t UserSettings_WriteUserSettingsFileToDisk(UserSettings *this);
 
-esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor)
+esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor, int userSettingsPriority)
 {
     assert(this);
     memset(this, 0, sizeof(*this));
@@ -66,7 +66,7 @@ esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor)
         UserSettings_WriteUserSettingsFileToDisk(this);
     }
 
-    assert(xTaskCreatePinnedToCore(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 2, this, USER_SETTINGS_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+    assert(xTaskCreatePinnedToCore(UserSettings_Task, "UserSettingsTask", configMINIMAL_STACK_SIZE * 2, this, userSettingsPriority, NULL, APP_CPU_NUM) == pdPASS);
     return ESP_OK;
 }
 

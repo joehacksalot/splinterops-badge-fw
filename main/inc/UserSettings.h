@@ -38,7 +38,7 @@ typedef struct UserSettings_t
     BatterySensor *pBatterySensor;
 } UserSettings;
 
-esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor);
+esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor, int userSettingsPriority);
 
 esp_err_t UserSettings_UpdateFromJson(UserSettings *this, uint8_t * settingsJson);
 
