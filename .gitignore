@@ -4,6 +4,7 @@ prod_certs/
 dependencies.lock
 .vscode/
 tmp/
+bak/
 
 ### Beyond Compare .gitignore below
 *.orig

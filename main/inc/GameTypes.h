@@ -3,6 +3,7 @@
 
 #include "hashmap.h"
 #include "Utilities.h"
+#include "BadgeHwProfile.h"
 
 #define BADGE_ID_SIZE                 (8)
 #define BADGE_ID_B64_SIZE             (13)

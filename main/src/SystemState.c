@@ -248,7 +248,7 @@ esp_err_t SystemState_Init(SystemState *this)
     }
 
     ESP_ERROR_CHECK(TouchSensor_Init(&this->touchSensor, &this->notificationDispatcher, TOUCH_SENSOR_TASK_PRIORITY, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION));
-    ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher));
+    ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, NOTIFICATION_EVENTS_TOUCH_ACTION_CMD));
     ESP_ERROR_CHECK(BleControl_Init(&this->bleControl, &this->notificationDispatcher, &this->userSettings, &this->gameState));
     ESP_ERROR_CHECK(WifiClient_Init(&this->wifiClient, &this->notificationDispatcher, &this->userSettings));
     ESP_ERROR_CHECK(OtaUpdate_Init(&this->otaUpdate, &this->wifiClient, &this->notificationDispatcher));

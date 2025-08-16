@@ -1,0 +1,25 @@
+#ifndef BADGE_PROFILE_FMAN25_H_
+#define BADGE_PROFILE_FMAN25_H_
+
+#include "BadgeType.h"
+
+#define BADGE_TYPE BADGE_TYPE_FMAN25
+#define BADGE_PROFILE_NAME "FMAN25"
+#define BLE_DEVICE_NAME "IWCv4"
+
+typedef enum TouchSensorFman25Names_t
+{
+    TOUCH_SENSOR_RIGHT_TOUCH_1 = 0, // 0
+    TOUCH_SENSOR_RIGHT_TOUCH_2,     // 1
+    TOUCH_SENSOR_RIGHT_TOUCH_3,     // 2
+    TOUCH_SENSOR_RIGHT_TOUCH_4,     // 3
+    TOUCH_SENSOR_CENTER_TOUCH,      // 4
+    TOUCH_SENSOR_LEFT_TOUCH_4,      // 5
+    TOUCH_SENSOR_LEFT_TOUCH_3,      // 6
+    TOUCH_SENSOR_LEFT_TOUCH_2,      // 7
+    TOUCH_SENSOR_LEFT_TOUCH_1,      // 8
+    
+    TOUCH_SENSOR_NUM_BUTTONS // 9
+} TouchSensorNames;
+
+#endif // BADGE_PROFILE_FMAN25_H_
