@@ -4,7 +4,6 @@
 
 #include "TouchActions.h"
 #include "NotificationDispatcher.h"
-#include "NotificationEvents.h"
 
 // Internal Function Declarations
 static esp_err_t CommandDetected(TouchActions *this, TouchActionsCmd touchActionCmd);
@@ -15,23 +14,25 @@ static void ReportTouchActionCommands(TouchActions *this);
 static const char * TAG = "ACT";
 
 
-esp_err_t TouchActions_Init(TouchActions *this, NotificationDispatcher *pNotificationDispatcher)
+esp_err_t TouchActions_Init(TouchActions *this, NotificationDispatcher *pNotificationDispatcher, int touchSensorEvent, int touchActionEvent)
 {
     memset(this, 0, sizeof(*this));
 
     this->pNotificationDispatcher = pNotificationDispatcher;
+    this->touchSensorEvent = touchSensorEvent;
+    this->touchActionEvent = touchActionEvent;
     for (int i = 0; i < TOUCH_SENSOR_NUM_BUTTONS; i++)
     {
         this->touchSensorValue[i] = TOUCH_SENSOR_EVENT_RELEASED;
     }
 
-    return NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &TouchSensorNotificationHandler, this);
+    return NotificationDispatcher_RegisterNotificationEventHandler(this->pNotificationDispatcher, this->touchSensorEvent, &TouchSensorNotificationHandler, this);
 }
 
 static esp_err_t CommandDetected(TouchActions *this, TouchActionsCmd touchActionCmd)
 {
-    ESP_LOGD(TAG, "Command Detected: %d", touchActionCmd);
-    esp_err_t ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ACTION_CMD, &touchActionCmd, sizeof(touchActionCmd), DEFAULT_NOTIFY_WAIT_DURATION);
+    ESP_LOGD(TAG, "Command Detected: %d", touchActionCmd); 
+    esp_err_t ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchActionEvent, &touchActionCmd, sizeof(touchActionCmd), DEFAULT_NOTIFY_WAIT_DURATION);
 
     return ret;
 }

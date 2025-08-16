@@ -23,8 +23,10 @@ typedef struct TouchActions_t
 {
     TouchSensorEvent touchSensorValue[TOUCH_SENSOR_NUM_BUTTONS];
     NotificationDispatcher *pNotificationDispatcher;
+    int touchSensorEvent;
+    int touchActionEvent;
 } TouchActions;
 
-esp_err_t TouchActions_Init(TouchActions *this, NotificationDispatcher *pNotificationDispatcher);
+esp_err_t TouchActions_Init(TouchActions *this, NotificationDispatcher *pNotificationDispatcher, int touchSensorEvent, int touchActionEvent);
 
 #endif // TOUCH_ACTIONS_CMD_H_
