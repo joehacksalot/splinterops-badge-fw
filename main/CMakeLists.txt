@@ -1,6 +1,6 @@
 idf_component_register( SRC_DIRS "src"
                         INCLUDE_DIRS "inc"
-                        REQUIRES esp_wifi esp_event esp_netif esp_eth esp_phy lwip vfs efuse esp_timer driver fatfs console_cmds led_strip json_utils esp_http_client log freertos esp-tls esp_https_ota app_update esp_adc esp_netif bt notification_dispatcher circular_buffer utilities battery_sensor disk_utilities badge_metrics json_utils hashmap piezo_music gpio_control mutex time_utils)
+                        REQUIRES esp_wifi esp_event esp_netif esp_eth esp_phy lwip vfs efuse esp_timer driver fatfs console_cmds led_strip json_utils esp_http_client log freertos esp-tls esp_https_ota app_update esp_adc esp_netif bt notification_dispatcher circular_buffer utilities battery_sensor disk_utilities badge_metrics json_utils hashmap piezo_music gpio_control mutex time_utils touch_sensor)
 
 if(CONFIG_BADGE_TYPE_TRON)
     add_definitions(-DTRON_BADGE)

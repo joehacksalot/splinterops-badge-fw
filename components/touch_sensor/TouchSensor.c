@@ -9,9 +9,7 @@
 #include "TimeUtils.h"
 
 #include "NotificationDispatcher.h"
-#include "NotificationEvents.h"
 #include "TouchSensor.h"
-#include "TaskPriorities.h"
 #include "Utilities.h"
 
 // Touch pad settings
@@ -44,7 +42,7 @@ static const char * TOUCH_TAG = "TCH";
   static const int TOUCH_BUTTON_MAP[TOUCH_SENSOR_NUM_BUTTONS] =  {0,2,3,4,5,6,7,8,9};
 #endif
 
-esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher)
+esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher, int taskPriority, int touchSensortNotificationEvent)
 {
     assert(this);
     assert(pNotificationDispatcher);
@@ -53,6 +51,7 @@ esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificat
     memset(this, 0, sizeof(*this));
 
     this->pNotificationDispatcher = pNotificationDispatcher;
+    this->touchSensortNotificationEvent = touchSensortNotificationEvent;
 
     // Defaults to software trigger mode
     ret = touch_pad_init();
@@ -77,7 +76,7 @@ esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificat
     ret = touch_pad_filter_start(TOUCH_FILTER_PERIOD_MS);
     ESP_ERROR_CHECK(ret);
 
-    assert(xTaskCreatePinnedToCore(TouchSensorTask, "TouchSensorTask", configMINIMAL_STACK_SIZE * 2, this, TOUCH_SENSOR_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+    assert(xTaskCreatePinnedToCore(TouchSensorTask, "TouchSensorTask", configMINIMAL_STACK_SIZE * 2, this, taskPriority, NULL, APP_CPU_NUM) == pdPASS);
     return ret;
 }
 
@@ -156,7 +155,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
                     this->touchSensorActiveTimeStamp[i] = curTime;
 
                     TouchSensorEventNotificationData notificationData = { .touchSensorIdx = i, .touchSensorEvent = TOUCH_SENSOR_EVENT_TOUCHED };
-                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchSensortNotificationEvent, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     if (ret != ESP_OK)
                     {
                         ESP_LOGE(TOUCH_TAG, "NotificationDispatcher_NotifyEvent for TOUCH_SENSOR_EVENT_TOUCHED event error %d", ret);
@@ -173,7 +172,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
                     this->touchSensorActiveTimeStamp[i] = curTime;
 
                     TouchSensorEventNotificationData notificationData = { .touchSensorIdx = i, .touchSensorEvent = TOUCH_SENSOR_EVENT_RELEASED };
-                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchSensortNotificationEvent, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     if (ret != ESP_OK)
                     {
                         ESP_LOGE(TOUCH_TAG, "NotificationDispatcher_NotifyEvent for TOUCH_SENSOR_EVENT_RELEASED event error %d", ret);
@@ -196,7 +195,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
                     ESP_LOGD(TOUCH_TAG, "Touch %d Short Pressed", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_SHORT_PRESSED;
                     TouchSensorEventNotificationData notificationData = { .touchSensorIdx = i, .touchSensorEvent = TOUCH_SENSOR_EVENT_SHORT_PRESSED };
-                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchSensortNotificationEvent, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     if (ret != ESP_OK)
                     {
                         ESP_LOGE(TOUCH_TAG, "NotificationDispatcher_NotifyEvent for TOUCH_SENSOR_EVENT_SHORT_PRESSED event error %d", ret);
@@ -209,7 +208,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
                     ESP_LOGD(TOUCH_TAG, "Touch %d Long Pressed", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_LONG_PRESSED;
                     TouchSensorEventNotificationData notificationData = { .touchSensorIdx = i, .touchSensorEvent = TOUCH_SENSOR_EVENT_LONG_PRESSED };
-                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchSensortNotificationEvent, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     if (ret != ESP_OK)
                     {
                         ESP_LOGE(TOUCH_TAG, "NotificationDispatcher_NotifyEvent for NOTIFICATION_EVENTS_BUTTON_LONG_PRESSED event error %d", ret);
@@ -221,7 +220,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
                     ESP_LOGD(TOUCH_TAG, "Touch %d Super Long Pressed", i);
                     this->touchSensorActive[i] = TOUCH_SENSOR_EVENT_VERY_LONG_PRESSED;
                     TouchSensorEventNotificationData notificationData = { .touchSensorIdx = i, .touchSensorEvent = TOUCH_SENSOR_EVENT_VERY_LONG_PRESSED };
-                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchSensortNotificationEvent, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     if (ret != ESP_OK)
                     {
                         ESP_LOGE(TOUCH_TAG, "NotificationDispatcher_NotifyEvent for TOUCH_SENSOR_EVENT_VERY_LONG_PRESSED event error %d", ret);
@@ -236,7 +235,7 @@ static esp_err_t MonitorTouchSensors(TouchSensor *this)
                     this->touchSensorActiveTimeStamp[i] = curTime;
 
                     TouchSensorEventNotificationData notificationData = { .touchSensorIdx = i, .touchSensorEvent = TOUCH_SENSOR_EVENT_RELEASED };
-                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
+                    ret = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->touchSensortNotificationEvent, &notificationData, sizeof(notificationData), DEFAULT_NOTIFY_WAIT_DURATION);
                     if (ret != ESP_OK)
                     {
                         ESP_LOGE(TOUCH_TAG, "NotificationDispatcher_NotifyEvent for TOUCH_SENSOR_EVENT_RELEASED event error %d", ret);

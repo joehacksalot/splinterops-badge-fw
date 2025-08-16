@@ -92,7 +92,7 @@ typedef enum TouchSensorFman25Names_t
     
     TOUCH_SENSOR_NUM_BUTTONS // 9
 } TouchSensorNames;
-#endif 
+#endif
 
 typedef struct TouchSensor_t
 {
@@ -103,10 +103,11 @@ typedef struct TouchSensor_t
     int touchSensorActive[TOUCH_SENSOR_NUM_BUTTONS];
     TickType_t touchSensorActiveTimeStamp[TOUCH_SENSOR_NUM_BUTTONS];
     esp_event_loop_handle_t touch_notify_loop_task;
+    int touchSensortNotificationEvent;
     bool touchEnabled;
 } TouchSensor;
 
-esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher);
+esp_err_t TouchSensor_Init(TouchSensor *this, NotificationDispatcher *pNotificationDispatcher, int taskPriority, int touchSensortNotificationEvent);
 int TouchSensor_GetTouchSensorActive(TouchSensor *this, int pad_num);
 esp_err_t TouchSensor_SetTouchEnabled(TouchSensor *this, bool enabled);
 
