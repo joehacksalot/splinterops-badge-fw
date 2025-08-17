@@ -40,10 +40,13 @@ typedef struct WifiClient_t
     int32_t numClients;
 
     NotificationDispatcher *pNotificationDispatcher;
-    UserSettings *pUserSettings;
+    uint8_t ssid[32];
+    uint8_t password[64];
+    int testCompleteEventId;
+    int wifiTaskPriority;
 } WifiClient;
 
-esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings);
+esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, uint8_t *ssid, uint8_t *password, int testCompleteEventId, int wifiTaskPriority);
 
 // Immediately enable wifi
 // DOES NOT turn wifi off on its own

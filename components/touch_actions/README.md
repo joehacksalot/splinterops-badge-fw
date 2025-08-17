@@ -30,8 +30,15 @@ This component acts as a bridge between raw touch sensor events and meaningful u
 TouchActions touchActions;
 NotificationDispatcher notificationDispatcher;
 
-// Initialize the touch actions system
-esp_err_t ret = TouchActions_Init(&touchActions, &notificationDispatcher);
+// Example event IDs (use your project's actual values)
+const int TOUCH_SENSOR_EVENT_ID = NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION;
+const int TOUCH_ACTION_CMD_EVENT_ID = NOTIFICATION_EVENTS_TOUCH_ACTION_CMD;
+
+// Initialize the touch actions system: subscribe to touch sensor event, publish touch action event
+esp_err_t ret = TouchActions_Init(&touchActions,
+                                  &notificationDispatcher,
+                                  TOUCH_SENSOR_EVENT_ID,
+                                  TOUCH_ACTION_CMD_EVENT_ID);
 if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Failed to initialize touch actions");
 }
@@ -74,12 +81,14 @@ NotificationDispatcher_RegisterNotificationEventHandler(
 
 ### Functions
 
-#### `TouchActions_Init(TouchActions *this, NotificationDispatcher *pNotificationDispatcher)`
-Initializes the touch actions system and registers for touch sensor notifications.
+#### `TouchActions_Init(TouchActions *this, NotificationDispatcher *pNotificationDispatcher, int touchSensorEvent, int touchActionEvent)`
+Initializes the touch actions system, registers for touch sensor notifications, and sets the event used to publish action commands.
 
 **Parameters:**
 - `this`: Pointer to TouchActions structure
 - `pNotificationDispatcher`: Pointer to notification dispatcher for event handling
+- `touchSensorEvent`: Event ID to subscribe to (from `touch_sensor`) for incoming sensor notifications
+- `touchActionEvent`: Event ID to publish (action command notifications)
 
 **Returns:**
 - `ESP_OK` on success

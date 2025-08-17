@@ -5,9 +5,6 @@
 
 #include "WifiClient.h"
 #include "NotificationDispatcher.h"
-#include "NotificationEvents.h"
-#include "UserSettings.h"
-#include "TaskPriorities.h"
 #include "TimeUtils.h"
 #include "Utilities.h"
 
@@ -68,18 +65,20 @@ void _WifiClient_Enable(WifiClient *this);
 // }
 
 // Should be called by app_main on boot to prevent race condition on initial initialization
-esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, UserSettings *pUserSettings)
+esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificationDispatcher, uint8_t *ssid, uint8_t *password, int testCompleteEventId, int wifiTaskPriority)
 {
     esp_err_t retVal = ESP_FAIL;
     assert(this);
     assert(pNotificationDispatcher);
-    assert(pUserSettings);
+    assert(ssid);
+    assert(password);
 
     this->pNotificationDispatcher = pNotificationDispatcher;
-    this->pUserSettings = pUserSettings;
     this->state = WIFI_CLIENT_STATE_DISCONNECTED;
-    strncpy((char*)this->defconWifiSettings.ssid, CONFIG_WIFI_SSID, sizeof(this->defconWifiSettings.ssid));
-    strncpy((char*)this->defconWifiSettings.password, CONFIG_WIFI_PASSWORD, sizeof(this->defconWifiSettings.password));
+    strncpy((char*)this->ssid, (char*)ssid, sizeof(this->ssid));
+    strncpy((char*)this->password, (char*)password, sizeof(this->password));
+    this->testCompleteEventId = testCompleteEventId;
+    this->wifiTaskPriority = wifiTaskPriority;
 
     this->clientMutex = xSemaphoreCreateMutex();
 
@@ -126,7 +125,7 @@ esp_err_t WifiClient_Init(WifiClient *this, NotificationDispatcher *pNotificatio
         retVal = ESP_OK;
     }
 
-    assert(xTaskCreatePinnedToCore(_WifiTask, "WifiClientTask", configMINIMAL_STACK_SIZE * 2, this, WIFI_CONTROL_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+    assert(xTaskCreatePinnedToCore(_WifiTask, "WifiClientTask", configMINIMAL_STACK_SIZE * 2, this, this->wifiTaskPriority, NULL, APP_CPU_NUM) == pdPASS);
 
     return retVal;
 }
@@ -165,8 +164,8 @@ void _WifiClient_Enable(WifiClient *this)
         }
 
         WifiSettings customWifiSettings;
-        strncpy((char*)customWifiSettings.ssid, (char*)this->pUserSettings->settings.wifiSettings.ssid, sizeof(customWifiSettings.ssid));
-        strncpy((char*)customWifiSettings.password,(char*)this->pUserSettings->settings.wifiSettings.password, sizeof(customWifiSettings.password));
+        strncpy((char*)customWifiSettings.ssid, (char*)this->ssid, sizeof(customWifiSettings.ssid));
+        strncpy((char*)customWifiSettings.password, (char*)this->password, sizeof(customWifiSettings.password));
 
         ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_scan_count, ap_info));  // esp_wifi_scan_get_ap_records clears memory allocated from scan_start
@@ -359,8 +358,8 @@ void WifiClient_TestConnect(WifiClient *this)
     WifiClient_RequestConnect(this, 0);
     bool success = (ESP_OK == WifiClient_WaitForConnected(this));
     esp_err_t err;
-    if ((err = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE, (void*)&success, sizeof(success), DEFAULT_NOTIFY_WAIT_DURATION)) != ESP_OK) {
-        ESP_LOGE(TAG, "NotificationDispatcher_NotifyEvent NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE failed: %s", esp_err_to_name(err));
+    if ((err = NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->testCompleteEventId, (void*)&success, sizeof(success), DEFAULT_NOTIFY_WAIT_DURATION)) != ESP_OK) {
+        ESP_LOGE(TAG, "NotificationDispatcher_NotifyEvent this->testCompleteEventId failed: %s", esp_err_to_name(err));
     }
     WifiClient_Disconnect(this);
 }
