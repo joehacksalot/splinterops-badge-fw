@@ -250,3 +250,20 @@ The component is designed to be thread-safe:
 - Touch sensor task runs independently
 - State updates are atomic
 - Notification publishing is thread-safe via notification dispatcher
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["Touch Sensor<br/><small>splinterops</small>"] --> B["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> C["time_utils<br/><small>splinterops</small>"]
+    A --> D["utilities<br/><small>splinterops</small>"]
+    A --> E["badge_hw_profile<br/><small>splinterops</small>"]
+
+    %% Styling
+    style A fill:#e1f5fe,color:#000000
+    style B fill:#e1f5fe,color:#000000
+    style C fill:#e1f5fe,color:#000000
+    style D fill:#e1f5fe,color:#000000
+    style E fill:#e1f5fe,color:#000000
+```

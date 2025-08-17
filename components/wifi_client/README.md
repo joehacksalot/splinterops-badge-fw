@@ -173,3 +173,18 @@ components/wifi_client/
 
 - A task `WifiClientTask` is created in `WifiClient_Init()` pinned to `APP_CPU_NUM` with stack size `configMINIMAL_STACK_SIZE * 2` and priority `wifiTaskPriority`.
 - AP selection order: provided SSID first, then `defconWifiSettings` fallback if present.
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["WiFi Client<br/><small>splinterops</small>"] --> G["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> H["time_utils<br/><small>splinterops</small>"]
+    A --> I["utilities<br/><small>splinterops</small>"]
+
+    %% Styling
+    style A fill:#e1f5fe,color:#000000
+    style G fill:#e1f5fe,color:#000000
+    style H fill:#e1f5fe,color:#000000
+    style I fill:#e1f5fe,color:#000000
+```

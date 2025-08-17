@@ -191,3 +191,26 @@ idf_component_register(
 ## Thread Safety
 
 The component is designed to be thread-safe when used with the notification dispatcher system. All state updates occur within the notification event handler context.
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["Touch Actions<br/><small>splinterops</small>"] --> B["touch_sensor<br/><small>splinterops</small>"]
+    A --> C["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> D["badge_hw_profile<br/><small>splinterops</small>"]
+
+    %% Transitive deps within SplinterOps from touch_sensor
+    B --> C
+    B --> E["time_utils<br/><small>splinterops</small>"]
+    B --> F["utilities<br/><small>splinterops</small>"]
+    B --> D
+
+    %% Styling
+    style A fill:#e1f5fe,color:#000000
+    style B fill:#e1f5fe,color:#000000
+    style C fill:#e1f5fe,color:#000000
+    style D fill:#e1f5fe,color:#000000
+    style E fill:#e1f5fe,color:#000000
+    style F fill:#e1f5fe,color:#000000
+```

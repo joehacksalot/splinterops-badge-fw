@@ -62,3 +62,23 @@ components/badge_metrics/
 ├── BadgeMetrics.h    # Public API
 └── README.md         # This documentation
 ```
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["badge_metrics<br/><small>splinterops</small>"] --> D["disk_utilities<br/><small>splinterops</small>"]
+    A --> E["utilities<br/><small>splinterops</small>"]
+    
+    %% Transitive deps from SplinterOps components
+    D --> F["battery_sensor<br/><small>splinterops</small>"]
+    F --> G["notification_dispatcher<br/><small>splinterops</small>"]
+    F --> E
+
+    %% SplinterOps components styling
+    style A fill:#e1f5fe,color:#000000
+    style D fill:#e1f5fe,color:#000000
+    style E fill:#e1f5fe,color:#000000
+    style F fill:#e1f5fe,color:#000000
+    style G fill:#e1f5fe,color:#000000
+```

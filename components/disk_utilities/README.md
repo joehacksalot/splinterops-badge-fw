@@ -70,3 +70,20 @@ graph TD
     %% FreeRTOS components
     style F fill:#f8cecc,color:#000000
 ```
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["DiskUtilities<br/><small>splinterops</small>"] --> B["battery_sensor<br/><small>splinterops</small>"]
+    
+    %% Transitive deps within SplinterOps
+    B --> C["notification_dispatcher<br/><small>splinterops</small>"]
+    B --> D["utilities<br/><small>splinterops</small>"]
+
+    %% Styling
+    style A fill:#e1f5fe,color:#000000
+    style B fill:#e1f5fe,color:#000000
+    style C fill:#e1f5fe,color:#000000
+    style D fill:#e1f5fe,color:#000000
+```

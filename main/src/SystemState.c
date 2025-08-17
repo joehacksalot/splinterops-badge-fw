@@ -251,7 +251,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(TouchActions_Init(&this->touchActions, &this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_SENSE_ACTION, NOTIFICATION_EVENTS_TOUCH_ACTION_CMD));
     ESP_ERROR_CHECK(BleControl_Init(&this->bleControl, &this->notificationDispatcher, &this->userSettings, &this->gameState));
     ESP_ERROR_CHECK(WifiClient_Init(&this->wifiClient, &this->notificationDispatcher, this->userSettings.settings.wifiSettings.ssid, this->userSettings.settings.wifiSettings.password, NOTIFICATION_EVENTS_NETWORK_TEST_COMPLETE, WIFI_CONTROL_TASK_PRIORITY));
-    ESP_ERROR_CHECK(OtaUpdate_Init(&this->otaUpdate, &this->wifiClient, &this->notificationDispatcher));
+    ESP_ERROR_CHECK(OtaUpdate_Init(&this->otaUpdate, &this->wifiClient, &this->notificationDispatcher, OTA_UPDATE_TASK_PRIORITY, APP_CPU_NUM, NOTIFICATION_EVENTS_OTA_UPDATE_AVAILABLE, NOTIFICATION_EVENTS_OTA_DOWNLOAD_INITIATED, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE));
     ESP_ERROR_CHECK(HTTPGameClient_Init(&this->httpGameClient, &this->wifiClient, &this->notificationDispatcher, &this->batterySensor));
 
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_TOUCH_ACTION_CMD,                 &SystemState_TouchActionNotificationHandler,    this));

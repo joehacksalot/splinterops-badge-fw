@@ -10,9 +10,8 @@
 #include "esp_crt_bundle.h"
 
 #include "OtaUpdate.h"
-#include "TaskPriorities.h"
 #include "Utilities.h"
-#include "NotificationEvents.h"
+#include "BadgeHwProfile.h"
 
 // Internal Function Declarations
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt);
@@ -40,15 +39,18 @@ static const char * TAG = "ota_task";
 #define OTA_CHECK_DELAY_MS      OTA_CHECK_DELAY_HOURS * HOURS_TO_MS
 #define OTA_WIFI_WAIT_TIME_MS   0 * 60 * 1000                       // Immediately turn on wifi
 
-esp_err_t OtaUpdate_Init(OtaUpdate *this, WifiClient *pWifiClient, NotificationDispatcher * pNotificationDispatcher)
+esp_err_t OtaUpdate_Init(OtaUpdate *this, WifiClient *pWifiClient, NotificationDispatcher * pNotificationDispatcher, int priority, int cpuNumber, int updateAvailableEventId, int downloadInitiatedEventId, int downloadCompletedEventId)
 {
     assert(this);
     memset(this, 0, sizeof(*this));
 
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pWifiClient = pWifiClient;
+    this->updateAvailableEventId = updateAvailableEventId;
+    this->downloadInitiatedEventId = downloadInitiatedEventId;
+    this->downloadCompletedEventId = downloadCompletedEventId;
 
-    assert(xTaskCreatePinnedToCore(OtaUpdateTask, "OtaUpdateTask", configMINIMAL_STACK_SIZE * 3, this, OTA_UPDATE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
+    assert(xTaskCreatePinnedToCore(OtaUpdateTask, "OtaUpdateTask", configMINIMAL_STACK_SIZE * 3, this, priority, NULL, cpuNumber) == pdPASS);
     return ESP_OK;
 }
 
@@ -77,7 +79,7 @@ static esp_err_t CheckUpdateRequired(OtaUpdate * this, esp_app_desc_t * new_app_
                 // TODO: Do we need to validate this version?
                 ESP_LOGI(TAG, "OTA Update Starting");
                 ret = ESP_OK;
-                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_REQUIRED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->updateAvailableEventId, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
             }
         }
 
@@ -155,7 +157,7 @@ static void OtaUpdateTask(void *pvParameters)
                     {
                         ESP_LOGI(TAG, "image update required");
                         ESP_LOGI(TAG, "image download starting");
-                        NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_INITIATED, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                        NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->downloadInitiatedEventId, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
 
                         // Retrieve the ota image
                         esp_err_t ota_status;
@@ -180,7 +182,7 @@ static void OtaUpdateTask(void *pvParameters)
                             if ((ota_status == ESP_OK) && (ota_finish_err == ESP_OK)) 
                             {
                                 ESP_LOGI(TAG, "Firmware upgrade successful. Rebooting in one");
-                                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->downloadCompletedEventId, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                                 vTaskDelay(pdMS_TO_TICKS(1000));
                                 esp_restart();
                             }
@@ -191,13 +193,13 @@ static void OtaUpdateTask(void *pvParameters)
                                     ESP_LOGE(TAG, "firmware validation failed, image corrupted");
                                 }
                                 ESP_LOGE(TAG, "firmware upgrade failed 0x%x", ota_finish_err);
-                                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                                NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->downloadCompletedEventId, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                             }
                         }
                         else
                         {
                             ESP_LOGE(TAG, "Failed to retrieve complete firmware image");
-                            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
+                            NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, this->downloadCompletedEventId, NULL, 0, DEFAULT_NOTIFY_WAIT_DURATION);
                         }
                     }
                     else

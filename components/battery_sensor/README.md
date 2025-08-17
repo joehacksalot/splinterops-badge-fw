@@ -150,3 +150,16 @@ Battery percentage is calculated as:
 ```
 Percentage = ((min(Battery_Voltage, BAT_MAX) - BAT_MIN) × 100) / (BAT_MAX - BAT_MIN)
 ```
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["BatterySensor<br/><small>splinterops</small>"] --> F["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> G["utilities<br/><small>splinterops</small>"]
+
+    %% SplinterOps components styling
+    style A fill:#e1f5fe,color:#000000
+    style F fill:#e1f5fe,color:#000000
+    style G fill:#e1f5fe,color:#000000
+```

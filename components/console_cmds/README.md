@@ -92,3 +92,23 @@ components/console_cmds/
 
 - USB CDC console is not supported (`CONFIG_ESP_CONSOLE_USB_CDC` incompatible path is guarded).
 - History persistence requires a mounted filesystem at `CONFIG_MOUNT_PATH`.
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["console_cmds<br/><small>splinterops</small>"] --> G["disk_utilities<br/><small>splinterops</small>"]
+    A --> H["utilities<br/><small>splinterops</small>"]
+
+    %% Transitive deps from SplinterOps components
+    G --> I["battery_sensor<br/><small>splinterops</small>"]
+    I --> J["notification_dispatcher<br/><small>splinterops</small>"]
+    I --> H
+
+    %% SplinterOps components styling
+    style A fill:#e1f5fe,color:#000000
+    style G fill:#e1f5fe,color:#000000
+    style H fill:#e1f5fe,color:#000000
+    style I fill:#e1f5fe,color:#000000
+    style J fill:#e1f5fe,color:#000000
+```

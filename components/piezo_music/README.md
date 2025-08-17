@@ -175,3 +175,13 @@ Then include the headers in your code:
 #include "Song.h"
 #include "Notes.h"
 ```
+
+## SplinterOps Dependency Tree
+
+```mermaid
+graph TD
+    A["Piezo Music<br/><small>splinterops</small>"] --> C["utilities<br/><small>splinterops</small>"]
+
+    style A fill:#e1f5fe,color:#000000
+    style C fill:#e1f5fe,color:#000000
+```
