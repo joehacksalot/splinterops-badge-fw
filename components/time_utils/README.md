@@ -188,6 +188,17 @@ The `TimeUtils_IsTimeExpired()` function performs an inclusive check, meaning it
 
 - ESP-IDF `freertos` component for tick count functions and time conversion macros
 
+```mermaid
+graph TD
+    A["Time Utils<br/><small>splinterops</small>"] --> B["freertos<br/><small>esp-idf</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+
+    %% ESP-IDF components
+    style B fill:#fff2cc,color:#000000
+```
+
 ## Integration
 
 To use this component in your project, include it in your component's CMakeLists.txt:

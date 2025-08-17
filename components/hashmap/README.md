@@ -82,6 +82,18 @@ The library provides several built-in hash functions:
 
 This hashmap implementation is **not** thread-safe. If you need to use it in a multi-threaded environment, you must provide your own synchronization mechanisms.
 
+## Dependencies
+
+This component has no external component dependencies.
+
+```mermaid
+graph TD
+    A["Hashmap<br/><small>splinterops</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+```
+
 ## License
 
 MIT License - see the source files for full license text.

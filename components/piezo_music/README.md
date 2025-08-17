@@ -145,6 +145,19 @@ typedef struct SongNotes_t {
 - ESP-IDF `log` component for logging functionality
 - `Utilities.h` (referenced in Songs.c)
 
+```mermaid
+graph TD
+    A["Piezo Music<br/><small>splinterops</small>"] --> B["log<br/><small>esp-idf</small>"]
+    A --> C["utilities<br/><small>splinterops</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+    style C fill:#e1f5fe,color:#000000
+
+    %% ESP-IDF components
+    style B fill:#fff2cc,color:#000000
+```
+
 ## Integration
 
 To use this component in your project, include it in your main component's CMakeLists.txt:

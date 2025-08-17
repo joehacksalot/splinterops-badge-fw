@@ -203,6 +203,29 @@ Event data includes sensor index and event type for processing by higher-level c
 - `utilities` component for utility functions
 - `badge_hw_profile` component for hardware-specific definitions
 
+```mermaid
+graph TD
+    A["Touch Sensor<br/><small>splinterops</small>"] --> B["driver<br/><small>esp-idf</small>"]
+    A --> C["freertos<br/><small>esp-idf</small>"]
+    A --> D["log<br/><small>esp-idf</small>"]
+    A --> E["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> F["time_utils<br/><small>splinterops</small>"]
+    A --> G["utilities<br/><small>splinterops</small>"]
+    A --> H["badge_hw_profile<br/><small>splinterops</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+    style E fill:#e1f5fe,color:#000000
+    style F fill:#e1f5fe,color:#000000
+    style G fill:#e1f5fe,color:#000000
+    style H fill:#e1f5fe,color:#000000
+
+    %% ESP-IDF components
+    style B fill:#fff2cc,color:#000000
+    style C fill:#fff2cc,color:#000000
+    style D fill:#fff2cc,color:#000000
+```
+
 ## Integration
 
 To use this component in your project, include it in your component's CMakeLists.txt:

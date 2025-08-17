@@ -158,6 +158,19 @@ void non_blocking_function() {
 - ESP-IDF `freertos` component for mutex functionality
 - ESP-IDF `log` component for logging
 
+```mermaid
+graph TD
+    A["Mutex<br/><small>splinterops</small>"] --> B["freertos<br/><small>esp-idf</small>"]
+    A --> C["log<br/><small>esp-idf</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+
+    %% ESP-IDF components
+    style B fill:#fff2cc,color:#000000
+    style C fill:#fff2cc,color:#000000
+```
+
 ## Integration
 
 To use this component in your project, include it in your component's CMakeLists.txt:

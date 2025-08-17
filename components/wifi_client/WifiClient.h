@@ -10,7 +10,7 @@
 #include "esp_err.h"
 
 #include "NotificationDispatcher.h"
-#include "UserSettings.h"
+#include "WifiSettings.h"
 
 typedef enum WifiClient_State_e
 {

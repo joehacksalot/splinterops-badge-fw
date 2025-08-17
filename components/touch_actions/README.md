@@ -160,6 +160,23 @@ This function analyzes the current touch sensor states and returns the appropria
 - `badge_hw_profile` component for badge-specific command mapping logic
 - ESP-IDF `log` component for logging
 
+```mermaid
+graph TD
+    A["Touch Actions<br/><small>splinterops</small>"] --> B["touch_sensor<br/><small>splinterops</small>"]
+    A --> C["notification_dispatcher<br/><small>splinterops</small>"]
+    A --> D["badge_hw_profile<br/><small>splinterops</small>"]
+    A --> E["log<br/><small>esp-idf</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+    style B fill:#e1f5fe,color:#000000
+    style C fill:#e1f5fe,color:#000000
+    style D fill:#e1f5fe,color:#000000
+
+    %% ESP-IDF components
+    style E fill:#fff2cc,color:#000000
+```
+
 ## Integration
 
 To use this component in your project, include it in your component's CMakeLists.txt:

@@ -121,6 +121,21 @@ Main control structure containing:
 - ESP-IDF `esp_timer` component for timeout functionality  
 - ESP-IDF `log` component for logging
 
+```mermaid
+graph TD
+    A["GPIO Control<br/><small>splinterops</small>"] --> B["driver<br/><small>esp-idf</small>"]
+    A --> C["esp_timer<br/><small>esp-idf</small>"]
+    A --> D["log<br/><small>esp-idf</small>"]
+
+    %% SplinterOps components
+    style A fill:#e1f5fe,color:#000000
+
+    %% ESP-IDF components
+    style B fill:#fff2cc,color:#000000
+    style C fill:#fff2cc,color:#000000
+    style D fill:#fff2cc,color:#000000
+```
+
 ## Integration
 
 To use this component in your project, include it in your main component's CMakeLists.txt:
