@@ -9,7 +9,7 @@ This component provides a type-safe, generic hashmap implementation using C macr
 ## Features
 
 - **Type-safe**: Uses C macros to provide compile-time type safety
-- **Generic**: Works with any key and data types
+- **Generic**: Works with any uniqueKey and data types
 - **Efficient**: Uses open addressing with linear probing
 - **Iterator support**: Provides safe iteration over hashmap entries
 - **Memory efficient**: Automatically resizes based on load factor
@@ -37,7 +37,7 @@ hashmap_init(&my_map, hashmap_hash_default, hashmap_compare_default);
 ### Basic Operations
 
 ```c
-// Put a key-value pair
+// Put a uniqueKey-value pair
 hashmap_put(&my_map, &key, &value);
 
 // Get a value by key

@@ -500,11 +500,11 @@ static esp_err_t _ParseJsonResponseString(NotificationDispatcher *pNotificationD
                 {
                     ESP_LOGI(TAG, "Sibling %s not in map, adding", siblingValue);
                     bool *siblingSeen = calloc(sizeof(bool), 1);
-                    char *badgeIdB64 = calloc(BADGE_ID_B64_SIZE, sizeof(char));
-                    strncpy(badgeIdB64, siblingValue, BADGE_ID_B64_SIZE - 1);
+                    char *uuidB64 = calloc(BADGE_UUID_B64_SIZE, sizeof(char));
+                    strncpy(uuidB64, siblingValue, BADGE_UUID_B64_SIZE - 1);
 
                     // TODO : EMP doesn't yet account for removing a sibling from the map, must power cycle to reset
-                    if (hashmap_put(pSiblings, badgeIdB64, siblingSeen))
+                    if (hashmap_put(pSiblings, uuidB64, siblingSeen))
                     {
                         ESP_LOGE(TAG, "Failed to add sibling %s to map", siblingValue);
                     }
@@ -770,6 +770,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     assert(notificationData);
     HTTPGameClient * this = (HTTPGameClient *)pObj;
     HeartBeatRequest *pRequest = (HeartBeatRequest *)notificationData;
+    Badge *badge = Badge_GetInstance();
 
     // Prepare peer report json
     ESP_LOGI(TAG, "Handling HeartBeatRequest notification");
@@ -777,7 +778,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     int offset = 0;
     if (pRequest->numPeerReports > 0)
     {
-        offset = snprintf(this->peerReport, sizeof(this->peerReport), PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[0].badgeIdB64, pRequest->peerReports[0].peakRssi, pRequest->peerReports[0].eventIdB64);
+        offset = snprintf(this->peerReport, sizeof(this->peerReport), PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[0].uuidB64, pRequest->peerReports[0].peakRssi, pRequest->peerReports[0].eventIdB64);
         if (offset < 0)
         {
             ESP_LOGE(TAG, "Failed to add peer report to json");
@@ -795,7 +796,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
         }
 
         offset += res1;
-        int res2 = snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].badgeIdB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
+        int res2 = snprintf(this->peerReport + offset, sizeof(this->peerReport) - offset, PEER_REPORT_JSON_TEMPLATE, pRequest->peerReports[i].uuidB64, pRequest->peerReports[i].peakRssi, pRequest->peerReports[i].eventIdB64);
         if (res2 < 0)
         {
             ESP_LOGE(TAG, "Failed to add peer report to json");
@@ -818,7 +819,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     
     struct timeval tv;
     gettimeofday(&tv, NULL); // timezone structure is obsolete
-    int coded_badge_type = GetBadgeType();
+    int coded_badge_type = badge->badgeType;
     char songsStr[27] = {0}; // size based on max possible size of song string with null terminator: "1,2,3,4,5,6,7,8,9,10,11,12"
     int songStrOffset = 0;
     bool first = true;
@@ -855,8 +856,8 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
 
     TickType_t curTimeTicks = TimeUtils_GetCurTimeTicks();
     int len = snprintf((char *)pHttpRequest->pData, sizeof(pHttpRequest->pData), HEARTBEAT_JSON_TEMPLATE, 
-                        pRequest->badgeIdB64,  // uuid %s
-                        pRequest->keyB64,      // key %s
+                        pRequest->uuidB64,  // uuid %s
+                        pRequest->uniqueKeyB64,      // key %s
                                                // provisionKey hard coded
                         this->peerReport,      // peerReport %s 
                         eventIdStr,            // enrolledEvent %s

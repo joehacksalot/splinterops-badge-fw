@@ -73,13 +73,14 @@ esp_err_t GameState_Init(GameState *this, NotificationDispatcher *pNotificationD
 void GameState_SendHeartBeat(GameState *this, uint32_t waitTimeMs)
 {
     ESP_LOGI(TAG, "Current heartbeat time %lu", waitTimeMs);
+    Badge *badge = Badge_GetInstance();
     this->nextHeartBeatTime = TimeUtils_GetFutureTimeTicks(waitTimeMs);
     this->sendHeartbeatImmediately = false;
     if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
         HeartBeatRequest heartBeatRequest = { .gameStateData = this->gameStateData, .badgeStats = this->pBadgeStats->badgeStats, .waitTimeMs = 0, .numPeerReports = this->numPeerReports };
-        memcpy(heartBeatRequest.badgeIdB64, this->pUserSettings->badgeIdB64, sizeof(heartBeatRequest.badgeIdB64));
-        memcpy(heartBeatRequest.keyB64, this->pUserSettings->keyB64, sizeof(heartBeatRequest.keyB64));
+        memcpy(heartBeatRequest.uuidB64, badge->uuidB64, sizeof(heartBeatRequest.uuidB64));
+        memcpy(heartBeatRequest.uniqueKeyB64, badge->uniqueKeyB64, sizeof(heartBeatRequest.uniqueKeyB64));
         memcpy(heartBeatRequest.peerReports, this->peerReports, sizeof(heartBeatRequest.peerReports));
         NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_READY_TO_SEND, &heartBeatRequest, sizeof(heartBeatRequest), DEFAULT_NOTIFY_WAIT_DURATION);
         hashmap_clear(&this->peerMap);
@@ -102,7 +103,7 @@ static void _GameState_Task(void *pvParameters)
 
     // TEST CODE
     // vTaskDelay(pdMS_TO_TICKS(20000));
-    // HeartBeatRequest request = { .badgeIdB64 = "badgeId12345", .keyB64 = "badgekey1234", .gameStateData = { .status = {.currentEventColor = GAMESTATE_EVENTCOLOR_RED, .currentEventIdB64 = "eventId12345", .mSecRemaining = 15*60*1000, .powerLevel = 75}}};
+    // HeartBeatRequest request = { .uuidB64 = "badgeId12345", .uniqueKeyB64 = "badgekey1234", .gameStateData = { .status = {.currentEventColor = GAMESTATE_EVENTCOLOR_RED, .currentEventIdB64 = "eventId12345", .mSecRemaining = 15*60*1000, .powerLevel = 75}}};
     // NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_WIFI_HEARTBEAT_RESPONSE_RECV, &request, sizeof(request), DEFAULT_NOTIFY_WAIT_DURATION);
     // END TEST CODE
 
@@ -298,21 +299,21 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
     assert(this);
     if (xSemaphoreTake(this->gameStateDataMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
     {
-        int *pIndex = hashmap_get(&this->peerMap, peerReport->badgeIdB64);
+        int *pIndex = hashmap_get(&this->peerMap, peerReport->uuidB64);
         if (pIndex != NULL)
         {
             int index = *pIndex;
             // Check if event id changed, if so update
             if (strncmp(this->peerReports[index].eventIdB64, peerReport->eventIdB64, EVENT_ID_B64_SIZE) != 0)
             {
-                ESP_LOGI(TAG, "Updating event id for badge id [B64] %s", peerReport->badgeIdB64);
+                ESP_LOGI(TAG, "Updating event id for badge id [B64] %s", peerReport->uuidB64);
                 memcpy(this->peerReports[index].eventIdB64, peerReport->eventIdB64, EVENT_ID_B64_SIZE);
             }
 
             // Check if peak signal strength is greater (less negative)
             if (peerReport->peakRssi > this->peerReports[index].peakRssi)
             {
-                ESP_LOGD(TAG, "Updating peak rssi for badge id [B64] %s", peerReport->badgeIdB64);
+                ESP_LOGD(TAG, "Updating peak rssi for badge id [B64] %s", peerReport->uuidB64);
                 this->peerReports[index].peakRssi = peerReport->peakRssi;
             }
 
@@ -323,12 +324,12 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
             int hashmapSize = hashmap_size(&this->peerMap);
             if (hashmapSize < MAX_PEER_MAP_DEPTH)
             {
-                ESP_LOGI(TAG, "Adding new badge id [B64] %s with event id [B64] %s to peer map", peerReport->badgeIdB64, peerReport->eventIdB64);
+                ESP_LOGI(TAG, "Adding new badge id [B64] %s with event id [B64] %s to peer map", peerReport->uuidB64, peerReport->eventIdB64);
                 this->peerReports[hashmapSize] = *peerReport;
-                int result = hashmap_put(&this->peerMap, this->peerReports[hashmapSize].badgeIdB64, &mapIndices[hashmapSize]);
+                int result = hashmap_put(&this->peerMap, this->peerReports[hashmapSize].uuidB64, &mapIndices[hashmapSize]);
                 if (result != 0)
                 {
-                    ESP_LOGE(TAG, "Failed to add badge id [B64] %s to peer map", peerReport->badgeIdB64);
+                    ESP_LOGE(TAG, "Failed to add badge id [B64] %s to peer map", peerReport->uuidB64);
                 }
                 else
                 {
@@ -339,7 +340,7 @@ esp_err_t GameState_AddPeerReport(GameState *this, PeerReport *peerReport)
             }
             else
             {
-                ESP_LOGI(TAG, "Skipping add of new badge id [B64] %s to peer map, map is full", peerReport->badgeIdB64);
+                ESP_LOGI(TAG, "Skipping add of new badge id [B64] %s to peer map, map is full", peerReport->uuidB64);
             }
         }
 
@@ -441,7 +442,7 @@ static void _GameState_NotificationHandler(void *pObj, esp_event_base_t eventBas
             if (notificationData != NULL)
             {
                 PeerReport peerReport = *((PeerReport *)notificationData);
-                ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s", peerReport.badgeIdB64);
+                ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s", peerReport.uuidB64);
                 GameState_AddPeerReport(this, &peerReport);
                 if (!_GameState_IsBlankEvent(peerReport.eventIdB64))
                 {

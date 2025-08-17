@@ -95,6 +95,7 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     {
         pBleControl = this;
     }
+    Badge *badge = Badge_GetInstance();
 
     this->pNotificationDispatcher = pNotificationDispatcher;
     this->pUserSettings = pUserSettings;
@@ -105,8 +106,8 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
 
     GetBadgeBleDeviceName(this->bleName, sizeof(this->bleName));
 
-    memcpy(this->iwcAdvPayload.badgeId, this->pUserSettings->badgeId, sizeof(this->iwcAdvPayload.badgeId));
-    this->iwcAdvPayload.badgeType = GetBadgeType();
+    memcpy(this->iwcAdvPayload.uuid, badge->uuid, sizeof(this->iwcAdvPayload.uuid));
+    this->iwcAdvPayload.badgeType = badge->badgeType;
     this->iwcAdvPayload.magicNum = EVENT_ADV_MAGIC_NUMBER;
     memset(this->iwcAdvPayload.eventId, 0, sizeof(this->iwcAdvPayload.eventId));
 

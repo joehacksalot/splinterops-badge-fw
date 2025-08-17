@@ -14,7 +14,7 @@ typedef enum FileType_e
 
 typedef struct BleSettingsResponseData_t
 {
-    uint8_t badgeId[8];
+    uint8_t uuid[8];
     struct BleSettingsPackedBits_t
     {
         uint8_t soundEnabled : 1;

@@ -20,9 +20,6 @@ The public API abstracts these details so the rest of the firmware can remain pr
 
 ## API Functions
 
-### `const char* BadgeHwProfile_Name(void)`
-Returns the human-readable name of the active hardware profile.
-
 ### `const int* BadgeHwProfile_TouchButtonMap(void)`
 Returns a pointer to the const touch button map for the active profile.
 
@@ -38,7 +35,6 @@ Copies the default BLE device name into `buffer` (null-terminated within `buffer
 #include "BadgeHwProfile.h"
 
 void app_use_profile(void) {
-    const char* name = BadgeHwProfile_Name();
     const int* map = BadgeHwProfile_TouchButtonMap();
     int mapSize = BadgeHwProfile_TouchButtonMapSize();
 

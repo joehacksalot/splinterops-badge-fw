@@ -23,8 +23,8 @@ typedef struct HeartBeatRequest_t
     BadgeStatsFile badgeStats;
     PeerReport peerReports[MAX_PEER_MAP_DEPTH];
     uint32_t numPeerReports;
-    char badgeIdB64[BADGE_ID_B64_SIZE];
-    char keyB64[KEY_B64_SIZE];
+    char uuidB64[BADGE_UUID_B64_SIZE];
+    char uniqueKeyB64[BADGE_UNIQUE_KEY_B64_SIZE];
     uint32_t waitTimeMs;
 } HeartBeatRequest;
 

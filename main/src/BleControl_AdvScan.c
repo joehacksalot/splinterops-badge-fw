@@ -329,15 +329,15 @@ static PeerReport _BleControl_CreatePeerReport(BleControl * this, IwcAdvertising
     assert(this);
 
     size_t b64Outlen;
-    uint8_t badgeIdB64[BADGE_ID_B64_SIZE];
-    mbedtls_base64_encode((unsigned char*)badgeIdB64, BADGE_ID_B64_SIZE, &b64Outlen, eventAdvPacket.badgeId, BADGE_ID_SIZE);
-    ESP_LOGD(TAG, "_BleControl_CreatePeerReport:  BadgeId [B64]: %s", badgeIdB64);
+    uint8_t uuidB64[BADGE_UUID_B64_SIZE];
+    mbedtls_base64_encode((unsigned char*)uuidB64, BADGE_UUID_B64_SIZE, &b64Outlen, eventAdvPacket.uuid, BADGE_UUID_SIZE);
+    ESP_LOGD(TAG, "_BleControl_CreatePeerReport:  BadgeId [B64]: %s", uuidB64);
     uint8_t eventIdB64[EVENT_ID_B64_SIZE];
     mbedtls_base64_encode((unsigned char*)eventIdB64, EVENT_ID_B64_SIZE, &b64Outlen, eventAdvPacket.eventId, EVENT_ID_SIZE);
-    ESP_LOGD(TAG, "_BleControl_CreatePeerReport:  Peer Report: %s %s %d", badgeIdB64, eventIdB64, rssi);
+    ESP_LOGD(TAG, "_BleControl_CreatePeerReport:  Peer Report: %s %s %d", uuidB64, eventIdB64, rssi);
 
     PeerReport peerReport;
-    memcpy(peerReport.badgeIdB64, badgeIdB64, BADGE_ID_B64_SIZE);
+    memcpy(peerReport.uuidB64, uuidB64, BADGE_UUID_B64_SIZE);
     memcpy(peerReport.eventIdB64, eventIdB64, EVENT_ID_B64_SIZE);
     peerReport.peakRssi = rssi;
     peerReport.badgeType = ParseBadgeType(eventAdvPacket.badgeType);

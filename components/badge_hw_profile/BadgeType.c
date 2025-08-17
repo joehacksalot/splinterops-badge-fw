@@ -2,11 +2,6 @@
 #include "BadgeType.h"
 #include "BadgeHwProfile.h"
 
-BadgeType GetBadgeType(void)
-{
-    return BADGE_TYPE;
-}
-
 BadgeType ParseBadgeType(int badgeTypeNum)
 {
     switch (badgeTypeNum)

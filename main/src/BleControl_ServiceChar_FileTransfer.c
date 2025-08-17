@@ -139,13 +139,14 @@ esp_err_t _BleControl_GetFileTransferReadResponse(BleControl *this, uint8_t * bu
     assert(this);
     assert(buffer);
     assert(pLength);
+    Badge *badge = Badge_GetInstance();
 
     BleFileTransferResponseData settingsResponseData;
 
-    memcpy(settingsResponseData.badgeId, this->pUserSettings->badgeId, sizeof(settingsResponseData.badgeId));
+    memcpy(settingsResponseData.uuid, badge->uuid, sizeof(settingsResponseData.uuid));
     settingsResponseData.packedSettings.soundEnabled = this->pUserSettings->settings.soundEnabled;
     settingsResponseData.packedSettings.vibrationEnabled = this->pUserSettings->settings.vibrationEnabled;
-    settingsResponseData.badgeType = GetBadgeType();
+    settingsResponseData.badgeType = badge->badgeType;
     settingsResponseData.songBits = this->pGameState->gameStateData.status.statusData.songUnlockedBits;
     memcpy(settingsResponseData.ssid, this->pUserSettings->settings.wifiSettings.ssid, sizeof(settingsResponseData.ssid));
 

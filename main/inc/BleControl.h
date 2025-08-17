@@ -32,7 +32,7 @@ typedef struct IwcAdvertisingPayload_t
 {
     uint16_t magicNum;
     uint8_t badgeType;
-    uint8_t badgeId[BADGE_ID_SIZE];
+    uint8_t uuid[BADGE_UUID_SIZE];
     uint8_t eventId[EVENT_ID_SIZE];
 } __attribute__((packed)) IwcAdvertisingPayload;
 

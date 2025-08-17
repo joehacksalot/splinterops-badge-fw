@@ -5,8 +5,9 @@
 #include "freertos/semphr.h"
 
 #include "BatterySensor.h"
-#include "GameTypes.h"
 #include "WifiSettings.h"
+#include "GameTypes.h"
+#include "Badge.h"
 
 typedef struct UserSettingsFile_t
 {
@@ -22,10 +23,6 @@ typedef struct UserSettings_t
 {
     UserSettingsFile settings;
     bool updateNeeded;
-    uint8_t badgeId[BADGE_ID_SIZE];
-    uint8_t badgeIdB64[BADGE_ID_B64_SIZE];
-    uint8_t key[KEY_SIZE];
-    uint8_t keyB64[KEY_B64_SIZE];
     SemaphoreHandle_t mutex;
     BatterySensor *pBatterySensor;
 } UserSettings;

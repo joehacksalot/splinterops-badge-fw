@@ -1,29 +1,18 @@
 
 #include <string.h>
-#include "mbedtls/base64.h"
-#include "sha/sha_parallel_engine.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "esp_mac.h"
 
 #include "cJSON.h"
 
 #include "BatterySensor.h"
 #include "DiskUtilities.h"
-#include "TaskPriorities.h"
 #include "UserSettings.h"
 #include "Utilities.h"
 
 #define USER_SETTINGS_WRITE_PERIOD_MS (60 * 1000)
 #define SETTINGS_FILE_NAME CONFIG_MOUNT_PATH "/settings"
 #define MUTEX_MAX_WAIT_MS (50)
-#define SHA_INPUT_SIZE 12
-#define SHA2_256_BYTES 32
-#define SALT_SIZE 4
-#define BASE_MAC_BUFFER_SIZE 8
-
-uint8_t BADGE_ID_SALT[SALT_SIZE] = { 0x90, 0xDE, 0xCA, 0xFF };
-uint8_t KEY_SALT[SALT_SIZE] = { 0x14, 0x73, 0xC0, 0xDE };
 
 static const char *TAG = "SET";
 
@@ -40,27 +29,6 @@ esp_err_t UserSettings_Init(UserSettings *this, BatterySensor * pBatterySensor, 
     this->settings.vibrationEnabled = 1;
     this->mutex = xSemaphoreCreateMutex();
     assert(this->mutex);
-    // Set badge id and key
-    uint8_t baseMac[BASE_MAC_BUFFER_SIZE];
-    memset(baseMac, 0, BASE_MAC_BUFFER_SIZE);
-    ESP_ERROR_CHECK(esp_efuse_mac_get_default(baseMac));
-    ESP_LOGD(TAG, "Generating badge id from base MAC");
-    uint8_t shaInput[SHA_INPUT_SIZE];
-    memcpy(shaInput, BADGE_ID_SALT, 4);
-    memcpy(shaInput + 4, baseMac, BASE_MAC_BUFFER_SIZE);
-    uint8_t shaOutput[SHA2_256_BYTES];
-    esp_sha(SHA2_256, shaInput, SHA_INPUT_SIZE, shaOutput);
-    memcpy(this->badgeId, shaOutput, BADGE_ID_SIZE);
-    size_t b64Outlen;
-    mbedtls_base64_encode((unsigned char*)this->badgeIdB64, BADGE_ID_B64_SIZE, &b64Outlen, this->badgeId, BADGE_ID_SIZE);
-    ESP_LOGI(TAG, "BadgeId [B64]: %s", this->badgeIdB64);
-    ESP_LOGD(TAG, "Generating badge key from base MAC");
-    memcpy(shaInput, KEY_SALT, SALT_SIZE);
-    esp_sha(SHA2_256, shaInput, SHA_INPUT_SIZE, shaOutput);
-    mbedtls_base64_encode((unsigned char*)this->keyB64, KEY_B64_SIZE, &b64Outlen, shaOutput, 8);
-    memcpy(this->key, shaOutput, KEY_SIZE);
-    mbedtls_base64_encode((unsigned char*)this->keyB64, KEY_B64_SIZE, &b64Outlen, this->key, KEY_SIZE);
-    ESP_LOGI(TAG, "Key B64: %s", this->keyB64);
     if (UserSettings_ReadUserSettingsFileFromDisk(this) != ESP_OK)
     {
         UserSettings_WriteUserSettingsFileToDisk(this);

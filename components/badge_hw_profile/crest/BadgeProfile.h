@@ -2,10 +2,13 @@
 #define BADGE_PROFILE_CREST_H_
 
 #include "BadgeType.h"
+#include "AppConfig.h"
 
 #define BADGE_TYPE BADGE_TYPE_CREST
 #define BADGE_PROFILE_NAME "CREST"
 #define BLE_DEVICE_NAME "IWCv3"
+
+extern const AppConfig APP_CONFIG;
 
 typedef enum TouchSensorCrestNames_t
 {

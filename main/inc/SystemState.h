@@ -22,13 +22,6 @@
 #include "SynthMode.h"
 #include "Ocarina.h"
 
-typedef struct AppConfig_t
-{
-    bool touchActionCommandEnabled;
-    bool buzzerPresent;
-    bool eyeGpioLedsPresent;
-} AppConfig;
-
 typedef struct SystemState_t
 {
     bool touchActive;

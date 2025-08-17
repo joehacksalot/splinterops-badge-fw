@@ -4,11 +4,8 @@
 #include "hashmap.h"
 #include "Utilities.h"
 #include "BadgeHwProfile.h"
+#include "Badge.h"
 
-#define BADGE_ID_SIZE                 (8)
-#define BADGE_ID_B64_SIZE             (13)
-#define KEY_SIZE                      (8)
-#define KEY_B64_SIZE                  (13)
 #define PAIR_ID_SIZE                  (8)
 #define PAIR_ID_B64_SIZE              (13)
 #define MAX_PEER_MAP_DEPTH            (25)
@@ -55,7 +52,7 @@ typedef struct GameStatus_t
 
 typedef struct PeerReport_t // Sent from BleControl 
 {
-    char badgeIdB64[BADGE_ID_B64_SIZE];
+    char uuidB64[BADGE_UUID_B64_SIZE];
     char eventIdB64[EVENT_ID_B64_SIZE];
     int16_t peakRssi;
     BadgeType badgeType;

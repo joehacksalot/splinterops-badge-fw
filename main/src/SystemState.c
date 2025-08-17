@@ -11,6 +11,7 @@
 #include "esp_system.h"
 #include "mbedtls/base64.h"
 
+#include "Badge.h"
 #include "BadgeMetrics.h"
 #include "BleControl.h"
 #include "BleControl_Service.h"
@@ -131,23 +132,8 @@ esp_err_t SystemState_Init(SystemState *this)
     // esp_log_level_set("MOD", ESP_LOG_INFO);
     // esp_log_level_set("SYS", ESP_LOG_INFO);
 
-    BadgeType badgeType = GetBadgeType();
-    switch (badgeType)
-    {
-        case BADGE_TYPE_TRON:
-            break;
-        case BADGE_TYPE_REACTOR:
-            this->appConfig.buzzerPresent = true;
-            this->appConfig.touchActionCommandEnabled = true;
-            this->appConfig.eyeGpioLedsPresent = true;
-            break;
-        case BADGE_TYPE_CREST:
-        case BADGE_TYPE_FMAN25:
-            this->appConfig.buzzerPresent = true;
-            this->appConfig.touchActionCommandEnabled = true;
-        default:
-            break;
-    }
+    Badge *badge = Badge_GetInstance();
+    assert(Badge_Init(badge) == ESP_OK);
 
     this->touchActiveTimer = xTimerCreate("TouchActiveTimer", pdMS_TO_TICKS(TOUCH_ACTIVE_TIMEOUT_DURATION_MSEC), pdFALSE, 0, SystemState_TouchActiveTimerCallback);
     if (this->touchActiveTimer == NULL)
@@ -241,7 +227,7 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(GameState_Init(&this->gameState, &this->notificationDispatcher, &this->badgeStats, &this->userSettings, &this->batterySensor));
     ESP_ERROR_CHECK(LedControl_Init(&this->ledControl, &this->notificationDispatcher, &this->userSettings, &this->batterySensor, &this->gameState, BATTERY_SEQUENCE_HOLD_DURATION_MSEC));
     ESP_ERROR_CHECK(LedModing_Init(&this->ledModing, &this->ledControl));
-    if (this->appConfig.buzzerPresent)
+    if (GetBadgeAppConfig()->buzzerPresent)
     {
         ESP_ERROR_CHECK(SynthMode_Init(&this->synthMode, &this->notificationDispatcher, &this->userSettings));
         ESP_ERROR_CHECK(Ocarina_Init(&this->ocarina, &this->notificationDispatcher));
@@ -275,12 +261,12 @@ esp_err_t SystemState_Init(SystemState *this)
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_INITIATED,           &SystemState_BleNotificationHandler,            this));
     ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_OTA_DOWNLOAD_COMPLETE,            &SystemState_BleNotificationHandler,            this));
     
-    if (this->appConfig.buzzerPresent)
+    if (GetBadgeAppConfig()->buzzerPresent)
     {
        ESP_ERROR_CHECK(NotificationDispatcher_RegisterNotificationEventHandler(&this->notificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION,              &SystemState_SongNoteChangeNotificationHandler, this));
     }
 
-    if (this->appConfig.eyeGpioLedsPresent)
+    if (GetBadgeAppConfig()->eyeGpioLedsPresent)
     {
         GpioControl_Control(&this->gpioControl, GPIO_FEATURE_LEFT_EYE, true, 0);
         GpioControl_Control(&this->gpioControl, GPIO_FEATURE_RIGHT_EYE, true, 0);
@@ -319,7 +305,7 @@ esp_err_t SystemState_Init(SystemState *this)
     if (firstBoot)
     {
         PlaySongEventNotificationData firstBootPlaySongNotificationData;
-        switch (badgeType)
+        switch (badge->badgeType)
         {
             case BADGE_TYPE_REACTOR:
                 firstBootPlaySongNotificationData.song = SONG_BONUS;
@@ -338,7 +324,7 @@ esp_err_t SystemState_Init(SystemState *this)
     }
     else
     {
-        if (badgeType == BADGE_TYPE_FMAN25)
+        if (badge->badgeType == BADGE_TYPE_FMAN25)
         {
             uint32_t rnd = esp_random();
             if ((rnd % 5) == 0)
@@ -398,7 +384,7 @@ static bool SystemState_ProcessSynthModeCmd(SystemState *this, TouchActionsCmd t
     switch(touchCmd)
     {
         case TOUCH_ACTIONS_CMD_TOGGLE_SYNTH_MODE_ENABLE:
-            if (this->appConfig.buzzerPresent)
+            if (GetBadgeAppConfig()->buzzerPresent)
             {
                 ESP_LOGI(TAG, "Disabling Synth Mode");
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
@@ -419,7 +405,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
     switch(touchCmd)
     {
         case TOUCH_ACTIONS_CMD_DISABLE_TOUCH:
-            if (this->appConfig.touchActionCommandEnabled && this->touchActive)
+            if (GetBadgeAppConfig()->touchActionCommandEnabled && this->touchActive)
             {
                 ESP_LOGI(TAG, "Touch Disabled");
                 this->touchActive = false;
@@ -428,7 +414,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500); // TODO: Make these components use the notification dispatcher instead of these functions
                 LedModing_SetTouchActive(&this->ledModing, false);      // TODO: Make these components use the notification dispatcher instead of these functions
                 TouchSensor_SetTouchEnabled(&this->touchSensor, false); // TODO: Make these components use the notification dispatcher instead of these functions
-                if (this->appConfig.buzzerPresent)
+                if (GetBadgeAppConfig()->buzzerPresent)
                 {
                     SynthMode_SetTouchSoundEnabled(&this->synthMode, false, 0);          // TODO: Make these components use the notification dispatcher instead of these functions
                     Ocarina_SetModeEnabled(&this->ocarina, false);          // TODO: Make these components use the notification dispatcher instead of these functions
@@ -512,7 +498,7 @@ static bool SystemState_ProcessMenuCmd(SystemState *this, TouchActionsCmd touchC
             cmdProcessed = true;
             break;
         case TOUCH_ACTIONS_CMD_TOGGLE_SYNTH_MODE_ENABLE:
-            if (this->appConfig.buzzerPresent)
+            if (GetBadgeAppConfig()->buzzerPresent)
             {
                 ESP_LOGI(TAG, "Enabling Synth Mode");
                 GpioControl_Control(&this->gpioControl, GPIO_FEATURE_VIBRATION, true, 500);
@@ -556,11 +542,11 @@ static void SystemState_ProcessTouchActionCmd(SystemState *this, TouchActionsCmd
     }
 
     // Process touch command
-    if (this->appConfig.touchActionCommandEnabled && !this->touchActive)
+    if (GetBadgeAppConfig()->touchActionCommandEnabled && !this->touchActive)
     {
         cmdProcessed = SystemState_ProcessTouchModeEnabledModeCmd(this, touchCmd);
     }
-    else if (this->appConfig.buzzerPresent && this->synthMode.touchSoundEnabled)
+    else if (GetBadgeAppConfig()->buzzerPresent && this->synthMode.touchSoundEnabled)
     {
         cmdProcessed = SystemState_ProcessSynthModeCmd(this, touchCmd);
     }
@@ -872,7 +858,7 @@ static esp_err_t SystemState_TouchInactiveTimerExpired(SystemState *this)
     ESP_LOGI(TAG, "Touch Disabled");
     LedModing_SetTouchActive(&this->ledModing, false);
     TouchSensor_SetTouchEnabled(&this->touchSensor, false);
-    if (this->appConfig.buzzerPresent)
+    if (GetBadgeAppConfig()->buzzerPresent)
     {
         SynthMode_SetTouchSoundEnabled(&this->synthMode, false, 0);
         Ocarina_SetModeEnabled(&this->ocarina, false);
@@ -1083,13 +1069,13 @@ static void SystemState_PeerHeartbeatNotificationHandler(void *pObj, esp_event_b
             if (notificationData != NULL)
             {
                 PeerReport peerReport = *((PeerReport *)notificationData);
-                ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.badgeIdB64, peerReport.peakRssi, peerReport.badgeType);
-                if (!this->appConfig.buzzerPresent)
+                ESP_LOGD(TAG, "NOTIFICATION_EVENTS_BLE_PEER_HEARTBEAT_DETECTED event with badge id [B64] %s   peakrssi %d    badgeType %d", peerReport.uuidB64, peerReport.peakRssi, peerReport.badgeType);
+                if (!GetBadgeAppConfig()->buzzerPresent)
                 {
                     break;
                 }
 
-                bool *pSeen = hashmap_get(&this->httpGameClient.siblingMap, peerReport.badgeIdB64);
+                bool *pSeen = hashmap_get(&this->httpGameClient.siblingMap, peerReport.uuidB64);
                 if (pSeen != NULL)
                 {
                     if (*pSeen)

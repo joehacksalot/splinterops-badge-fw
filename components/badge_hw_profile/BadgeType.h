@@ -10,7 +10,6 @@ typedef enum BadgeType_e
     BADGE_TYPE_FMAN25 = 4
 } BadgeType;
 
-extern BadgeType GetBadgeType(void);
 extern BadgeType ParseBadgeType(int badgeTypeNum);
 
 #endif // BADGE_TYPE_H_
