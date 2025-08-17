@@ -1,6 +1,6 @@
 # CircularBuffer Component
 
-The CircularBuffer component provides a generic, thread-safe circular buffer implementation for the badge firmware, enabling efficient FIFO (First In, First Out) data storage with fixed memory allocation.
+The CircularBuffer component provides a generic circular buffer implementation for the badge firmware, enabling efficient FIFO (First In, First Out) data storage with fixed memory allocation.
 
 ## Overview
 
