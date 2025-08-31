@@ -21,16 +21,6 @@ static void OtaUpdateTask(void *pvParameters);
 // Internal Constants
 static const char * TAG = "ota_task";
 
-#if defined(TRON_BADGE)
-#define OTA_URL CONFIG_OTA_UPDATE_URL"_TRON"
-#elif defined(REACTOR_BADGE)
-#define OTA_URL CONFIG_OTA_UPDATE_URL"_REACTOR"
-#elif defined(CREST_BADGE)
-#define OTA_URL CONFIG_OTA_UPDATE_URL"_CREST"
-#elif defined(FMAN25_BADGE)
-#define OTA_URL CONFIG_OTA_UPDATE_URL"_FMAN25"
-#endif
-
 #define HTTP_RESPONSE_BUFFER_SIZE 2048
 
 #define OTA_STATUS_PRINT_STEP   10

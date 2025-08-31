@@ -25,8 +25,8 @@ typedef enum HTTPGameClient_HTTPRequestTypes_e
 
 typedef enum HTTPGameClient_HTTPMethods_e
 {
-    HTTPGAMECLIENT_HTTPMETHOD_GET = 0,
-    HTTPGAMECLIENT_HTTPMETHOD_POST,
+    HTTP_REQUEST_HTTP_METHOD_GET = 0,
+    HTTP_REQUEST_HTTP_METHOD_POST,
 } HTTPGameClient_HTTPMethodTypes;
 
 typedef struct HTTPGameClient_Request_t

@@ -582,10 +582,10 @@ void _HTTPGameClient_ProcessRequestList(HTTPGameClient *this)
             esp_http_client_handle_t client = esp_http_client_init(&http_config);
             switch(pCurr->request.methodType)
             {
-                case HTTPGAMECLIENT_HTTPMETHOD_GET:
+                case HTTP_REQUEST_HTTP_METHOD_GET:
                     esp_http_client_set_method(client, HTTP_METHOD_GET);
                     break;
-                case HTTPGAMECLIENT_HTTPMETHOD_POST:
+                case HTTP_REQUEST_HTTP_METHOD_POST:
                     esp_http_client_set_method(client, HTTP_METHOD_POST);
                     esp_http_client_set_header(client, "Content-Type", "application/json");
                     esp_http_client_set_post_field(client, (char *)pCurr->request.pData, pCurr->request.dataLength);
@@ -813,7 +813,7 @@ static void HTTPGameClient_GameStateRequestNotificationHandler(void *pObj, esp_e
     // HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
     HTTPGameClient_Request *pHttpRequest = (HTTPGameClient_Request *)malloc(sizeof(HTTPGameClient_Request));
     
-    pHttpRequest->methodType = HTTPGAMECLIENT_HTTPMETHOD_POST;
+    pHttpRequest->methodType = HTTP_REQUEST_HTTP_METHOD_POST;
     pHttpRequest->requestType = HTTPGAMECLIENT_HTTPREQUEST_HEARTBEAT;
     pHttpRequest->waitTimeMs = pRequest->waitTimeMs;
     

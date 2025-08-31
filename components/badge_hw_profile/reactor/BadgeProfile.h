@@ -3,9 +3,14 @@
 
 #include "BadgeType.h"
 
+#define OTA_URL CONFIG_OTA_UPDATE_URL"_REACTOR"
+
 #define BADGE_TYPE BADGE_TYPE_REACTOR
 #define BADGE_PROFILE_NAME "REACTOR"
 #define BLE_DEVICE_NAME "IWCv2"
+
+#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 2
+#define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 
 typedef enum TouchSensorNames_t
 {
