@@ -6,16 +6,11 @@ Badge 2nd stage bootloader and application project
 
 ## Getting started
 
-Do not forget to download the submodule projects
-```bash
-git submodule update --init --recursive
-```
-
 ## Description
 
-A description goes here - mostly of why submodules are being used :P
+A description goes here
 
-## Mantinance
+## Maintenance
 
 ### Flashing a badge
 
