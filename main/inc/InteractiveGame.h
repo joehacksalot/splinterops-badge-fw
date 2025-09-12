@@ -17,6 +17,7 @@ typedef struct InteractiveGameBits_t
   uint16_t lastFailed : 1;
   uint16_t active   : 1;
 } InteractiveGameBits;
+
 typedef union
 {
   InteractiveGameBits s;

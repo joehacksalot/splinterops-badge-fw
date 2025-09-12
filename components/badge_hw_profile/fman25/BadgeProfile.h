@@ -3,9 +3,14 @@
 
 #include "BadgeType.h"
 
+#define OTA_URL CONFIG_OTA_UPDATE_URL"_FMAN25"
+
 #define BADGE_TYPE BADGE_TYPE_FMAN25
 #define BADGE_PROFILE_NAME "FMAN25"
 #define BLE_DEVICE_NAME "IWCv4"
+
+#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 4
+#define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 
 typedef enum TouchSensorFman25Names_t
 {

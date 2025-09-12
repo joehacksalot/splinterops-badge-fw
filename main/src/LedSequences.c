@@ -12,13 +12,8 @@
 #include "DiskUtilities.h"
 #include "LedControl.h"
 #include "LedSequences.h"
+#include "BadgeHwProfile.h"
 
-#ifdef FMAN25_BADGE
-#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 4
-#else
-#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 2
-#endif
-#define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 #define NUM_LED_SEQUENCES (LED_SEQ_NUM_BUILT_IN_SEQUENCES + LED_SEQ_NUM_CUSTOM_SEQUENCES)
 
 static const char * TAG = "LEDS";
@@ -29,13 +24,21 @@ char custom_led_sequences_sharecodes[LED_SEQ_NUM_CUSTOM_SEQUENCES][NUM_SHARECODE
 BatterySensor *pBatterySensor = NULL;
 
 static char * user_led_sequences[NUM_LED_SEQUENCES] = {
-  (char * )led_seq_default1,
-  (char * )led_seq_default2,
-#ifdef FMAN25_BADGE
-  (char * )led_seq_default3,
-  (char * )led_seq_default4,
+  (char * )led_seq_default1
+#if LED_SEQ_NUM_BUILT_IN_SEQUENCES > 1
+  ,(char * )led_seq_default2
+#elif LED_SEQ_NUM_BUILT_IN_SEQUENCES > 2
+  ,(char * )led_seq_default3
+#elif LED_SEQ_NUM_BUILT_IN_SEQUENCES > 3
+  ,(char * )led_seq_default4
 #endif
-  0 // custom led seq 0
+#if LED_SEQ_NUM_CUSTOM_SEQUENCES > 0
+  ,0 // custom led seq 0
+#elif LED_SEQ_NUM_CUSTOM_SEQUENCES > 1
+  ,0 // custom led seq 1
+#elif LED_SEQ_NUM_CUSTOM_SEQUENCES > 2
+  ,0 // custom led seq 2
+#endif
 };
 
 int LedSequences_GetNumLedSequences(void)

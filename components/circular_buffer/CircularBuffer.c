@@ -184,3 +184,112 @@ esp_err_t CircularBuffer_MatchSequence(CircularBuffer *cb, const void *sequence,
 
   return ESP_OK;
 }
+
+/**
+ * Initializes an iterator for the circular buffer.
+ *
+ * @param cb Pointer to the circular buffer structure.
+ * @param iterator Pointer to the iterator structure to be initialized.
+ *
+ * @return void
+ *
+ * @throws None
+ */
+void CircularBuffer_InitIterator(CircularBuffer *cb, CircularBufferIterator_t *iterator)
+{
+  assert(cb != NULL);
+  assert(iterator != NULL);
+  
+  iterator->pBuffer = cb;
+  iterator->pCurrent = cb->pTail;
+  iterator->index = 0;
+}
+
+/**
+ * Checks if there are more elements to iterate over.
+ *
+ * @param iterator Pointer to the iterator structure.
+ *
+ * @return true if there are more elements, false otherwise.
+ *
+ * @throws None
+ */
+bool CircularBuffer_HasNext(CircularBufferIterator_t *iterator)
+{
+  assert(iterator != NULL);
+  assert(iterator->pBuffer != NULL);
+  
+  return iterator->index < iterator->pBuffer->count;
+}
+
+/**
+ * Gets the next element from the iterator and advances the iterator.
+ *
+ * @param iterator Pointer to the iterator structure.
+ * @param item Pointer to the destination where the item will be copied.
+ *
+ * @return ESP_OK if the item was successfully retrieved, ESP_FAIL if there are no more items.
+ *
+ * @throws None
+ */
+esp_err_t CircularBuffer_GetNext(CircularBufferIterator_t *iterator, void *item)
+{
+  assert(iterator != NULL);
+  assert(iterator->pBuffer != NULL);
+  assert(item != NULL);
+  
+  if (!CircularBuffer_HasNext(iterator))
+  {
+    ESP_LOGE(TAG, "No more elements in iterator");
+    return ESP_FAIL;
+  }
+  
+  // Copy the current item
+  memcpy(item, iterator->pCurrent, iterator->pBuffer->size);
+  
+  // Advance the iterator
+  iterator->pCurrent = (char*)iterator->pCurrent + iterator->pBuffer->size;
+  if (iterator->pCurrent == iterator->pBuffer->pBufferEnd)
+  {
+    iterator->pCurrent = iterator->pBuffer->pBuffer;
+  }
+  
+  iterator->index++;
+  return ESP_OK;
+}
+
+/**
+ * Peeks at an element at a specific index in the circular buffer without removing it.
+ *
+ * @param cb Pointer to the circular buffer structure.
+ * @param index Index of the element to peek at (0 is the oldest element).
+ * @param item Pointer to the destination where the item will be copied.
+ *
+ * @return ESP_OK if the item was successfully retrieved, ESP_FAIL if the index is out of bounds.
+ *
+ * @throws None
+ */
+esp_err_t CircularBuffer_PeekAt(CircularBuffer *cb, size_t index, void *item)
+{
+  assert(cb != NULL);
+  assert(item != NULL);
+  
+  if (index >= cb->count)
+  {
+    ESP_LOGE(TAG, "Index %zu out of bounds (count: %zu)", index, cb->count);
+    return ESP_FAIL;
+  }
+  
+  // Calculate the position of the element
+  void *position = (char*)cb->pTail + (index * cb->size);
+  
+  // Wrap around if necessary
+  if (position >= cb->pBufferEnd)
+  {
+    position = (char*)cb->pBuffer + ((char*)position - (char*)cb->pBufferEnd);
+  }
+  
+  // Copy the item
+  memcpy(item, position, cb->size);
+  return ESP_OK;
+}

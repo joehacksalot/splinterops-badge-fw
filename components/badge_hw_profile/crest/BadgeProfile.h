@@ -4,11 +4,14 @@
 #include "BadgeType.h"
 #include "AppConfig.h"
 
+#define OTA_URL CONFIG_OTA_UPDATE_URL"_CREST"
+
 #define BADGE_TYPE BADGE_TYPE_CREST
 #define BADGE_PROFILE_NAME "CREST"
 #define BLE_DEVICE_NAME "IWCv3"
 
-extern const AppConfig APP_CONFIG;
+#define LED_SEQ_NUM_BUILT_IN_SEQUENCES 2
+#define LED_SEQ_NUM_CUSTOM_SEQUENCES 1
 
 typedef enum TouchSensorCrestNames_t
 {
