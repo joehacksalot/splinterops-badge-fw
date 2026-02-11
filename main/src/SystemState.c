@@ -115,6 +115,10 @@ esp_err_t SystemState_Init(SystemState *this)
     assert(this);
     memset(this, 0, sizeof(*this));
 
+#ifdef CONFIG_BADGE_QEMU_MODE
+    ESP_LOGI(TAG, "QEMU mode: hardware peripherals are stubbed");
+#endif
+
     // Initialize ESP Timers
     esp_timer_init(); // JER: Something seems to be initializing the esp timers somewhere else, this prints an error message
 

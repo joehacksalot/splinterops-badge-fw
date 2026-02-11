@@ -1,0 +1,42 @@
+# QEMU-specific sdkconfig overlay
+# Usage (clean build):
+#   rm -rf build sdkconfig
+#   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.old;sdkconfig.ci.qemu" build
+# Or if sdkconfig is the base config:
+#   rm -rf build
+#   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig;sdkconfig.ci.qemu" build
+# Note: SDKCONFIG_DEFAULTS is only read during initial cmake configuration.
+#       A clean build (rm -rf build) is required when switching between normal and QEMU mode.
+
+# Enable QEMU mode (stubs unsupported peripherals)
+CONFIG_BADGE_QEMU_MODE=y
+
+# Disable watchdog timers (cleaner QEMU output)
+CONFIG_ESP_TASK_WDT_EN=n
+CONFIG_ESP_INT_WDT=n
+
+# Use OpenCores Ethernet instead of WiFi for network tests
+CONFIG_ETH_USE_OPENETH=y
+
+# Increase log verbosity for test output
+CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y
+
+# Ensure console UART is enabled
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
+# --- BLE emulation via HCI bridge to external virtual controller ---
+# Enable Bluetooth and NimBLE host stack
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+
+# Disable the ESP32 BT controller (no hardware in QEMU)
+CONFIG_BT_CONTROLLER_DISABLED=y
+
+# Keep NimBLE host features enabled
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=y
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+
+# Use external HCI transport (our custom UART/TCP shim in hci_transport_qemu.c)
+CONFIG_BT_NIMBLE_TRANSPORT_UART=y
