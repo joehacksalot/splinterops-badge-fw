@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplinterOps Badge Visualizer</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a2e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --accent: #00d4ff;
+            --accent-dim: #005577;
+            --border: #2a2a3e;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            transition: background 0.3s;
+        }
+
+        .status-dot.connected { background: var(--success); }
+
+        select {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 1fr auto auto;
+            flex: 1;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        /* Left Control Panel */
+        .control-panel {
+            grid-row: 1;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cp-section {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cp-section-header {
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            background: var(--bg-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+        }
+
+        .cp-section-header:hover {
+            background: #1e1e35;
+        }
+
+        .cp-section-header .chevron {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .cp-section-header.collapsed .chevron {
+            transform: rotate(-90deg);
+        }
+
+        .cp-section-body {
+            padding: 10px 12px;
+            font-size: 11px;
+        }
+
+        .cp-section-body.hidden {
+            display: none;
+        }
+
+        .cp-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3px 0;
+            gap: 6px;
+        }
+
+        .cp-label {
+            color: var(--text-secondary);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .cp-input {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            width: 100%;
+        }
+
+        .cp-input:focus {
+            outline: none;
+            border-color: var(--accent-dim);
+        }
+
+        .cp-select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .cp-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .cp-btn:hover {
+            border-color: var(--accent-dim);
+            background: #1e1e35;
+        }
+
+        .cp-btn.primary {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .cp-btn.primary:hover {
+            background: #006688;
+        }
+
+        .cp-btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .cp-btn.danger:hover {
+            background: rgba(255,68,68,0.15);
+        }
+
+        .cp-btn-row {
+            display: flex;
+            gap: 6px;
+            padding: 4px 0;
+        }
+
+        .cp-btn-row .cp-btn {
+            flex: 1;
+        }
+
+        .cp-divider {
+            border-top: 1px solid var(--border);
+            margin: 6px 0;
+        }
+
+        .cp-checkbox-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 8px;
+            padding: 4px 0;
+        }
+
+        .cp-checkbox-grid label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .cp-checkbox-grid input[type="checkbox"] {
+            accent-color: var(--accent);
+        }
+
+        .cp-range-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 0;
+        }
+
+        .cp-range-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+        }
+
+        .cp-range-value {
+            color: var(--accent);
+            font-weight: 600;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .peer-entry {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 0;
+        }
+
+        .peer-entry input {
+            flex: 1;
+        }
+
+        .peer-entry .cp-btn {
+            width: auto;
+            padding: 4px 8px;
+            flex-shrink: 0;
+        }
+
+        .cp-status-value {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .cp-status-value.off {
+            color: var(--text-secondary);
+        }
+
+        .cp-status-value.active {
+            color: var(--success);
+        }
+
+        .cp-status-value.warn {
+            color: var(--warning);
+        }
+
+        /* Touch combo reference table */
+        .combo-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        .combo-table th {
+            text-align: left;
+            color: var(--text-secondary);
+            padding: 3px 4px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+
+        .combo-table td {
+            padding: 3px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .combo-table tr.active-combo {
+            background: rgba(0,212,255,0.1);
+        }
+
+        .combo-table .keys-col {
+            color: var(--accent-dim);
+            font-weight: 600;
+        }
+
+        /* LED Visualizer */
+        .led-panel {
+            grid-row: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            position: relative;
+        }
+
+        #ledCanvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Right sidebar */
+        .sidebar {
+            grid-row: 1;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-header {
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+        }
+
+        .panel-body {
+            padding: 12px 16px;
+        }
+
+        /* Touch Sensor Panel */
+        .touch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .touch-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .touch-btn:hover {
+            border-color: var(--accent-dim);
+            background: #1e1e35;
+        }
+
+        .touch-btn:active, .touch-btn.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .touch-btn.touched { background: #003355; border-color: #0088cc; }
+        .touch-btn.short-pressed { background: #004466; border-color: #00aaff; }
+        .touch-btn.long-pressed { background: #005577; border-color: #00ccff; }
+        .touch-btn.very-long-pressed { background: #226688; border-color: #44eeff; }
+
+        .touch-btn .label {
+            font-size: 11px;
+            font-weight: 600;
+            display: block;
+        }
+
+        .touch-btn .index {
+            font-size: 9px;
+            color: var(--text-secondary);
+            display: block;
+            margin-top: 2px;
+        }
+
+        .touch-btn .note {
+            font-size: 10px;
+            color: var(--warning);
+            display: block;
+            margin-top: 3px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .touch-btn .keyhint {
+            font-size: 9px;
+            color: var(--accent-dim);
+            display: block;
+            margin-top: 3px;
+            font-weight: 600;
+        }
+
+        /* Status Panel */
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .status-label { color: var(--text-secondary); }
+        .status-value { color: var(--text-primary); font-weight: 500; }
+
+        /* Event Log */
+        .event-log {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-log .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+            font-size: 11px;
+            max-height: 200px;
+        }
+
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            gap: 8px;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            width: 65px;
+        }
+
+        .log-msg { color: var(--text-primary); }
+        .log-msg.touch { color: var(--accent); }
+        .log-msg.mode { color: var(--warning); }
+        .log-msg.error { color: var(--danger); }
+        .log-msg.info { color: var(--success); }
+
+        /* FPS counter */
+        .fps-display {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Console Log Panel */
+        .console-panel {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            max-height: 280px;
+            min-height: 120px;
+            overflow: hidden;
+        }
+
+        .console-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .console-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .console-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .console-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .console-controls label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .console-controls select {
+            font-size: 11px;
+            padding: 3px 8px;
+        }
+
+        .console-controls button {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .console-controls button:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-dim);
+        }
+
+        .console-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 0;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            line-height: 1.5;
+        }
+
+        .console-line {
+            padding: 1px 16px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .console-line:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .console-line.level-error { color: var(--danger); }
+        .console-line.level-warn { color: var(--warning); }
+        .console-line.level-info { color: var(--text-primary); }
+        .console-line.level-debug { color: #7a8a9a; }
+        .console-line.level-verbose { color: #5a6a7a; }
+
+        .console-line-count {
+            font-size: 10px;
+            color: var(--text-secondary);
+            background: var(--bg-primary);
+            padding: 1px 6px;
+            border-radius: 8px;
+        }
+
+        .log-level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .log-level-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .log-level-badge .dot.error { background: var(--danger); }
+        .log-level-badge .dot.warn { background: var(--warning); }
+        .log-level-badge .dot.info { background: var(--success); }
+        .log-level-badge .dot.debug { background: #7a8a9a; }
+        .log-level-badge .dot.verbose { background: #5a6a7a; }
+
+        /* Bottom bar */
+        .bottom-bar {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SPLINTEROPS BADGE VISUALIZER</h1>
+        <div class="header-controls">
+            <div class="fps-display" id="fpsDisplay">0 fps</div>
+            <select id="badgeSelect">
+                <option value="TRON">TRON (77 LEDs)</option>
+                <option value="REACTOR">REACTOR (48 LEDs)</option>
+                <option value="CREST">CREST (59 LEDs)</option>
+                <option value="FMAN25" selected>FMAN25 (45 LEDs)</option>
+            </select>
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <!-- Left Control Panel -->
+        <div class="control-panel" id="controlPanel">
+            <!-- Game Events Section -->
+            <div class="cp-section">
+                <div class="cp-section-header" onclick="toggleSection(this)">
+                    <span>Game Events</span>
+                    <span class="chevron">&#9660;</span>
+                </div>
+                <div class="cp-section-body">
+                    <div class="cp-row">
+                        <span class="cp-label">Preset:</span>
+                    </div>
+                    <select class="cp-select" id="cpGamePreset">
+                        <option value="">Select scenario...</option>
+                        <option value="join_red_5">Join Red Event (5min)</option>
+                        <option value="join_cyan_10">Join Cyan Event (10min)</option>
+                        <option value="event_complete">Complete Event (fanfare)</option>
+                        <option value="clear_event">Clear Event</option>
+                        <option value="unlock_stones">Unlock All Stones</option>
+                        <option value="unlock_songs">Unlock All Songs</option>
+                    </select>
+                    <div class="cp-divider"></div>
+                    <div class="cp-row">
+                        <span class="cp-label">Stone Color:</span>
+                        <select class="cp-select" id="cpStoneColor" style="width:auto;flex:1">
+                            <option value="1">Red</option>
+                            <option value="2">Yellow</option>
+                            <option value="3">Green</option>
+                            <option value="4">Cyan</option>
+                            <option value="5">Blue</option>
+                            <option value="6">Magenta</option>
+                        </select>
+                    </div>
+                    <div class="cp-range-row">
+                        <span class="cp-label">Power:</span>
+                        <input type="range" id="cpPowerLevel" min="0" max="100" value="75">
+                        <span class="cp-range-value" id="cpPowerValue">75%</span>
+                    </div>
+                    <div class="cp-row">
+                        <span class="cp-label">Duration (min):</span>
+                        <input type="number" class="cp-input" id="cpDuration" value="5" min="1" max="60" style="width:60px">
+                    </div>
+                    <div class="cp-row">
+                        <span class="cp-label">Event ID:</span>
+                        <input type="text" class="cp-input" id="cpEventId" value="QlgVrlHvkZs=" style="flex:1">
+                    </div>
+                    <div class="cp-divider"></div>
+                    <div class="cp-row"><span class="cp-label">Stones:</span></div>
+                    <div class="cp-checkbox-grid" id="cpStonesGrid">
+                        <label><input type="checkbox" value="1"> Red</label>
+                        <label><input type="checkbox" value="2"> Yellow</label>
+                        <label><input type="checkbox" value="3"> Green</label>
+                        <label><input type="checkbox" value="4"> Cyan</label>
+                        <label><input type="checkbox" value="5"> Blue</label>
+                        <label><input type="checkbox" value="6"> Magenta</label>
+                    </div>
+                    <div class="cp-row"><span class="cp-label">Songs:</span></div>
+                    <div class="cp-checkbox-grid" id="cpSongsGrid">
+                        <label><input type="checkbox" value="1"> 1</label>
+                        <label><input type="checkbox" value="2"> 2</label>
+                        <label><input type="checkbox" value="3"> 3</label>
+                        <label><input type="checkbox" value="4"> 4</label>
+                        <label><input type="checkbox" value="5"> 5</label>
+                    </div>
+                    <div class="cp-divider"></div>
+                    <div class="cp-btn-row">
+                        <button class="cp-btn primary" id="cpApplyTrigger">Apply & Trigger HB</button>
+                    </div>
+                    <div class="cp-btn-row">
+                        <button class="cp-btn" id="cpApplyWait">Apply (wait for next HB)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OTA Update Section -->
+            <div class="cp-section">
+                <div class="cp-section-header" onclick="toggleSection(this)">
+                    <span>OTA Update</span>
+                    <span class="chevron">&#9660;</span>
+                </div>
+                <div class="cp-section-body">
+                    <div class="cp-row">
+                        <span class="cp-label">Status:</span>
+                        <span class="cp-status-value off" id="cpOtaStatus">Disabled</span>
+                    </div>
+                    <div class="cp-btn-row">
+                        <button class="cp-btn" id="cpOtaEnable1M">Enable (1MB)</button>
+                        <button class="cp-btn" id="cpOtaEnable4M">Enable (4MB)</button>
+                    </div>
+                    <div class="cp-btn-row">
+                        <button class="cp-btn danger" id="cpOtaDisable">Disable OTA</button>
+                    </div>
+                    <div class="cp-divider"></div>
+                    <div class="cp-row">
+                        <span class="cp-label">Binary path:</span>
+                    </div>
+                    <input type="text" class="cp-input" id="cpOtaBinaryPath" placeholder="/path/to/firmware.bin">
+                    <div class="cp-btn-row" style="margin-top:4px">
+                        <button class="cp-btn" id="cpOtaEnableCustom">Enable (custom)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peers Section -->
+            <div class="cp-section">
+                <div class="cp-section-header" onclick="toggleSection(this)">
+                    <span>Peers / Siblings</span>
+                    <span class="chevron">&#9660;</span>
+                </div>
+                <div class="cp-section-body">
+                    <div id="cpPeerList"></div>
+                    <div class="peer-entry">
+                        <input type="text" class="cp-input" id="cpNewPeer" placeholder="badge_uuid">
+                        <button class="cp-btn" id="cpAddPeer" style="width:auto">+</button>
+                    </div>
+                    <div class="cp-divider"></div>
+                    <div class="cp-btn-row">
+                        <button class="cp-btn" id="cpAdd5Peers">+ 5 Random</button>
+                        <button class="cp-btn danger" id="cpClearPeers">Clear All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Touch Keys Reference Section -->
+            <div class="cp-section">
+                <div class="cp-section-header collapsed" onclick="toggleSection(this)">
+                    <span>Touch Commands</span>
+                    <span class="chevron">&#9660;</span>
+                </div>
+                <div class="cp-section-body hidden" id="cpTouchCombos">
+                    <table class="combo-table" id="cpComboTable">
+                        <thead>
+                            <tr><th>Action</th><th>Sensors</th><th class="keys-col">Keys</th></tr>
+                        </thead>
+                        <tbody id="cpComboTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mock Server State Section -->
+            <div class="cp-section">
+                <div class="cp-section-header collapsed" onclick="toggleSection(this)">
+                    <span>Server State</span>
+                    <span class="chevron">&#9660;</span>
+                </div>
+                <div class="cp-section-body hidden" id="cpServerState">
+                    <div class="cp-row">
+                        <span class="cp-label">Badges Online:</span>
+                        <span class="cp-status-value" id="cpBadgesOnline">0</span>
+                    </div>
+                    <div class="cp-row">
+                        <span class="cp-label">Last Heartbeat:</span>
+                        <span class="cp-status-value off" id="cpLastHeartbeat">Never</span>
+                    </div>
+                    <div class="cp-row">
+                        <span class="cp-label">OTA:</span>
+                        <span class="cp-status-value off" id="cpServerOta">Disabled</span>
+                    </div>
+                    <div class="cp-row">
+                        <span class="cp-label">Event:</span>
+                        <span class="cp-status-value off" id="cpServerEvent">None</span>
+                    </div>
+                    <div class="cp-divider"></div>
+                    <div class="cp-btn-row">
+                        <button class="cp-btn" id="cpRefreshState">Refresh</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="led-panel">
+            <canvas id="ledCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <div class="panel-header">Touch Sensors</div>
+                <div class="panel-body">
+                    <div class="touch-grid" id="touchGrid"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Status</div>
+                <div class="panel-body" id="statusPanel">
+                    <div class="status-row">
+                        <span class="status-label">LED Mode</span>
+                        <span class="status-value" id="ledModeValue">—</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Inner State</span>
+                        <span class="status-value" id="innerStateValue">—</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Outer State</span>
+                        <span class="status-value" id="outerStateValue">—</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Frames Recv</span>
+                        <span class="status-value" id="framesRecvValue">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Buzzer</div>
+                <div class="panel-body">
+                    <div class="status-row">
+                        <span class="status-label">Status</span>
+                        <span class="status-value" id="buzzerStatus">Silent</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Frequency</span>
+                        <span class="status-value" id="buzzerFrequency">&mdash;</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Volume</span>
+                        <input type="range" id="buzzerVolume" min="0" max="100" value="15"
+                            style="width:100px; accent-color:var(--accent);">
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Mute</span>
+                        <button id="buzzerMuteBtn"
+                            style="background:var(--bg-tertiary);color:var(--text-secondary);
+                            border:1px solid var(--border);border-radius:4px;padding:3px 10px;
+                            font-family:inherit;font-size:11px;cursor:pointer;">
+                            &#x1F50A; On
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel event-log">
+                <div class="panel-header">Event Log</div>
+                <div class="panel-body" id="eventLog"></div>
+            </div>
+        </div>
+
+        <div class="console-panel">
+            <div class="console-header">
+                <div class="console-header-left">
+                    <span class="console-title">Console Logs</span>
+                    <span class="console-line-count" id="consoleLineCount">0 lines</span>
+                </div>
+                <div class="console-controls">
+                    <label for="logLevelFilter">Level:</label>
+                    <select id="logLevelFilter">
+                        <option value="verbose">Verbose</option>
+                        <option value="debug">Debug</option>
+                        <option value="info" selected>Info</option>
+                        <option value="warn">Warning</option>
+                        <option value="error">Error</option>
+                    </select>
+                    <label for="logTagFilter">Tag:</label>
+                    <input type="text" id="logTagFilter" placeholder="Filter by tag..."
+                        style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-family:inherit;font-size:11px;width:120px;">
+                    <button id="consoleClearBtn">Clear</button>
+                    <button id="consoleScrollLockBtn" title="Auto-scroll">⬇ Auto</button>
+                </div>
+            </div>
+            <div class="console-body" id="consoleBody"></div>
+        </div>
+
+        <div class="bottom-bar">
+            <span>WebSocket: ws://localhost:8765</span>
+            <span id="ledCountDisplay">0 LEDs</span>
+        </div>
+    </div>
+
+    <script src="viz.js"></script>
+</body>
+</html>

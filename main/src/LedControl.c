@@ -22,6 +22,10 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
+#ifdef CONFIG_BADGE_QEMU_MODE
+#include "qemu_viz_transport.h"
+#endif
+
 #define MUTEX_MAX_WAIT_MS   (500)
 #define MAX_EVENT_TIME_MSEC (15*60*1000)
 
@@ -1572,6 +1576,23 @@ esp_err_t LedControl_SetLedMode(LedControl *this, LedMode mode)
     {
         ret = ESP_FAIL;
     }
+
+#ifdef CONFIG_BADGE_QEMU_MODE
+    if (ret == ESP_OK) {
+        uint8_t frame[] = {
+            QEMU_VIZ_FRAME_START,
+            QEMU_VIZ_MSG_MODE_CHANGE,
+            (uint8_t)mode,
+            (uint8_t)this->ledControlModeSettings.innerLedState,
+            (uint8_t)this->ledControlModeSettings.outerLedState,
+            QEMU_VIZ_FRAME_END
+        };
+        qemu_viz_tx_lock();
+        qemu_viz_send(frame, sizeof(frame));
+        qemu_viz_tx_unlock();
+    }
+#endif
+
     return ret;
 }
 

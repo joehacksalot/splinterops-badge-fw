@@ -1,0 +1,54 @@
+# .github/workflows/qemu-test.yml
+name: QEMU Tests
+
+# IMPORTANT: QEMU tests are currently disabled for CI.
+# Uncomment the 'on' triggers below to enable.
+# on:
+#   push:
+#     branches: [main, develop]
+#   pull_request:
+#     branches: [main]
+
+on:
+  workflow_dispatch:  # Manual trigger only for now
+
+jobs:
+  qemu-test:
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:v5.4.2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install QEMU
+        run: |
+          apt-get update && apt-get install -y libgcrypt20 libglib2.0-0 libpixman-1-0 libslirp0
+          . $IDF_PATH/export.sh
+          python $IDF_PATH/tools/idf_tools.py install qemu-xtensa
+          . $IDF_PATH/export.sh
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest-embedded pytest-embedded-idf pytest-embedded-qemu
+
+      - name: Build firmware (QEMU config)
+        run: |
+          . $IDF_PATH/export.sh
+          idf.py -DSDKCONFIG_DEFAULTS="sdkconfig;sdkconfig.ci.qemu" build
+
+      - name: Run QEMU tests
+        run: |
+          . $IDF_PATH/export.sh
+          cd tests/
+          pytest --target esp32 --embedded-services idf,qemu --junitxml=results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/results.xml

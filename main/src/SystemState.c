@@ -31,6 +31,10 @@
 #include "Utilities.h"
 #include "WifiClient.h"
 
+#ifdef CONFIG_BADGE_QEMU_MODE
+extern void QemuTestInject_Init(void);
+#endif
+
 #define PEER_RSSID_SONG_THRESHOLD_TRON              (-50)
 #define PEER_RSSID_SONG_THRESHOLD_REACTOR           (-50)
 #define PEER_RSSID_SONG_THRESHOLD_CREST             (-58)
@@ -114,6 +118,10 @@ esp_err_t SystemState_Init(SystemState *this)
     esp_err_t ret= ESP_OK;
     assert(this);
     memset(this, 0, sizeof(*this));
+
+#ifdef CONFIG_BADGE_QEMU_MODE
+    ESP_LOGI(TAG, "QEMU mode: hardware peripherals are stubbed");
+#endif
 
     // Initialize ESP Timers
     esp_timer_init(); // JER: Something seems to be initializing the esp timers somewhere else, this prints an error message
@@ -280,6 +288,10 @@ esp_err_t SystemState_Init(SystemState *this)
         GpioControl_Control(&this->gpioControl, GPIO_FEATURE_RIGHT_EYE, true, 0);
     }
 
+#ifdef CONFIG_BADGE_QEMU_MODE
+    QemuTestInject_Init();
+#endif
+
     assert(xTaskCreatePinnedToCore(SystemStateTask, "SystemStateTask", configMINIMAL_STACK_SIZE * 2, this, SYSTEM_STATE_TASK_PRIORITY, NULL, APP_CPU_NUM) == pdPASS);
     bool firstBoot = false;
     if (fsInitialized) {
@@ -308,6 +320,9 @@ esp_err_t SystemState_Init(SystemState *this)
     else
     {
         ESP_LOGE(TAG, "Failed to initialize filesystem, skipping first boot byte check");
+#ifdef CONFIG_BADGE_QEMU_MODE
+        firstBoot = true;  // QEMU has no FAT partition; treat as first boot
+#endif
     }
 
     if (firstBoot)
@@ -1033,7 +1048,10 @@ static void SystemState_SongNoteChangeNotificationHandler(void *pObj, esp_event_
                     ESP_LOGE(TAG, "Failed to reset peer song cooldown timer");
                 }
             }
-            if (data.song == SONG_ZELDA_OPENING)
+            if (data.song == SONG_ZELDA_OPENING ||
+                data.song == SONG_MARGARITAVILLE ||
+                data.song == SONG_BONUS ||
+                data.song == SONG_BONUS_BONUS)
             {
                 ESP_LOGI(TAG, "First boot song complete, setting first boot byte");
                 uint8_t firstBootByte = 0xFF;

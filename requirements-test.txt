@@ -1,0 +1,7 @@
+pytest-embedded>=1.0.0
+pytest-embedded-serial-esp>=1.0.0
+pytest-embedded-idf>=1.0.0
+pytest-embedded-qemu>=1.0.0
+pytest-asyncio>=0.21.0
+bumble>=0.0.189
+websockets>=12.0

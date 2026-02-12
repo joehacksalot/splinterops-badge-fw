@@ -1,0 +1,70 @@
+# QEMU-specific sdkconfig overlay
+# Usage (clean build):
+#   rm -rf build sdkconfig
+#   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.old;sdkconfig.ci.qemu" build
+# Or if sdkconfig is the base config:
+#   rm -rf build
+#   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig;sdkconfig.ci.qemu" build
+# Note: SDKCONFIG_DEFAULTS is only read during initial cmake configuration.
+#       A clean build (rm -rf build) is required when switching between normal and QEMU mode.
+
+# Enable QEMU mode (stubs unsupported peripherals)
+CONFIG_BADGE_QEMU_MODE=y
+
+# QEMU emulates ESP32 rev 0 — override the minimum chip revision check
+CONFIG_ESP32_REV_MIN_0=y
+CONFIG_ESP32_REV_MIN=0
+CONFIG_ESP32_REV_MIN_FULL=0
+CONFIG_ESP_REV_MIN_FULL=0
+
+# Enable PSRAM (Espressif QEMU supports 2/4 MB PSRAM via -m flag)
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_QUAD=y
+CONFIG_SPIRAM_TYPE_AUTO=y
+CONFIG_SPIRAM_SPEED_40M=y
+CONFIG_SPIRAM_BOOT_INIT=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=0
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768
+CONFIG_SPIRAM_MEMTEST=y
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+
+# Disable watchdog timers (cleaner QEMU output)
+CONFIG_ESP_TASK_WDT_EN=n
+CONFIG_ESP_INT_WDT=n
+
+# Use OpenCores Ethernet instead of WiFi for network tests
+CONFIG_ETH_USE_OPENETH=y
+
+# Increase log verbosity for test output
+CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y
+
+# Ensure console UART is enabled
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
+# --- BLE emulation via HCI bridge to external virtual controller ---
+# Enable Bluetooth and NimBLE host stack
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+
+# Disable the ESP32 BT controller (no hardware in QEMU)
+CONFIG_BT_CONTROLLER_DISABLED=y
+
+# Keep NimBLE host features enabled
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=y
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+
+# Disable NimBLE's built-in UART transport — our custom hci_transport_qemu.c
+# provides ble_transport_to_ll_*_impl() directly.
+CONFIG_BT_NIMBLE_TRANSPORT_UART=n
+
+# --- WiFi emulation via OpenCores Ethernet ---
+# Mock server URLs (HTTP, not HTTPS, for simplicity)
+CONFIG_QEMU_HEARTBEAT_URL="http://10.0.2.2:9080/heartbeat"
+CONFIG_QEMU_OTA_URL="http://10.0.2.2:9080/update"
+
+# --- LED/Touch visualization via UART2 bridge to external UI ---
+# Increase UART ring buffer for LED frame throughput
+CONFIG_UART_ISR_IN_IRAM=y

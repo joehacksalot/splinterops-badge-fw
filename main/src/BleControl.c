@@ -36,7 +36,9 @@
 #include "nvs_flash.h"
 
 // NimBLE
+#ifndef CONFIG_BADGE_QEMU_MODE
 #include "esp_bt.h"
+#endif
 #include "console/console.h"
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -51,6 +53,9 @@
 
 
 // Application
+#ifdef CONFIG_BADGE_QEMU_MODE
+#include "hci_transport_qemu.h"
+#endif
 #include "BleControl.h"
 #include "BleControl_Service.h"
 #include "BleControl_AdvScan.h"
@@ -121,6 +126,13 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     this->bleServiceDisableTimerHandleArgs.arg = (void*)(this); // argument specified here will be passed to timer callback function
     this->bleServiceDisableTimerHandleArgs.name = "ble-xfer-timeout";
     ESP_ERROR_CHECK(esp_timer_create(&this->bleServiceDisableTimerHandleArgs, &this->bleServiceDisableTimerHandle));
+
+#ifdef CONFIG_BADGE_QEMU_MODE
+    // In QEMU mode, skip esp_bt_controller_init/enable — no real controller.
+    // Use our custom HCI transport that bridges to an external virtual
+    // controller (e.g. Bumble) via UART/TCP.
+    ESP_ERROR_CHECK(hci_transport_qemu_init());
+#endif
 
     ESP_ERROR_CHECK(nimble_port_init());
     
@@ -237,9 +249,11 @@ esp_err_t BleControl_Init(BleControl *this, NotificationDispatcher *pNotificatio
     ble_hs_cfg.gatts_register_cb = _BleControl_ServiceEventCallbackHandler;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
+#ifndef CONFIG_BADGE_QEMU_MODE
     esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P3);      // ESP_PWR_LVL_P9 is max value
     esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_SCAN ,ESP_PWR_LVL_P3);     // ESP_PWR_LVL_P9 is max value
     esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT ,ESP_PWR_LVL_P3);  // ESP_PWR_LVL_P9 is max value
+#endif
 
     ble_svc_gap_init();
     ble_svc_gatt_init();

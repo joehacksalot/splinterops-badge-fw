@@ -1,5 +1,31 @@
 menu "Badge Additional Configuration"
 
+    choice BADGE_TYPE
+        prompt "Badge hardware type"
+        default BADGE_TYPE_FMAN25
+        help
+            Select which badge hardware variant to build for.
+
+        config BADGE_TYPE_TRON
+            bool "TRON"
+        config BADGE_TYPE_REACTOR
+            bool "REACTOR"
+        config BADGE_TYPE_CREST
+            bool "CREST"
+        config BADGE_TYPE_FMAN25
+            bool "FMAN25"
+    endchoice
+
+    config BADGE_QEMU_MODE
+        bool "Build for QEMU emulation (stubs unsupported peripherals)"
+        default n
+        help
+            When enabled, unsupported peripherals (touch, WiFi, ADC, LED strip, PWM)
+            are replaced with software stubs. BLE application code runs unmodified
+            with a custom HCI transport that bridges to an external virtual BLE
+            controller (e.g. Google Bumble) via UART/TCP. Use this for CI/QEMU
+            testing only.
+
     config CONSOLE_STORE_HISTORY
         bool "Store console command history in flash"
         default y
@@ -32,6 +58,22 @@ menu "Badge Additional Configuration"
         default 3
         help
             Maximium retry count for connecting to WiFi AP
+
+    config QEMU_HEARTBEAT_URL
+        string "QEMU mode heartbeat URL"
+        default "http://10.0.2.2:9080/heartbeat"
+        depends on BADGE_QEMU_MODE
+        help
+            URL of the mock game server's heartbeat endpoint.
+            10.0.2.2 is the host machine's IP as seen from QEMU SLIRP NAT.
+            Port 9080 avoids conflict with the viz bridge HTTP UI on 8080.
+
+    config QEMU_OTA_URL
+        string "QEMU mode OTA update URL"
+        default "http://10.0.2.2:9080/update"
+        depends on BADGE_QEMU_MODE
+        help
+            URL of the mock OTA server endpoint.
 
     config OTA_UPDATE_URL
         string "OTA Update URL"
