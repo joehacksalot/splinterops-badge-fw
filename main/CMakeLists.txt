@@ -1,18 +1,26 @@
 if(CONFIG_BADGE_QEMU_MODE)
-    # QEMU mode: use stubs for unsupported peripherals (touch, LED, battery, WiFi, synth)
+    # QEMU mode: use stubs for unsupported peripherals (touch, LED, battery, WiFi)
     # but keep REAL BLE application code with a custom HCI transport shim.
     # The BleControl_Stub.c is no longer used — real BLE code runs against
     # the NimBLE host stack, with HCI packets bridged to an external virtual
     # controller (e.g. Google Bumble) via UART/TCP.
+    # QEMU mode: real LedControl.c runs — led_strip_qemu.c provides the
+    # hardware abstraction.  TouchSensor_QemuViz.c replaces the old no-op
+    # touch stub with one that receives events from the visualization UI.
     set(QEMU_EXCLUDED_SRCS
         "src/TouchSensor.c"
         "src/BatterySensor.c"
-        "src/LedControl.c"
         "src/BleSpec.c"
         "src/WifiClient.c"
-        "src/SynthMode.c"
         "src/stubs/BleControl_Stub.c"
+        "src/stubs/LedControl_Stub.c"
+        "src/stubs/TouchSensor_Stub.c"
+        "src/stubs/SynthMode_Stub.c"
     )
+    # LedControl.c is NO LONGER excluded — real LED logic runs.
+    # led_strip_qemu.c overrides the led_strip component functions.
+    # qemu_viz_transport.c provides shared UART2 transport.
+    # TouchSensor_QemuViz.c receives touch events from the viz UI.
     idf_component_register( SRC_DIRS "src" "src/songs" "src/stubs"
                             EXCLUDE_SRCS ${QEMU_EXCLUDED_SRCS}
                             INCLUDE_DIRS "inc"

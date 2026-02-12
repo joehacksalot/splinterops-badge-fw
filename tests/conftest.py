@@ -4,14 +4,33 @@ import asyncio
 import sys
 import os
 
-# Add project root to path so tools/ is importable
+# Add project root and tests dir to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.dirname(__file__))
 
 
 @pytest.fixture(autouse=True)
 def qemu_config(request):
     """Configure QEMU-specific test settings."""
     pass
+
+
+@pytest.fixture(scope="session")
+async def viz_client(event_loop):
+    """
+    Client for the QEMU visualization transport (UART2 TCP).
+    Connects directly to QEMU's UART2 TCP port for injecting touch
+    events and reading LED frames in tests.
+    """
+    from test_touch_led import QemuVizClient
+
+    client = QemuVizClient(host="localhost", port=1235)
+    try:
+        await client.connect(timeout=10.0)
+    except Exception as e:
+        pytest.skip(f"Cannot connect to QEMU viz port: {e}")
+    yield client
+    await client.close()
 
 
 @pytest.fixture(scope="session")

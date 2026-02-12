@@ -15,6 +15,10 @@
 #include "TimeUtils.h"
 #include "UserSettings.h"
 
+#ifdef CONFIG_BADGE_QEMU_MODE
+#include "qemu_viz_transport.h"
+#endif
+
 #define SPEAKER_GPIO_NUM GPIO_NUM_18
 
 #define DEFAULT_LEDC_TIMER LEDC_TIMER_0
@@ -195,6 +199,10 @@ static void SynthModeTask(void *pvParameters)
 
 static esp_err_t SynthMode_ConfigurePWM(SynthMode *this)
 {
+#ifdef CONFIG_BADGE_QEMU_MODE
+    ESP_LOGI(TAG, "QEMU mode: skipping LEDC PWM config, using viz transport");
+    return ESP_OK;
+#else
     esp_err_t ret = ESP_FAIL;
 
     ledc_timer_config_t ledc_timer =
@@ -229,6 +237,7 @@ static esp_err_t SynthMode_ConfigurePWM(SynthMode *this)
     }
 
     return ret;
+#endif
 }
 
 
@@ -278,7 +287,20 @@ static esp_err_t SynthMode_PlayTone(SynthMode* this, NoteName note)
             // if (xSemaphoreTake(this->toneMutex, pdMS_TO_TICKS(MUTEX_MAX_WAIT_MS)) == pdTRUE)
             {
                 ESP_LOGD(TAG, "Starting tone at %f", frequency);
-#if DISABLE_SOUND
+#ifdef CONFIG_BADGE_QEMU_MODE
+                uint16_t freq_hz = (uint16_t)frequency;
+                uint8_t frame[] = {
+                    QEMU_VIZ_FRAME_START,
+                    QEMU_VIZ_MSG_TONE_EVENT,
+                    1,  // action: start
+                    (uint8_t)(freq_hz & 0xFF),
+                    (uint8_t)((freq_hz >> 8) & 0xFF),
+                    QEMU_VIZ_FRAME_END
+                };
+                qemu_viz_tx_lock();
+                qemu_viz_send(frame, sizeof(frame));
+                qemu_viz_tx_unlock();
+#elif DISABLE_SOUND
                 ledc_set_freq(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_TIMER, frequency);
                 ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_ON);
                 ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
@@ -317,8 +339,21 @@ static esp_err_t SynthMode_StopTone(SynthMode* this)
             data.action = SONG_NOTE_CHANGE_TYPE_TONE_STOP;
             NotificationDispatcher_NotifyEvent(this->pNotificationDispatcher, NOTIFICATION_EVENTS_SONG_NOTE_ACTION, &data, sizeof(data), DEFAULT_NOTIFY_WAIT_DURATION);
 
+#ifdef CONFIG_BADGE_QEMU_MODE
+            uint8_t frame[] = {
+                QEMU_VIZ_FRAME_START,
+                QEMU_VIZ_MSG_TONE_EVENT,
+                0,  // action: stop
+                0, 0,  // frequency = 0
+                QEMU_VIZ_FRAME_END
+            };
+            qemu_viz_tx_lock();
+            qemu_viz_send(frame, sizeof(frame));
+            qemu_viz_tx_unlock();
+#else
             ledc_set_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL, DEFAULT_LEDC_DUTY_OFF);
             ledc_update_duty(DEFAULT_LEDC_SPEED_MODE, DEFAULT_LEDC_CHANNEL);
+#endif
 
             // if (xSemaphoreGive(this->toneMutex) != pdTRUE)
             // {

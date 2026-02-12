@@ -290,6 +290,16 @@ static void hci_rx_task(void *param)
 }
 
 /* ------------------------------------------------------------------ */
+/* NimBLE transport init (called by nimble_port during esp_nimble_init) */
+/* ------------------------------------------------------------------ */
+
+void ble_transport_ll_init(void)
+{
+    /* Actual UART setup is deferred to hci_transport_qemu_init() which the
+     * application calls explicitly.  This stub satisfies the linker.       */
+}
+
+/* ------------------------------------------------------------------ */
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
