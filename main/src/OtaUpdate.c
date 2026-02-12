@@ -21,7 +21,9 @@ static void OtaUpdateTask(void *pvParameters);
 // Internal Constants
 static const char * TAG = "ota_task";
 
-#if defined(TRON_BADGE)
+#ifdef CONFIG_BADGE_QEMU_MODE
+#define OTA_URL CONFIG_QEMU_OTA_URL
+#elif defined(TRON_BADGE)
 #define OTA_URL CONFIG_OTA_UPDATE_URL"_TRON"
 #elif defined(REACTOR_BADGE)
 #define OTA_URL CONFIG_OTA_UPDATE_URL"_REACTOR"

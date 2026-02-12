@@ -39,7 +39,11 @@ static void _PrintHeartBeatResponse(HeartBeatResponse *pHeartBeatResponse);
 #define HTTP_REQUEST_EXPIRE_TIME_MS WIFI_WAIT_TIMEOUT_MS
 
 static const char * TAG             = "HGC";
+#ifdef CONFIG_BADGE_QEMU_MODE
+static const char * HEARTBEAT_URL   = CONFIG_QEMU_HEARTBEAT_URL;
+#else
 static const char * HEARTBEAT_URL   = "https://us-central1-iwc-dc32.cloudfunctions.net/heartbeat";
+#endif
 static const char * PEER_REPORT_JSON_TEMPLATE = "{\"uuid\":\"%s\", \"peakRssi\":%d, \"eventUuid\":\"%s\"}";
 static const char * HEARTBEAT_JSON_TEMPLATE   = 
 "{\

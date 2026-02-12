@@ -12,6 +12,7 @@ if(CONFIG_BADGE_QEMU_MODE)
         "src/BatterySensor.c"
         "src/BleSpec.c"
         "src/WifiClient.c"
+        "src/stubs/WifiClient_Stub.c"
         "src/stubs/BleControl_Stub.c"
         "src/stubs/LedControl_Stub.c"
         "src/stubs/TouchSensor_Stub.c"

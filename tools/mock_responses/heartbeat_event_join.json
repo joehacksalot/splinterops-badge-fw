@@ -1,0 +1,17 @@
+{
+    "stones": [1, 2, 3],
+    "songs": [1, 5],
+    "event": {
+        "event": "QlgVrlHvkZs=",
+        "stoneColor": 2,
+        "power": 75.0,
+        "msRemaining": 600000,
+        "eventComplete": false
+    },
+    "badgeRequestTime": 0,
+    "serverResponseTime": {
+        "tv_sec": 0,
+        "tv_nsec": 0
+    },
+    "siblings": []
+}

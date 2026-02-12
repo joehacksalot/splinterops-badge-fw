@@ -81,6 +81,9 @@ static void viz_rx_task(void *param)
         case QEMU_VIZ_MSG_TOUCH_EVENT:
             payload_len = 2; /* sensor_idx + event_type */
             break;
+        case QEMU_VIZ_MSG_TEST_INJECT:
+            payload_len = 1; /* sub_command */
+            break;
         default:
             ESP_LOGW(TAG, "Unknown RX msg type: 0x%02x", msg_type);
             continue;

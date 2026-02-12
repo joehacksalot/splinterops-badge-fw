@@ -60,6 +60,11 @@ CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
 # provides ble_transport_to_ll_*_impl() directly.
 CONFIG_BT_NIMBLE_TRANSPORT_UART=n
 
+# --- WiFi emulation via OpenCores Ethernet ---
+# Mock server URLs (HTTP, not HTTPS, for simplicity)
+CONFIG_QEMU_HEARTBEAT_URL="http://10.0.2.2:9080/heartbeat"
+CONFIG_QEMU_OTA_URL="http://10.0.2.2:9080/update"
+
 # --- LED/Touch visualization via UART2 bridge to external UI ---
 # Increase UART ring buffer for LED frame throughput
 CONFIG_UART_ISR_IN_IRAM=y

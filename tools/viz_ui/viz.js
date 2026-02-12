@@ -12,12 +12,21 @@
 // ----------------------------------------------------------------
 
 const WS_URL = `ws://${window.location.hostname || 'localhost'}:8765`;
+const MOCK_SERVER_URL = `http://${window.location.hostname || 'localhost'}:9080`;
 const TOUCH_EVENT = {
     RELEASED: 0,
     TOUCHED: 1,
     SHORT_PRESSED: 2,
     LONG_PRESSED: 3,
     VERY_LONG_PRESSED: 4,
+};
+
+// Synth mode note mappings per badge (from SynthMode.c touchFrequencyMapping[])
+const SYNTH_NOTES = {
+    FMAN25:  ['D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4'],
+    CREST:   ['D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4'],
+    TRON:    ['D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4'],
+    REACTOR: ['D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4'],
 };
 
 const LED_MODE_NAMES = [
@@ -45,6 +54,7 @@ const OUTER_STATE_NAMES = [
 
 let ws = null;
 let badgeLayouts = {};
+let badgePcbPositions = {};
 let currentBadge = 'FMAN25';
 let pixels = [];
 let framesReceived = 0;
@@ -95,6 +105,14 @@ async function loadBadgeLayouts() {
         badgeLayouts = {
             FMAN25: { led_count: 45, inner_ring: { offset: 32, count: 13 }, outer_ring: { offset: 0, count: 32 }, touch_sensors: 9, touch_labels: ['R1','R2','R3','R4','Center','L4','L3','L2','L1'] },
         };
+    }
+
+    try {
+        const resp = await fetch('badge_pcb_positions.json');
+        badgePcbPositions = await resp.json();
+    } catch (e) {
+        console.warn('Failed to load badge_pcb_positions.json, using fallback positions:', e);
+        badgePcbPositions = {};
     }
 }
 
@@ -224,7 +242,9 @@ function buildTouchButtons() {
         btn.className = 'touch-btn';
         btn.dataset.index = i;
         const keyHint = sensorToKey[i] ? `<span class="keyhint">[${sensorToKey[i]}]</span>` : '';
-        btn.innerHTML = `<span class="label">${layout.touch_labels[i]}</span><span class="index">Sensor ${i}</span>${keyHint}`;
+        const notes = SYNTH_NOTES[currentBadge] || [];
+        const noteHint = notes[i] ? `<span class="note">${notes[i]}</span>` : '';
+        btn.innerHTML = `<span class="label">${layout.touch_labels[i]}</span><span class="index">Sensor ${i}</span>${noteHint}${keyHint}`;
 
         // Mouse events for click-and-hold behavior
         btn.addEventListener('mousedown', (e) => onTouchStart(i, btn, e));
@@ -251,6 +271,7 @@ document.addEventListener('keydown', (e) => {
     if (activeKeys.has(e.key)) return; // Already held, ignore repeat
 
     activeKeys.add(e.key);
+    updateComboHighlights();
     const btn = touchBtnElements[sensorIdx];
     if (btn) onTouchStart(sensorIdx, btn, e);
 });
@@ -261,6 +282,7 @@ document.addEventListener('keyup', (e) => {
     if (!activeKeys.has(e.key)) return;
 
     activeKeys.delete(e.key);
+    updateComboHighlights();
     const btn = touchBtnElements[sensorIdx];
     if (btn) onTouchEnd(sensorIdx, btn, e);
 });
@@ -652,10 +674,70 @@ document.addEventListener('keydown', () => initAudioContext(), { once: true });
 // ----------------------------------------------------------------
 
 function computeLedPositions(layout) {
-    if (currentBadge === 'FMAN25') {
-        return computeFman25Positions(layout);
+    const pcbData = badgePcbPositions[currentBadge];
+    if (pcbData && pcbData.coords.length === layout.led_count) {
+        return mapPcbCoordsToCanvas(pcbData, layout);
+    }
+    // Fallback to generic concentric circles if no PCB data
+    return computeGenericRingPositions(layout);
+}
+
+/**
+ * Map PCB pick-and-place coordinates to canvas positions for any badge.
+ * Applies the correctedPixelOffset mapping: for each logical index i,
+ * the physical PCB position is pcbData.coords[pcbData.pixel_offset[i]].
+ */
+function mapPcbCoordsToCanvas(pcbData, layout) {
+    const positions = [];
+    const coords = pcbData.coords;
+    const pixelOffset = pcbData.pixel_offset;
+
+    // Find bounding box of all physical LED coordinates
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [px, py] of coords) {
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
     }
 
+    const pcbW = maxX - minX || 1;
+    const pcbH = maxY - minY || 1;
+
+    // Map PCB coords to canvas with padding
+    const margin = 50;
+    const availW = canvas.width - margin * 2;
+    const availH = canvas.height - margin * 2;
+    const scale = Math.min(availW / pcbW, availH / pcbH);
+
+    // Center the layout on the canvas
+    const offsetX = (canvas.width - pcbW * scale) / 2;
+    const offsetY = (canvas.height - pcbH * scale) / 2;
+
+    const innerOffset = layout.inner_ring.offset;
+    const innerEnd = innerOffset + layout.inner_ring.count;
+
+    for (let i = 0; i < layout.led_count; i++) {
+        // Apply pixel offset mapping: logical index i → physical PCB index
+        const physIdx = pixelOffset[i];
+        const [px, py] = coords[physIdx];
+
+        // Map to canvas: X maps directly, Y is negated (PCB Y convention varies,
+        // but we always map minY→bottom, maxY→top for consistent display)
+        const screenX = (px - minX) * scale + offsetX;
+        const screenY = (maxY - py) * scale + offsetY;
+
+        const ring = (i >= innerOffset && i < innerEnd) ? 'inner' : 'outer';
+        positions[i] = { x: screenX, y: screenY, ring };
+    }
+
+    return positions;
+}
+
+/**
+ * Fallback: generic concentric circle positions when no PCB data is available.
+ */
+function computeGenericRingPositions(layout) {
     const positions = [];
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
@@ -665,12 +747,10 @@ function computeLedPositions(layout) {
     const innerOffset = layout.inner_ring.offset;
     const outerOffset = layout.outer_ring.offset;
 
-    // Compute ring radii based on canvas size
     const maxRadius = Math.min(cx, cy) - 30;
     const outerRadius = maxRadius * 0.85;
     const innerRadius = maxRadius * 0.45;
 
-    // Inner ring LEDs
     for (let i = 0; i < innerCount; i++) {
         const angle = (2 * Math.PI * i / innerCount) - Math.PI / 2;
         positions[innerOffset + i] = {
@@ -680,7 +760,6 @@ function computeLedPositions(layout) {
         };
     }
 
-    // Outer ring LEDs
     for (let i = 0; i < outerCount; i++) {
         const angle = (2 * Math.PI * i / outerCount) - Math.PI / 2;
         positions[outerOffset + i] = {
@@ -693,164 +772,232 @@ function computeLedPositions(layout) {
     return positions;
 }
 
-/**
- * Compute LED positions for the FMAN25 badge using exact PCB pick-and-place
- * coordinates from PCBWay_positions.csv.
- *
- * Outer ring (indices 0-31, D1-D32): SK6812SIDE LEDs around the triangle perimeter.
- * Inner ring (indices 32-44, D33-D45): SK6812MINI LEDs around the central IC.
- */
-function computeFman25Positions(layout) {
-    const positions = [];
-
-    // Exact PCB coordinates from PCBWay_positions.csv (pos_x, pos_y).
-    // PCB Y-axis is negative (increases downward on screen).
-    // Indexed by diode number: pcbCoords[0] = D1, pcbCoords[44] = D45.
-    const pcbCoords = [
-        // D1-D12: outer ring (left edge + bottom vertex)
-        [118.641587, -33.867092],  // D1
-        [122.622622, -41.027948],  // D2
-        [126.220880, -48.244993],  // D3
-        [129.819145, -55.462037],  // D4
-        [133.417411, -62.679090],  // D5
-        [137.015677, -69.896141],  // D6
-        [140.613938, -77.113188],  // D7
-        [144.212199, -84.330237],  // D8
-        [147.810467, -91.547289],  // D9
-        [151.408726, -98.764341],  // D10
-        [155.006996, -105.981384], // D11
-        [157.641377, -112.267203], // D12
-        // D13-D23: outer ring (right edge + top-right corner)
-        [160.316706, -105.935978], // D13
-        [163.863324, -98.822609],  // D14
-        [167.409942, -91.709246],  // D15
-        [170.956561, -84.595877],  // D16
-        [174.503177, -77.482516],  // D17
-        [178.049799, -70.369148],  // D18
-        [181.596415, -63.255783],  // D19
-        [185.143027, -56.142414],  // D20
-        [188.689649, -49.029053],  // D21
-        [192.236191, -41.915629],  // D22
-        [196.641590, -33.867305],  // D23
-        // D24-D32: outer ring (top edge, right-to-left)
-        [190.641591, -34.167288],  // D24
-        [182.391577, -34.167261],  // D25
-        [174.141571, -34.167243],  // D26
-        [165.891558, -34.167218],  // D27
-        [157.641545, -34.167193],  // D28
-        [149.391534, -34.167176],  // D29
-        [141.141549, -34.167107],  // D30
-        [132.891577, -34.167085],  // D31
-        [124.641588, -34.167111],  // D32
-        // D33-D45: inner ring (SK6812MINI)
-        [135.641559, -43.967135],  // D33
-        [141.141563, -54.060939],  // D34
-        [146.641523, -64.154691],  // D35
-        [152.141489, -74.248440],  // D36
-        [157.641452, -84.342201],  // D37
-        [163.141476, -74.248471],  // D38
-        [168.641491, -64.154749],  // D39
-        [174.141510, -54.061023],  // D40
-        [179.641563, -43.967258],  // D41
-        [168.641558, -43.967227],  // D42
-        [157.641561, -43.967195],  // D43
-        [146.641563, -43.967166],  // D44
-        [157.641537, -54.060985],  // D45
-    ];
-
-    // Find bounding box of all LED coordinates
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const [px, py] of pcbCoords) {
-        if (px < minX) minX = px;
-        if (px > maxX) maxX = px;
-        if (py < minY) minY = py;
-        if (py > maxY) maxY = py;
-    }
-
-    const pcbW = maxX - minX;
-    const pcbH = maxY - minY; // Note: py values are negative, so this is positive range
-
-    // Map PCB coords to canvas with padding
-    const margin = 50;
-    const availW = canvas.width - margin * 2;
-    const availH = canvas.height - margin * 2;
-    const scale = Math.min(availW / pcbW, availH / pcbH);
-
-    // Center the layout on the canvas
-    const offsetX = (canvas.width - pcbW * scale) / 2;
-    const offsetY = (canvas.height - pcbH * scale) / 2;
-
-    for (let i = 0; i < pcbCoords.length; i++) {
-        const [px, py] = pcbCoords[i];
-        // Map PCB coords to canvas: X maps directly, Y is negated (PCB Y is negative-down)
-        const screenX = (px - minX) * scale + offsetX;
-        const screenY = (-py - (-maxY)) * scale + offsetY; // flip Y: most-negative → top
-        const ring = i < 32 ? 'outer' : 'inner';
-        positions[i] = { x: screenX, y: screenY, ring };
-    }
-
-    return positions;
-}
-
 let ledPositions = [];
 let touchPadPositions = []; // Computed touch pad positions on the canvas
 
-// FMAN25 touch sensor → LED index mapping (from firmware touchMap).
+// Per-badge touch sensor → LED index mapping (from firmware touchMap in LedControl.c).
 // Each sensor maps to a cluster of outer-ring LEDs.
-const FMAN25_TOUCH_LED_MAP = [
-    [21, 22, 23], // sensor 0 (R1) — top-right corner
-    [18, 19, 20], // sensor 1 (R2) — right edge upper
-    [15, 16, 17], // sensor 2 (R3) — right edge mid
-    [13, 14, 15], // sensor 3 (R4) — right edge lower
-    [10, 11, 12], // sensor 4 (Center) — bottom vertex
-    [7, 8, 9],    // sensor 5 (L4) — left edge lower
-    [5, 6, 7],    // sensor 6 (L3) — left edge mid
-    [2, 3, 4],    // sensor 7 (L2) — left edge upper
-    [0, 1, 31],   // sensor 8 (L1) — top-left corner
-];
+const TOUCH_LED_MAPS = {
+    FMAN25: [
+        [21, 22, 23], // sensor 0 (R1) — top-right corner
+        [18, 19, 20], // sensor 1 (R2) — right edge upper
+        [15, 16, 17], // sensor 2 (R3) — right edge mid
+        [13, 14, 15], // sensor 3 (R4) — right edge lower
+        [10, 11, 12], // sensor 4 (Center) — bottom vertex
+        [7, 8, 9],    // sensor 5 (L4) — left edge lower
+        [5, 6, 7],    // sensor 6 (L3) — left edge mid
+        [2, 3, 4],    // sensor 7 (L2) — left edge upper
+        [0, 1, 31],   // sensor 8 (L1) — top-left corner
+    ],
+    TRON: [
+        [24, 25, 47, 35, 36, 37], // sensor 0 (12 o'clock)
+        [26, 27, 24],             // sensor 1 (1 o'clock)
+        [28, 29, 30],             // sensor 2 (2 o'clock)
+        [30, 31, 32],             // sensor 3 (4 o'clock)
+        [33, 34, 24],             // sensor 4 (5 o'clock)
+        [38, 39, 24],             // sensor 5 (7 o'clock)
+        [40, 41, 42],             // sensor 6 (8 o'clock)
+        [42, 43, 44],             // sensor 7 (10 o'clock)
+        [45, 46, 47],             // sensor 8 (11 o'clock)
+    ],
+    REACTOR: [
+        [24, 25, 47, 35, 36, 37], // sensor 0 (12 o'clock)
+        [26, 27, 24],             // sensor 1 (1 o'clock)
+        [28, 29, 30],             // sensor 2 (2 o'clock)
+        [30, 31, 32],             // sensor 3 (4 o'clock)
+        [33, 34, 24],             // sensor 4 (5 o'clock)
+        [38, 39, 24],             // sensor 5 (7 o'clock)
+        [40, 41, 42],             // sensor 6 (8 o'clock)
+        [42, 43, 44],             // sensor 7 (10 o'clock)
+        [45, 46, 47],             // sensor 8 (11 o'clock)
+    ],
+    CREST: [
+        [8, 9, 10, 11, 12],      // sensor 0 (RW1)
+        [16, 17, 18],             // sensor 1 (RW2)
+        [23, 24],                 // sensor 2 (RW3)
+        [28],                     // sensor 3 (RW4)
+        [31],                     // sensor 4 (Tail)
+        [35],                     // sensor 5 (LW4)
+        [40, 41],                 // sensor 6 (LW3)
+        [46, 47, 48],             // sensor 7 (LW2)
+        [52, 53, 54, 55, 56],    // sensor 8 (LW1)
+    ],
+};
 
 /**
- * Compute touch pad positions from LED positions.
+ * Compute touch pad positions from LED positions for any badge.
  * Each pad is placed at the centroid of its mapped LED cluster,
- * pushed slightly outward from the triangle center.
+ * pushed slightly outward from the overall LED centroid.
  */
 function computeTouchPadPositions() {
-    if (currentBadge !== 'FMAN25' || ledPositions.length < 45) {
+    const layout = badgeLayouts[currentBadge];
+    const touchMap = TOUCH_LED_MAPS[currentBadge];
+    if (!layout || !touchMap || ledPositions.length < layout.led_count) {
         touchPadPositions = [];
         return;
     }
 
-    const layout = badgeLayouts[currentBadge];
-    if (!layout) return;
-
-    // Triangle centroid (average of corner LEDs)
-    const ctrX = (ledPositions[0].x + ledPositions[11].x + ledPositions[22].x) / 3;
-    const ctrY = (ledPositions[0].y + ledPositions[11].y + ledPositions[22].y) / 3;
+    // Compute overall centroid of all LED positions
+    let ctrX = 0, ctrY = 0, count = 0;
+    for (const pos of ledPositions) {
+        if (pos) { ctrX += pos.x; ctrY += pos.y; count++; }
+    }
+    ctrX /= count;
+    ctrY /= count;
 
     touchPadPositions = [];
-    for (let s = 0; s < FMAN25_TOUCH_LED_MAP.length; s++) {
-        const ledIdxs = FMAN25_TOUCH_LED_MAP[s];
+    for (let s = 0; s < touchMap.length; s++) {
+        const ledIdxs = touchMap[s];
         // Centroid of mapped LEDs
-        let sx = 0, sy = 0;
+        let sx = 0, sy = 0, validCount = 0;
         for (const idx of ledIdxs) {
-            sx += ledPositions[idx].x;
-            sy += ledPositions[idx].y;
+            if (ledPositions[idx]) {
+                sx += ledPositions[idx].x;
+                sy += ledPositions[idx].y;
+                validCount++;
+            }
         }
-        sx /= ledIdxs.length;
-        sy /= ledIdxs.length;
+        if (validCount === 0) continue;
+        sx /= validCount;
+        sy /= validCount;
 
-        // Push outward from triangle center by a fixed amount
+        // Push outward from center by a fixed amount
         const dx = sx - ctrX;
         const dy = sy - ctrY;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const pushOut = 18;
         touchPadPositions[s] = {
-            x: sx + (dx / dist) * pushOut,
-            y: sy + (dy / dist) * pushOut,
+            x: dist > 1 ? sx + (dx / dist) * pushOut : sx,
+            y: dist > 1 ? sy + (dy / dist) * pushOut : sy,
             label: layout.touch_labels[s],
             sensorIdx: s,
         };
     }
+}
+
+/**
+ * Draw per-badge shape guide outlines on the canvas.
+ * Uses actual LED positions to derive the guide geometry.
+ */
+function drawShapeGuide(layout) {
+    if (ledPositions.length < layout.led_count) return;
+
+    if (currentBadge === 'FMAN25') {
+        // Outer triangle: D1 (idx 0) = top-left, D12 (idx 11) = bottom, D23 (idx 22) = top-right
+        const pTL = ledPositions[0];
+        const pB  = ledPositions[11];
+        const pTR = ledPositions[22];
+        ctx.beginPath();
+        ctx.moveTo(pTL.x, pTL.y);
+        ctx.lineTo(pTR.x, pTR.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Inner triangle: D33 (idx 32) = top-left, D37 (idx 36) = bottom, D41 (idx 40) = top-right
+        const iTL = ledPositions[32];
+        const iB  = ledPositions[36];
+        const iTR = ledPositions[40];
+        ctx.beginPath();
+        ctx.moveTo(iTL.x, iTL.y);
+        ctx.lineTo(iTR.x, iTR.y);
+        ctx.lineTo(iB.x, iB.y);
+        ctx.closePath();
+        ctx.stroke();
+
+    } else if (currentBadge === 'TRON' || currentBadge === 'REACTOR') {
+        // Draw two concentric circles derived from inner and outer ring LED positions
+        const innerOffset = layout.inner_ring.offset;
+        const innerEnd = innerOffset + layout.inner_ring.count;
+        const outerOffset = layout.outer_ring.offset;
+        const outerEnd = outerOffset + layout.outer_ring.count;
+
+        // Compute centroid
+        let ctrX = 0, ctrY = 0, cnt = 0;
+        for (const pos of ledPositions) {
+            if (pos) { ctrX += pos.x; ctrY += pos.y; cnt++; }
+        }
+        ctrX /= cnt; ctrY /= cnt;
+
+        // Average radius for each ring
+        let innerR = 0, innerC = 0, outerR = 0, outerC = 0;
+        for (let i = 0; i < layout.led_count; i++) {
+            if (!ledPositions[i]) continue;
+            const dx = ledPositions[i].x - ctrX;
+            const dy = ledPositions[i].y - ctrY;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (i >= innerOffset && i < innerEnd) { innerR += d; innerC++; }
+            if (i >= outerOffset && i < outerEnd) { outerR += d; outerC++; }
+        }
+        if (innerC > 0) {
+            ctx.beginPath();
+            ctx.arc(ctrX, ctrY, innerR / innerC, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        if (outerC > 0) {
+            ctx.beginPath();
+            ctx.arc(ctrX, ctrY, outerR / outerC, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+    } else if (currentBadge === 'CREST') {
+        // Draw convex hull of outer ring LED positions (irregular crest shape)
+        const outerOffset = layout.outer_ring.offset;
+        const outerEnd = outerOffset + layout.outer_ring.count;
+        const outerPts = [];
+        for (let i = outerOffset; i < outerEnd; i++) {
+            if (ledPositions[i]) outerPts.push(ledPositions[i]);
+        }
+        if (outerPts.length > 2) {
+            const hull = convexHull(outerPts);
+            ctx.beginPath();
+            ctx.moveTo(hull[0].x, hull[0].y);
+            for (let i = 1; i < hull.length; i++) {
+                ctx.lineTo(hull[i].x, hull[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+    }
+}
+
+/**
+ * Compute convex hull of a set of 2D points using Graham scan.
+ */
+function convexHull(points) {
+    if (points.length < 3) return points.slice();
+
+    // Find bottom-most (then left-most) point
+    let start = 0;
+    for (let i = 1; i < points.length; i++) {
+        if (points[i].y > points[start].y ||
+            (points[i].y === points[start].y && points[i].x < points[start].x)) {
+            start = i;
+        }
+    }
+
+    const pivot = points[start];
+    const sorted = points.slice().sort((a, b) => {
+        const angleA = Math.atan2(a.y - pivot.y, a.x - pivot.x);
+        const angleB = Math.atan2(b.y - pivot.y, b.x - pivot.x);
+        if (angleA !== angleB) return angleA - angleB;
+        const distA = (a.x - pivot.x) ** 2 + (a.y - pivot.y) ** 2;
+        const distB = (b.x - pivot.x) ** 2 + (b.y - pivot.y) ** 2;
+        return distA - distB;
+    });
+
+    const hull = [];
+    for (const p of sorted) {
+        while (hull.length >= 2) {
+            const a = hull[hull.length - 2];
+            const b = hull[hull.length - 1];
+            const cross = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+            if (cross <= 0) hull.pop();
+            else break;
+        }
+        hull.push(p);
+    }
+    return hull;
 }
 
 function renderFrame() {
@@ -871,47 +1018,9 @@ function renderFrame() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw ring/shape guides (subtle)
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const maxRadius = Math.min(cx, cy) - 30;
-
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
-
-    if (currentBadge === 'FMAN25' && ledPositions.length >= 45) {
-        // Draw outer triangle guide using corner LED positions:
-        // D1 (idx 0) = top-left, D12 (idx 11) = bottom, D23 (idx 22) = top-right
-        const pTL = ledPositions[0];
-        const pB  = ledPositions[11];
-        const pTR = ledPositions[22];
-
-        ctx.beginPath();
-        ctx.moveTo(pTL.x, pTL.y);
-        ctx.lineTo(pTR.x, pTR.y);
-        ctx.lineTo(pB.x, pB.y);
-        ctx.closePath();
-        ctx.stroke();
-
-        // Draw inner triangle guide using corner inner LEDs:
-        // D33 (idx 32) = inner top-left, D37 (idx 36) = inner bottom, D41 (idx 40) = inner top-right
-        const iTL = ledPositions[32];
-        const iB  = ledPositions[36];
-        const iTR = ledPositions[40];
-
-        ctx.beginPath();
-        ctx.moveTo(iTL.x, iTL.y);
-        ctx.lineTo(iTR.x, iTR.y);
-        ctx.lineTo(iB.x, iB.y);
-        ctx.closePath();
-        ctx.stroke();
-    } else if (currentBadge !== 'FMAN25') {
-        ctx.beginPath();
-        ctx.arc(cx, cy, maxRadius * 0.85, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(cx, cy, maxRadius * 0.45, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    drawShapeGuide(layout);
 
     // Draw LEDs
     const ledRadius = Math.max(4, Math.min(10, 300 / layout.led_count));
@@ -1021,7 +1130,7 @@ function renderFrame() {
     ctx.font = '14px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(currentBadge, cx, cy);
+    ctx.fillText(currentBadge, canvas.width / 2, canvas.height / 2);
 
     // Update FPS display
     const fps = frameTimestamps.length > 1
@@ -1094,14 +1203,387 @@ badgeSelect.addEventListener('change', () => {
 });
 
 // ----------------------------------------------------------------
+// Control Panel — Section Toggle
+// ----------------------------------------------------------------
+
+function toggleSection(headerEl) {
+    headerEl.classList.toggle('collapsed');
+    const body = headerEl.nextElementSibling;
+    body.classList.toggle('hidden');
+}
+
+// ----------------------------------------------------------------
+// Control Panel — Mock Server API Helpers
+// ----------------------------------------------------------------
+
+async function mockServerPost(path, data = {}) {
+    try {
+        const resp = await fetch(`${MOCK_SERVER_URL}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        const result = await resp.json();
+        logEvent(`API ${path}: ${result.status || 'ok'}`, 'info');
+        return result;
+    } catch (e) {
+        logEvent(`API ${path} failed: ${e.message}`, 'error');
+        return null;
+    }
+}
+
+async function mockServerGet(path) {
+    try {
+        const resp = await fetch(`${MOCK_SERVER_URL}${path}`);
+        return await resp.json();
+    } catch (e) {
+        logEvent(`API GET ${path} failed: ${e.message}`, 'error');
+        return null;
+    }
+}
+
+function triggerHeartbeat() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'inject', command: 'send_heartbeat' }));
+        logEvent('Inject: send_heartbeat', 'info');
+    } else {
+        logEvent('Cannot inject: WebSocket not connected', 'error');
+    }
+}
+
+// ----------------------------------------------------------------
+// Control Panel — Game Events
+// ----------------------------------------------------------------
+
+const GAME_PRESETS = {
+    join_red_5: {
+        event: { event: 'QlgVrlHvkZs=', stoneColor: 1, power: 75.0, msRemaining: 300000, eventComplete: false },
+    },
+    join_cyan_10: {
+        event: { event: 'QlgVrlHvkZs=', stoneColor: 4, power: 50.0, msRemaining: 600000, eventComplete: false },
+    },
+    event_complete: {
+        event: { event: 'QlgVrlHvkZs=', stoneColor: 3, power: 100.0, msRemaining: 0, eventComplete: true },
+    },
+    clear_event: {
+        event: { event: 'AAAAAAAAAAA=', stoneColor: 1, power: 0, msRemaining: 0, eventComplete: false },
+    },
+    unlock_stones: {
+        stones: [1, 2, 3, 4, 5, 6],
+    },
+    unlock_songs: {
+        songs: [1, 2, 3, 4, 5],
+    },
+};
+
+function getGamePatchFromUI() {
+    const patch = {};
+
+    // Event data
+    const eventId = document.getElementById('cpEventId').value;
+    const stoneColor = parseInt(document.getElementById('cpStoneColor').value);
+    const power = parseInt(document.getElementById('cpPowerLevel').value);
+    const duration = parseInt(document.getElementById('cpDuration').value) || 5;
+
+    patch.event = {
+        event: eventId,
+        stoneColor: stoneColor,
+        power: power,
+        msRemaining: duration * 60 * 1000,
+    };
+
+    // Stones
+    const stoneChecks = document.querySelectorAll('#cpStonesGrid input:checked');
+    if (stoneChecks.length > 0) {
+        patch.stones = Array.from(stoneChecks).map(cb => parseInt(cb.value));
+    }
+
+    // Songs
+    const songChecks = document.querySelectorAll('#cpSongsGrid input:checked');
+    if (songChecks.length > 0) {
+        patch.songs = Array.from(songChecks).map(cb => parseInt(cb.value));
+    }
+
+    return patch;
+}
+
+async function applyGameEvent(andTrigger) {
+    const presetKey = document.getElementById('cpGamePreset').value;
+    const patch = presetKey ? GAME_PRESETS[presetKey] : getGamePatchFromUI();
+    if (!patch) return;
+
+    await mockServerPost('/admin/config/patch', patch);
+    if (andTrigger) {
+        triggerHeartbeat();
+    }
+}
+
+// Preset dropdown auto-apply
+document.getElementById('cpGamePreset').addEventListener('change', () => {
+    // Just select — user clicks Apply button
+});
+
+// Power slider display
+document.getElementById('cpPowerLevel').addEventListener('input', (e) => {
+    document.getElementById('cpPowerValue').textContent = `${e.target.value}%`;
+});
+
+// Apply buttons
+document.getElementById('cpApplyTrigger').addEventListener('click', () => applyGameEvent(true));
+document.getElementById('cpApplyWait').addEventListener('click', () => applyGameEvent(false));
+
+// ----------------------------------------------------------------
+// Control Panel — OTA
+// ----------------------------------------------------------------
+
+document.getElementById('cpOtaEnable1M').addEventListener('click', async () => {
+    await mockServerPost('/admin/ota/enable', { dummy_size: 1024 * 1024 });
+    updateOtaStatusUI(true);
+});
+
+document.getElementById('cpOtaEnable4M').addEventListener('click', async () => {
+    await mockServerPost('/admin/ota/enable', { dummy_size: 4 * 1024 * 1024 });
+    updateOtaStatusUI(true);
+});
+
+document.getElementById('cpOtaDisable').addEventListener('click', async () => {
+    await mockServerPost('/admin/ota/disable');
+    updateOtaStatusUI(false);
+});
+
+document.getElementById('cpOtaEnableCustom').addEventListener('click', async () => {
+    const path = document.getElementById('cpOtaBinaryPath').value.trim();
+    if (!path) { logEvent('OTA: No binary path specified', 'error'); return; }
+    await mockServerPost('/admin/ota/enable', { binary_path: path });
+    updateOtaStatusUI(true);
+});
+
+function updateOtaStatusUI(enabled) {
+    const el = document.getElementById('cpOtaStatus');
+    el.textContent = enabled ? 'Enabled' : 'Disabled';
+    el.className = `cp-status-value ${enabled ? 'active' : 'off'}`;
+}
+
+// ----------------------------------------------------------------
+// Control Panel — Peers
+// ----------------------------------------------------------------
+
+let peerList = [];
+
+function renderPeerList() {
+    const container = document.getElementById('cpPeerList');
+    container.innerHTML = '';
+    peerList.forEach((uuid, idx) => {
+        const div = document.createElement('div');
+        div.className = 'peer-entry';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'cp-input';
+        input.value = uuid;
+        input.readOnly = true;
+
+        const btn = document.createElement('button');
+        btn.className = 'cp-btn danger';
+        btn.style.cssText = 'width:auto;padding:4px 8px';
+        btn.textContent = '\u2715';
+        btn.addEventListener('click', () => removePeer(idx));
+
+        div.appendChild(input);
+        div.appendChild(btn);
+        container.appendChild(div);
+    });
+}
+
+function removePeer(idx) {
+    peerList.splice(idx, 1);
+    renderPeerList();
+    syncPeers();
+}
+
+async function syncPeers() {
+    await mockServerPost('/admin/peers', { siblings: peerList });
+}
+
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+document.getElementById('cpAddPeer').addEventListener('click', () => {
+    const input = document.getElementById('cpNewPeer');
+    const uuid = input.value.trim() || generateUUID();
+    peerList.push(uuid);
+    input.value = '';
+    renderPeerList();
+    syncPeers();
+});
+
+document.getElementById('cpAdd5Peers').addEventListener('click', () => {
+    for (let i = 0; i < 5; i++) peerList.push(generateUUID());
+    renderPeerList();
+    syncPeers();
+});
+
+document.getElementById('cpClearPeers').addEventListener('click', () => {
+    peerList = [];
+    renderPeerList();
+    syncPeers();
+});
+
+// ----------------------------------------------------------------
+// Control Panel — Touch Combination Reference (Phase 4)
+// ----------------------------------------------------------------
+
+const TOUCH_COMBOS = {
+    FMAN25: [
+        { action: 'Enable Touch',    sensors: 'Center',          keys: '[5] hold 1s' },
+        { action: 'Disable Touch',   sensors: 'L4+Ctr+R4',      keys: '[4]+[5]+[6] hold' },
+        { action: 'Next Sequence',   sensors: 'Center+R1',       keys: '[5]+[9]' },
+        { action: 'Prev Sequence',   sensors: 'L1+Center',       keys: '[1]+[5]' },
+        { action: 'Battery Meter',   sensors: 'Center+R2',       keys: '[5]+[8]' },
+        { action: 'Enable BLE',      sensors: 'Center+R3',       keys: '[5]+[7]' },
+        { action: 'Disable BLE',     sensors: 'L3+Center',       keys: '[3]+[5]' },
+        { action: 'Synth Mode',      sensors: 'L1+R1',           keys: '[1]+[9]' },
+        { action: 'Network Test',    sensors: 'L2+Center',       keys: '[2]+[5]' },
+    ],
+    CREST: [
+        { action: 'Enable Touch',    sensors: 'Tail',            keys: '[5] hold 1s' },
+        { action: 'Disable Touch',   sensors: 'RW3+RW2+RW1',    keys: '[7]+[8]+[9] hold' },
+        { action: 'Next Sequence',   sensors: 'LW1+RW1',         keys: '[1]+[9]' },
+        { action: 'Prev Sequence',   sensors: 'LW2+RW1',         keys: '[2]+[9]' },
+        { action: 'Battery Meter',   sensors: 'Tail+RW1',        keys: '[5]+[9]' },
+        { action: 'Enable BLE',      sensors: 'LW1+Tail',        keys: '[1]+[5]' },
+        { action: 'Disable BLE',     sensors: 'LW2+Tail',        keys: '[2]+[5]' },
+        { action: 'Synth Mode',      sensors: 'LW4+RW4',         keys: '[4]+[6]' },
+        { action: 'Network Test',    sensors: 'LW4+Tail+RW4',    keys: '[4]+[5]+[6]' },
+    ],
+    TRON: [
+        { action: 'Battery Meter',   sensors: '8+11 o\'clock',   keys: '[3]+[9]' },
+        { action: 'Enable BLE',      sensors: '12+8 o\'clock',   keys: '[1]+[3]' },
+        { action: 'Disable BLE',     sensors: '12+11 o\'clock',  keys: '[1]+[9]' },
+        { action: 'Next Sequence',   sensors: '2+7 o\'clock',    keys: '[7]+[4]' },
+    ],
+    REACTOR: [
+        { action: 'Enable Touch',    sensors: '2+4+8+10',        keys: '[7]+[6]+[3]+[2] hold' },
+        { action: 'Battery Meter',   sensors: '1+11 o\'clock',   keys: '[8]+[9]' },
+        { action: 'Next Sequence',   sensors: '2+10 o\'clock',   keys: '[7]+[2]' },
+        { action: 'Prev Sequence',   sensors: '4+10 o\'clock',   keys: '[6]+[2]' },
+        { action: 'Enable BLE',      sensors: '2+8 o\'clock',    keys: '[7]+[3]' },
+        { action: 'Disable BLE',     sensors: '4+8 o\'clock',    keys: '[6]+[3]' },
+        { action: 'Synth Mode',      sensors: '4+5+7+8',         keys: '[6]+[5]+[4]+[3]' },
+        { action: 'Network Test',    sensors: '5+7 o\'clock',    keys: '[5]+[4]' },
+    ],
+};
+
+function parseComboKeys(keysStr) {
+    // Extract key numbers from strings like "[5]+[9]" or "[4]+[5]+[6] hold"
+    const matches = keysStr.match(/\[(\d)\]/g);
+    if (!matches) return [];
+    return matches.map(m => m.charAt(1)); // ['5', '9']
+}
+
+function buildTouchComboTable() {
+    const tbody = document.getElementById('cpComboTableBody');
+    tbody.innerHTML = '';
+    const combos = TOUCH_COMBOS[currentBadge] || [];
+    for (const combo of combos) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${combo.action}</td><td>${combo.sensors}</td><td class="keys-col">${combo.keys}</td>`;
+        tr._requiredKeys = parseComboKeys(combo.keys);
+        tbody.appendChild(tr);
+    }
+}
+
+function updateComboHighlights() {
+    const tbody = document.getElementById('cpComboTableBody');
+    if (!tbody) return;
+    for (const tr of tbody.children) {
+        const required = tr._requiredKeys;
+        if (!required || required.length === 0) {
+            tr.classList.remove('active-combo');
+            continue;
+        }
+        const allHeld = required.every(k => activeKeys.has(k));
+        tr.classList.toggle('active-combo', allHeld);
+    }
+}
+
+// ----------------------------------------------------------------
+// Control Panel — Server State Polling (Phase 5)
+// ----------------------------------------------------------------
+
+let serverStatePollTimer = null;
+
+async function refreshServerState() {
+    const state = await mockServerGet('/admin/state');
+    if (!state) return;
+
+    document.getElementById('cpBadgesOnline').textContent = state.badges_registered || 0;
+
+    const hbEl = document.getElementById('cpLastHeartbeat');
+    if (state.last_heartbeat_time) {
+        const ago = Math.round((Date.now() / 1000) - state.last_heartbeat_time);
+        hbEl.textContent = `${ago}s ago`;
+        hbEl.className = 'cp-status-value';
+    } else {
+        hbEl.textContent = 'Never';
+        hbEl.className = 'cp-status-value off';
+    }
+
+    const otaEl = document.getElementById('cpServerOta');
+    otaEl.textContent = state.ota_enabled ? 'Enabled' : 'Disabled';
+    otaEl.className = `cp-status-value ${state.ota_enabled ? 'active' : 'off'}`;
+    updateOtaStatusUI(state.ota_enabled);
+
+    const eventEl = document.getElementById('cpServerEvent');
+    const tmpl = state.response_template || {};
+    if (tmpl.event && tmpl.event.event && tmpl.event.event !== 'AAAAAAAAAAA=') {
+        eventEl.textContent = `${tmpl.event.event.substring(0, 8)}... (color=${tmpl.event.stoneColor})`;
+        eventEl.className = 'cp-status-value';
+    } else {
+        eventEl.textContent = 'None';
+        eventEl.className = 'cp-status-value off';
+    }
+}
+
+function startServerStatePolling() {
+    if (serverStatePollTimer) clearInterval(serverStatePollTimer);
+    serverStatePollTimer = setInterval(refreshServerState, 5000);
+    refreshServerState();
+}
+
+document.getElementById('cpRefreshState').addEventListener('click', refreshServerState);
+
+// ----------------------------------------------------------------
+// Badge Variant Change — rebuild touch combos
+// ----------------------------------------------------------------
+
+badgeSelect.addEventListener('change', () => {
+    buildTouchComboTable();
+});
+
+// ----------------------------------------------------------------
 // Initialization
 // ----------------------------------------------------------------
 
 async function init() {
     await loadBadgeLayouts();
+
+    // Auto-select badge from URL query param (e.g. ?badge=TRON)
+    const urlBadge = new URLSearchParams(window.location.search).get('badge');
+    if (urlBadge && badgeLayouts[urlBadge.toUpperCase()]) {
+        currentBadge = urlBadge.toUpperCase();
+        badgeSelect.value = currentBadge;
+    }
+
     buildTouchButtons();
+    buildTouchComboTable();
     connectWebSocket();
     requestAnimationFrame(renderFrame);
+    startServerStatePolling();
     logEvent('Visualizer initialized', 'info');
 }
 

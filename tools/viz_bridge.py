@@ -40,6 +40,10 @@ MSG_LED_FRAME = 0x01
 MSG_TOUCH_EVENT = 0x02
 MSG_MODE_CHANGE = 0x03
 MSG_TONE_EVENT = 0x04
+MSG_TEST_INJECT = 0x05
+
+# Test injection sub-commands (payload byte 0)
+INJECT_CMD_SEND_HEARTBEAT = 0x01
 
 
 # Regex to extract ESP-IDF log level from a line like:
@@ -55,12 +59,13 @@ class VizBridge:
     """Bridges QEMU UART2 TCP ↔ WebSocket for LED/touch visualization."""
 
     def __init__(self, qemu_host: str, qemu_port: int, ws_port: int, http_port: int,
-                 console_port: int | None = None):
+                 console_port: int | None = None, badge: str | None = None):
         self.qemu_host = qemu_host
         self.qemu_port = qemu_port
         self.console_port = console_port
         self.ws_port = ws_port
         self.http_port = http_port
+        self.badge = badge
         self.ws_clients: set = set()
         self.qemu_reader: asyncio.StreamReader | None = None
         self.qemu_writer: asyncio.StreamWriter | None = None
@@ -263,17 +268,45 @@ class VizBridge:
             log.info(f"WebSocket client disconnected ({len(self.ws_clients)} total)")
 
     async def _handle_ws_message(self, message: str):
-        """Handle incoming WebSocket message (touch events from browser)."""
+        """Handle incoming WebSocket message (touch events and inject commands from browser)."""
         try:
             data = json.loads(message)
         except json.JSONDecodeError:
             log.warning(f"Invalid JSON from WebSocket: {message}")
             return
 
-        if data.get("type") == "touch_event":
+        msg_type = data.get("type")
+        if msg_type == "touch_event":
             sensor_idx = data.get("sensor_idx", 0)
             event_type = data.get("event_type", 0)
             await self._send_touch_to_qemu(sensor_idx, event_type)
+        elif msg_type == "inject":
+            command = data.get("command", "")
+            await self._handle_inject_command(command)
+
+    async def _handle_inject_command(self, command: str):
+        """Handle test injection commands from the viz portal control panel."""
+        if command == "send_heartbeat":
+            await self._send_inject_to_qemu(INJECT_CMD_SEND_HEARTBEAT)
+        else:
+            log.warning(f"Unknown inject command: {command}")
+
+    async def _send_inject_to_qemu(self, sub_command: int):
+        """Encode and send a test injection command to QEMU via TCP."""
+        if not self.connected or not self.qemu_writer:
+            log.warning("Cannot send inject command — not connected to QEMU")
+            return
+
+        # Test Inject Protocol (UI → Firmware):
+        # Byte 0: 0xAA (start), Byte 1: 0x05 (TEST_INJECT),
+        # Byte 2: sub_command, Byte 3: 0x55 (end)
+        frame = bytes([FRAME_START, MSG_TEST_INJECT, sub_command & 0xFF, FRAME_END])
+        try:
+            self.qemu_writer.write(frame)
+            await self.qemu_writer.drain()
+            log.info(f"Sent inject command: sub_cmd=0x{sub_command:02x}")
+        except (ConnectionResetError, OSError) as e:
+            log.warning(f"Failed to send inject command: {e}")
 
     async def _send_touch_to_qemu(self, sensor_idx: int, event_type: int):
         """Encode and send a touch event to QEMU via TCP."""
@@ -333,8 +366,21 @@ class VizBridge:
                 return
 
             path = parts[1]
+
+            # Redirect root to include ?badge= param if configured
+            if (path == "/" or path == "/index.html") and self.badge and "badge=" not in path:
+                redirect_url = f"/index.html?badge={self.badge}"
+                redirect_body = f'<html><head><meta http-equiv="refresh" content="0;url={redirect_url}"></head></html>'.encode("utf-8")
+                await self._send_http_response(writer, 302, "text/html; charset=utf-8", redirect_body,
+                                                extra_headers=f"Location: {redirect_url}\r\n")
+                return
+
             if path == "/" or path == "":
                 path = "/index.html"
+
+            # Strip query string for file lookup
+            if "?" in path:
+                path = path.split("?")[0]
 
             # Serve from tools/viz_ui/
             viz_ui_dir = Path(__file__).parent / "viz_ui"
@@ -362,13 +408,15 @@ class VizBridge:
                 pass
 
     @staticmethod
-    async def _send_http_response(writer, status: int, content_type: str, body: bytes):
-        status_text = {200: "OK", 403: "Forbidden", 404: "Not Found"}.get(status, "Error")
+    async def _send_http_response(writer, status: int, content_type: str, body: bytes,
+                                   extra_headers: str = ""):
+        status_text = {200: "OK", 302: "Found", 403: "Forbidden", 404: "Not Found"}.get(status, "Error")
         header = (
             f"HTTP/1.1 {status} {status_text}\r\n"
             f"Content-Type: {content_type}\r\n"
             f"Content-Length: {len(body)}\r\n"
             f"Access-Control-Allow-Origin: *\r\n"
+            f"{extra_headers}"
             f"Connection: close\r\n"
             f"\r\n"
         )
@@ -430,6 +478,7 @@ def main():
     parser.add_argument("--console-port", type=int, default=None, help="QEMU console serial TCP port")
     parser.add_argument("--ws-port", type=int, default=8765, help="WebSocket server port")
     parser.add_argument("--http-port", type=int, default=8080, help="HTTP server port for UI")
+    parser.add_argument("--badge", default=None, help="Badge type to auto-select in UI (FMAN25, TRON, REACTOR, CREST)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
@@ -437,7 +486,7 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     bridge = VizBridge(args.qemu_host, args.qemu_port, args.ws_port, args.http_port,
-                        console_port=args.console_port)
+                        console_port=args.console_port, badge=args.badge)
 
     try:
         asyncio.run(bridge.run())

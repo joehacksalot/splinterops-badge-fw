@@ -26,6 +26,10 @@ extern "C" {
 #define QEMU_VIZ_MSG_TOUCH_EVENT    0x02
 #define QEMU_VIZ_MSG_MODE_CHANGE    0x03
 #define QEMU_VIZ_MSG_TONE_EVENT     0x04
+#define QEMU_VIZ_MSG_TEST_INJECT    0x05
+
+/* Test injection sub-commands (payload byte 0 of MSG_TEST_INJECT) */
+#define QEMU_VIZ_INJECT_CMD_SEND_HEARTBEAT  0x01
 
 /* Touch event types (matches TouchSensorEvent enum) */
 #define QEMU_VIZ_TOUCH_RELEASED         0

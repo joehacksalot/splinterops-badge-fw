@@ -1,6 +1,8 @@
 # tests/conftest.py
 import pytest
 import asyncio
+import subprocess
+import time
 import sys
 import os
 
@@ -98,3 +100,33 @@ def bumble_controller(bumble_link):
     loop.run_until_complete(_setup())
     yield controller
     loop.run_until_complete(_teardown())
+
+
+@pytest.fixture(scope="session")
+def mock_server():
+    """Start mock game server for WiFi emulation tests."""
+    project_root = os.path.join(os.path.dirname(__file__), "..")
+    proc = subprocess.Popen(
+        [sys.executable, os.path.join(project_root, "tools", "mock_game_server.py"), "--port", "9080"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    time.sleep(1)  # Wait for server to start
+    yield proc
+    proc.terminate()
+    proc.wait()
+
+
+@pytest.fixture(scope="session")
+def mock_server_with_ota():
+    """Start mock game server with OTA response for WiFi emulation tests."""
+    project_root = os.path.join(os.path.dirname(__file__), "..")
+    response_file = os.path.join(project_root, "tools", "mock_responses", "heartbeat_event_complete.json")
+    proc = subprocess.Popen(
+        [sys.executable, os.path.join(project_root, "tools", "mock_game_server.py"),
+         "--port", "9080", "--response-file", response_file],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    time.sleep(1)  # Wait for server to start
+    yield proc
+    proc.terminate()
+    proc.wait()
