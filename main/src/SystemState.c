@@ -312,6 +312,9 @@ esp_err_t SystemState_Init(SystemState *this)
     else
     {
         ESP_LOGE(TAG, "Failed to initialize filesystem, skipping first boot byte check");
+#ifdef CONFIG_BADGE_QEMU_MODE
+        firstBoot = true;  // QEMU has no FAT partition; treat as first boot
+#endif
     }
 
     if (firstBoot)
